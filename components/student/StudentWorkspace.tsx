@@ -2,14 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ChevronRight,
-  History,
-  Send,
-  Sparkles,
-  Sun,
-  Target,
-} from "lucide-react";
+import { ChevronRight, History, Sparkles, Sun, Target } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   feelingLabel,
@@ -24,6 +17,7 @@ import {
 } from "./StudentShell";
 import StudentGoals from "./StudentGoals";
 import StudentHistory, { SAMPLE_CONVERSATIONS } from "./StudentHistory";
+import StudentChatComposer from "./StudentChatComposer";
 import { getUsernameError, normalizeUsername } from "@/lib/profile/username";
 
 type Profile = {
@@ -873,25 +867,13 @@ export default function StudentWorkspace({
                   Load more messages before continuing
                 </button>
               ) : null}
-              <form className="student-chat-composer" onSubmit={sendMessage}>
-                <textarea
-                  aria-label="Message Clarity"
-                  placeholder="Say something to Clarity…"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  maxLength={2000}
-                  rows={2}
-                  disabled={busy || conversationHasMore}
-                />
-                <button
-                  className="student-action"
-                  type="submit"
-                  disabled={busy || conversationHasMore || !draft.trim()}
-                  aria-label="Send message"
-                >
-                  <Send size={22} />
-                </button>
-              </form>
+              <StudentChatComposer
+                value={draft}
+                onChange={setDraft}
+                onSubmit={sendMessage}
+                disabled={busy || conversationHasMore}
+                busy={busy}
+              />
             </>
           )}
           <StudentSafety />
