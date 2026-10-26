@@ -88,6 +88,47 @@
   font-weight: 700;
   letter-spacing: -0.04em;
 }
+.student-brand-image {
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.student-preview-controls {
+  padding: 18px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 24px;
+  background: #eaf1e6;
+  border-bottom: 1px solid #cdddc6;
+  position: relative;
+  z-index: 40;
+  font-size: 14px;
+}
+.student-preview-controls p {
+  margin: 0;
+  font-size: 12px;
+}
+.student-preview-controls nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.student-preview-controls a {
+  padding: 7px 12px;
+  border: 1px solid #b8ccae;
+  border-radius: 999px;
+  background: #fffdf7;
+  text-decoration: none;
+}
+.student-preview-controls a[aria-current="page"] {
+  background: #245f3d;
+  color: white;
+  border-color: #245f3d;
+}
+.student-preview-canvas {
+  position: relative;
+  transform: translateZ(0);
+}
 .student-edition-label {
   display: block;
   font-size: 0.7rem;
@@ -227,6 +268,9 @@
   height: 52px;
 }
 .student-counselor {
+  width: 100%;
+  border: none;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: 16px;

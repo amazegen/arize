@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check,
@@ -84,6 +84,11 @@ export default function StudentWorkspace({
   const [success, setSuccess] = useState("");
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
+  const [counselorStatus, setCounselorStatus] = useState<
+    "idle" | "sending" | "sent" | "pending" | "preview"
+  >("idle");
+  const [counselorError, setCounselorError] = useState("");
+  const counselorRequestId = useRef<string | null>(null);
   const [previewDays, setPreviewDays] = useState<Record<string, Activity>>({});
   const [activity, setActivity] = useState<Activity | null>(
     preview && !loadingPreview
@@ -147,9 +152,49 @@ export default function StudentWorkspace({
     setSuccess("");
     if (next === "check-in") setScore(activity?.checkIn?.score ?? 6);
     if (next === "home" || next === "check-in") chooseDay(localDay());
-    router.push(`${preview ? "/student-design" : "/student"}?screen=${next}`, {
+    const query = preview
+      ? new URLSearchParams(window.location.search)
+      : new URLSearchParams();
+    query.set("screen", next);
+    router.push(`${preview ? "/student-design" : "/student"}?${query}`, {
       scroll: true,
     });
+  }
+  async function requestCounselor() {
+    if (counselorStatus === "sending" || counselorStatus === "sent") return;
+    navigate("counselor");
+    setCounselorError("");
+    if (preview) {
+      setCounselorStatus("preview");
+      return;
+    }
+    setCounselorStatus("sending");
+    counselorRequestId.current ??= crypto.randomUUID();
+    try {
+      const response = await fetch("/api/student/counselor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: counselorRequestId.current }),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || "Your request could not be sent.");
+      if (result.status === "sent") setCounselorStatus("sent");
+      else {
+        setCounselorStatus("pending");
+        setCounselorError(
+          result.error ||
+            "Your request status is pending. Please do not send a second request.",
+        );
+      }
+    } catch (reason) {
+      setCounselorStatus("idle");
+      setCounselorError(
+        reason instanceof Error
+          ? reason.message
+          : "We could not confirm that your request was sent. Please try again.",
+      );
+    }
   }
   async function mutate(body: Record<string, unknown>) {
     const response = await fetch("/api/student", {
@@ -412,6 +457,11 @@ export default function StudentWorkspace({
           monitors this chat for emergencies. School or guardian permission is
           handled separately by your pilot coordinator.
         </p>
+        <p>
+          If you choose Talk to your counselor, your preferred name and a
+          request to connect are sent to Shelby. Your chats, goals, and check-in
+          scores are not attached.
+        </p>
       </div>
       <div className="student-privacy-links">
         <a
@@ -493,11 +543,8 @@ export default function StudentWorkspace({
                   <h2>Ready when you are.</h2>
                   <p>One small step today.</p>
                 </div>
-                <div
-                  className="student-sun"
-                  aria-label="Lion character concept"
-                >
-                  🦁
+                <div className="student-sun" aria-hidden="true">
+                  <Sun size={42} />
                 </div>
               </div>
               <section className="student-card">
@@ -579,7 +626,12 @@ export default function StudentWorkspace({
               </div>
             </div>
             <aside className="student-stack">
-              <CounselorCard onClick={() => navigate("counselor")} />
+              <CounselorCard
+                onClick={requestCounselor}
+                disabled={
+                  counselorStatus === "sending" || counselorStatus === "sent"
+                }
+              />
               <StudentSafety />
               <section className="student-note">
                 <h3>Your space. Your pace.</h3>
@@ -630,7 +682,12 @@ export default function StudentWorkspace({
             </form>
           </div>
           <div style={{ marginTop: 24 }}>
-            <CounselorCard onClick={() => navigate("counselor")} />
+            <CounselorCard
+              onClick={requestCounselor}
+              disabled={
+                counselorStatus === "sending" || counselorStatus === "sent"
+              }
+            />
             <StudentSafety />
           </div>
         </div>
@@ -752,6 +809,54 @@ export default function StudentWorkspace({
             <p>You do not have to figure everything out alone.</p>
           </div>
           <section className="student-card">
+            <h2>Connect with Shelby</h2>
+            <p style={{ margin: "16px 0" }}>
+              Send your preferred name and a request to connect. Your chats,
+              goals, and check-in scores stay out of this notification.
+            </p>
+            {counselorStatus === "sent" ? (
+              <div className="student-success" role="status">
+                <strong>Your request has been sent to Shelby.</strong>
+                <p>
+                  The email service accepted your notification. This does not
+                  mean Shelby has read it. Your school’s response times apply.
+                </p>
+              </div>
+            ) : (
+              <button
+                className="student-action secondary"
+                onClick={requestCounselor}
+                disabled={
+                  counselorStatus === "sending" || counselorStatus === "pending"
+                }
+              >
+                {counselorStatus === "sending"
+                  ? "Sending your request…"
+                  : counselorStatus === "pending"
+                    ? "Confirmation pending"
+                    : "Notify Shelby"}
+              </button>
+            )}
+            {counselorStatus === "preview" ? (
+              <div
+                className="student-note"
+                role="status"
+                style={{ margin: "18px 0" }}
+              >
+                <strong>Preview only — no email has been sent.</strong>
+                <p>
+                  In the connected app, this action sends your request to Shelby
+                  and shows a sent confirmation only after the email service
+                  accepts it.
+                </p>
+              </div>
+            ) : null}
+            {counselorError ? (
+              <p role="alert" className="student-error">
+                {counselorError}
+              </p>
+            ) : null}
+            <div style={{ marginTop: 28 }} />
             <h2>{school.name}</h2>
             <p style={{ margin: "18px 0" }}>{school.counselor_instructions}</p>
             {counselorUrl ? (
@@ -774,9 +879,9 @@ export default function StudentWorkspace({
               </div>
             )}
             <p style={{ marginTop: 22 }}>
-              Opening this page does not notify a counselor or send your chats,
-              goals, or check-ins. Your school’s response times and contact
-              process apply.
+              Viewing this page or sending a Clarity message does not notify
+              anyone. Notifications are sent only when you choose Talk to your
+              counselor or Notify Shelby. This is not monitored for emergencies.
             </p>
           </section>
           <div style={{ marginTop: 22 }}>
@@ -889,7 +994,12 @@ export default function StudentWorkspace({
               </form>
             </>
           )}
-          <CounselorCard onClick={() => navigate("counselor")} />
+          <CounselorCard
+            onClick={requestCounselor}
+            disabled={
+              counselorStatus === "sending" || counselorStatus === "sent"
+            }
+          />
           <StudentSafety />
         </div>
       ) : null}

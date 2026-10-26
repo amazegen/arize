@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import StudentBrand from "./StudentBrand";
 import {
   ArrowLeft,
   ChevronRight,
@@ -11,12 +12,7 @@ import {
 } from "lucide-react";
 
 export type StudentScreen =
-  | "home"
-  | "check-in"
-  | "goals"
-  | "clarity"
-  | "counselor"
-  | "profile";
+  "home" | "check-in" | "goals" | "clarity" | "counselor" | "profile";
 
 export function StudentSafety() {
   return (
@@ -36,7 +32,7 @@ export function StudentAccessMessage({ message }: { message: string }) {
     <div className="student-wrap">
       <header className="student-header">
         <Link className="student-brand" href="/student">
-          <span aria-hidden>🌻</span> Arize
+          <StudentBrand />
         </Link>
       </header>
       <main className="student-main student-narrow">
@@ -98,11 +94,7 @@ export function StudentShell({
               onNavigate("home");
             }}
           >
-            <span aria-hidden>🌻</span>
-            <span>
-              Arize
-              <span className="student-edition-label">Student Edition</span>
-            </span>
+            <StudentBrand />
           </a>
           <a
             className="student-avatar"
@@ -154,22 +146,26 @@ export function StudentShell({
   );
 }
 
-export function CounselorCard({ onClick }: { onClick: () => void }) {
+export function CounselorCard({
+  onClick,
+  disabled = false,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   return (
-    <a
+    <button
+      type="button"
       className="student-counselor"
-      href="/student?screen=counselor"
-      onClick={(e) => {
-        e.preventDefault();
-        onClick();
-      }}
+      disabled={disabled}
+      onClick={onClick}
     >
       <MessageCircle size={32} aria-hidden />
       <div>
         <h3>Talk to your counselor</h3>
-        <p>Connect through your school.</p>
+        <p>Sends your name and request to Shelby.</p>
       </div>
       <ChevronRight size={24} aria-hidden />
-    </a>
+    </button>
   );
 }

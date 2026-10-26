@@ -12,7 +12,7 @@ export function studentSafetyReply(
     result.categories["self-harm/intent"] ||
     result.categories["self-harm/instructions"]
   ) {
-    return "I’m glad you reached out. This is a moment for real human support, not AI coaching. Please tell a trusted adult or your school counselor now. If you are in immediate danger, call 911. In the U.S., call or text 988 for crisis support. Nobody is watching this chat live, and Arize has not contacted anyone for you.";
+    return "I’m glad you reached out. This is a moment for real human support, not AI coaching. Please tell a trusted adult or your school counselor now. If you are in immediate danger, call 911. In the U.S., call or text 988 for crisis support. Nobody is watching this chat live. Sending a chat message does not notify your counselor; the counselor-request button is a separate action.";
   }
   if (
     result.flagged ||

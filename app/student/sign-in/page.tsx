@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StudentSafety } from "@/components/student/StudentShell";
+import StudentBrand from "@/components/student/StudentBrand";
 
 export default function StudentSignIn() {
   const [email, setEmail] = useState("");
@@ -38,7 +39,7 @@ export default function StudentSignIn() {
     <div className="student-wrap">
       <header className="student-header">
         <Link className="student-brand" href="/student">
-          <span aria-hidden>🌻</span> Arize
+          <StudentBrand />
         </Link>
       </header>
       <main className="student-main student-narrow">
