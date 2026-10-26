@@ -43,6 +43,7 @@ All four screen mockups were visually reviewed. The phone home reference was dow
 - Student deployment routing blocks adult Village, adult coach, checkout, billing portal, and other adult pages. An adult deployment does not expose student routes.
 - Development-only sample-data design preview; it is inaccessible in production builds and never bypasses real student authorization.
 - Visible Desktop, Phone, and Chromebook preview controls with Home, Goals, Clarity, Counselor, and Profile screen selectors. Embedded phone navigation stays in the phone frame.
+- Compact counselor-request action in the shared top bar beside the profile icon, replacing the large repeated cards. It remains available on Home, Goals, Clarity, Check-in, and Profile after onboarding. The request action and truthful delivery states are unchanged; preview clicks still send no email.
 
 ## Existing app features to preserve
 
@@ -98,6 +99,7 @@ Official references: [Supabase row-level security](https://supabase.com/docs/gui
 - Live student backend, live AI, counselor process, school consent, and the full 20-student/10-teacher pilot acceptance remain unverified until the setup steps above are completed.
 - Desktop and phone previews were visually reviewed, including the real flower logo and the explicit no-email-sent counselor preview. A development manifest/cache error was resolved by separating the preview build directory from production builds. Real-device and full pilot acceptance remain open.
 - The sample staff settings form was tested in the browser: confirming and saving a synthetic address updates the preview destination and change history, with an explicit preview-only receipt. Live staff sign-in, persistence, and subsequent email delivery remain unverified until the dedicated student backend and approved account are connected.
+- The compact top-bar counselor action was visually reviewed in phone and desktop previews. Clicking it opens the counselor result screen with the explicit no-email-sent preview notice; ordinary page navigation does not send a request.
 - Production-mode localhost checks: `/student-design`, `/api/coach`, and `/api/billing/checkout` return 404; an unauthenticated `/api/student` call returns 401. Development with absent backend settings returns the explicit setup error rather than granting access.
 
 No More Life OS completion statuses, client notifications, production settings, or real student records were changed by this work.

@@ -20,7 +20,6 @@ import {
   STUDENT_NOTICE_VERSION,
 } from "@/lib/student/policy";
 import {
-  CounselorCard,
   StudentSafety,
   StudentShell,
   type StudentScreen,
@@ -526,6 +525,9 @@ export default function StudentWorkspace({
       screen={screen}
       onNavigate={navigate}
       preview={preview}
+      onRequestCounselor={requestCounselor}
+      counselorStatus={counselorStatus}
+      counselorDisabled={busy}
     >
       {screen === "home" ? (
         <>
@@ -626,12 +628,6 @@ export default function StudentWorkspace({
               </div>
             </div>
             <aside className="student-stack">
-              <CounselorCard
-                onClick={requestCounselor}
-                disabled={
-                  counselorStatus === "sending" || counselorStatus === "sent"
-                }
-              />
               <StudentSafety />
               <section className="student-note">
                 <h3>Your space. Your pace.</h3>
@@ -682,12 +678,6 @@ export default function StudentWorkspace({
             </form>
           </div>
           <div style={{ marginTop: 24 }}>
-            <CounselorCard
-              onClick={requestCounselor}
-              disabled={
-                counselorStatus === "sending" || counselorStatus === "sent"
-              }
-            />
             <StudentSafety />
           </div>
         </div>
@@ -994,12 +984,6 @@ export default function StudentWorkspace({
               </form>
             </>
           )}
-          <CounselorCard
-            onClick={requestCounselor}
-            disabled={
-              counselorStatus === "sending" || counselorStatus === "sent"
-            }
-          />
           <StudentSafety />
         </div>
       ) : null}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import StudentBrand from "./StudentBrand";
 import {
   ArrowLeft,
-  ChevronRight,
+  Check,
   Home,
   MessageCircle,
   Target,
@@ -61,12 +61,18 @@ export function StudentShell({
   screen,
   onNavigate,
   preview = false,
+  onRequestCounselor,
+  counselorStatus = "idle",
+  counselorDisabled = false,
 }: {
   children: React.ReactNode;
   name: string;
   screen: StudentScreen;
   onNavigate: (screen: StudentScreen) => void;
   preview?: boolean;
+  onRequestCounselor?: () => void;
+  counselorStatus?: "idle" | "sending" | "sent" | "pending" | "preview";
+  counselorDisabled?: boolean;
 }) {
   const tabs = [
     { id: "home", label: "Home", Icon: Home },
@@ -96,17 +102,67 @@ export function StudentShell({
           >
             <StudentBrand />
           </a>
-          <a
-            className="student-avatar"
-            href="/student?screen=profile"
-            aria-label="Your profile"
-            onClick={(e) => {
-              e.preventDefault();
-              onNavigate("profile");
-            }}
-          >
-            {name.slice(0, 1).toUpperCase() || <UserRound size={24} />}
-          </a>
+          <div className="student-header-actions">
+            {onRequestCounselor ? (
+              <button
+                type="button"
+                className="student-counselor-shortcut"
+                onClick={onRequestCounselor}
+                aria-label={
+                  counselorStatus === "sent"
+                    ? "Counselor request sent"
+                    : counselorStatus === "sending"
+                      ? "Sending counselor request"
+                      : counselorStatus === "pending"
+                        ? "Counselor request confirmation pending"
+                        : "Talk to your counselor — send a request to Shelby"
+                }
+                title="Send only your preferred name and a request to connect. No chats, goals, or scores."
+                disabled={
+                  counselorDisabled ||
+                  counselorStatus === "sending" ||
+                  counselorStatus === "sent" ||
+                  counselorStatus === "pending"
+                }
+              >
+                {counselorStatus === "sent" ? (
+                  <Check size={20} aria-hidden />
+                ) : (
+                  <MessageCircle size={20} aria-hidden />
+                )}
+                <span>
+                  {counselorStatus === "sent" ? (
+                    <>
+                      Request <strong>sent</strong>
+                    </>
+                  ) : counselorStatus === "sending" ? (
+                    <>
+                      Sending <strong>request…</strong>
+                    </>
+                  ) : counselorStatus === "pending" ? (
+                    <>
+                      Confirmation <strong>pending</strong>
+                    </>
+                  ) : (
+                    <>
+                      Talk to your <strong>counselor</strong>
+                    </>
+                  )}
+                </span>
+              </button>
+            ) : null}
+            <a
+              className="student-avatar"
+              href="/student?screen=profile"
+              aria-label="Your profile"
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate("profile");
+              }}
+            >
+              {name.slice(0, 1).toUpperCase() || <UserRound size={24} />}
+            </a>
+          </div>
         </header>
         <main id="student-main" className="student-main">
           {screen !== "home" ? (
@@ -143,29 +199,5 @@ export function StudentShell({
         ))}
       </nav>
     </>
-  );
-}
-
-export function CounselorCard({
-  onClick,
-  disabled = false,
-}: {
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      className="student-counselor"
-      disabled={disabled}
-      onClick={onClick}
-    >
-      <MessageCircle size={32} aria-hidden />
-      <div>
-        <h3>Talk to your counselor</h3>
-        <p>Sends your name and request to Shelby.</p>
-      </div>
-      <ChevronRight size={24} aria-hidden />
-    </button>
   );
 }

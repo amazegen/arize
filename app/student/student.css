@@ -79,6 +79,35 @@
   justify-content: space-between;
   gap: 18px;
 }
+.student-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.student-counselor-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  border: 1px solid #266b43;
+  border-radius: 16px;
+  padding: 9px 14px;
+  background: var(--green);
+  color: white;
+  text-align: left;
+}
+.student-counselor-shortcut svg {
+  flex-shrink: 0;
+}
+.student-counselor-shortcut span {
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+.student-counselor-shortcut strong {
+  display: block;
+  font-size: 0.95rem;
+}
 .student-brand {
   display: inline-flex;
   align-items: center;
@@ -291,28 +320,6 @@
   color: var(--ink);
   width: 52px;
   height: 52px;
-}
-.student-counselor {
-  width: 100%;
-  border: none;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--green);
-  color: white !important;
-  padding: 24px;
-  border-radius: 26px;
-  text-decoration: none;
-  box-shadow: 0 10px 24px #2f7e5026;
-}
-.student-counselor p {
-  color: #e2f3e7;
-  margin-top: 3px;
-}
-.student-counselor svg:last-child {
-  margin-left: auto;
-  flex-shrink: 0;
 }
 .student-safety {
   padding: 8px 6px;
@@ -682,6 +689,39 @@
   }
   .student-header {
     height: 90px;
+    gap: 10px;
+  }
+  .student-header-actions {
+    gap: 8px;
+  }
+  .student-header .student-brand {
+    gap: 7px;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  .student-header .student-brand-image {
+    width: 40px;
+    height: 37px;
+  }
+  .student-header .student-edition-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.08em;
+  }
+  .student-header .student-avatar {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+  .student-counselor-shortcut {
+    gap: 7px;
+    padding: 8px 10px;
+    min-height: 44px;
+  }
+  .student-counselor-shortcut span {
+    font-size: 0.75rem;
+  }
+  .student-counselor-shortcut strong {
+    font-size: 0.85rem;
   }
   .student-main {
     padding-top: 22px;
@@ -720,15 +760,6 @@
     width: 44px;
     height: 44px;
   }
-  .student-counselor {
-    padding: 22px;
-  }
-  .student-counselor h3 {
-    font-size: 1.05rem;
-  }
-  .student-counselor p {
-    font-size: 0.9rem;
-  }
   .student-note {
     padding: 20px;
   }
@@ -736,6 +767,22 @@
 @media (max-width: 360px) {
   .student-app .student-wrap {
     padding: 0 16px;
+  }
+  .student-header {
+    gap: 6px;
+  }
+  .student-header-actions {
+    gap: 6px;
+  }
+  .student-counselor-shortcut {
+    gap: 5px;
+    padding: 7px;
+  }
+  .student-counselor-shortcut span {
+    font-size: 0.7rem;
+  }
+  .student-counselor-shortcut strong {
+    font-size: 0.78rem;
   }
   .student-quick-grid {
     gap: 10px;
