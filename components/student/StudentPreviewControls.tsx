@@ -72,6 +72,14 @@ export default function StudentPreviewControls({
           </a>
         ))}
       </nav>
+      <nav aria-label="Staff preview">
+        <a
+          href="/student-design?screen=admin-notifications"
+          aria-current={screen === "admin-notifications" ? "page" : undefined}
+        >
+          Admin settings
+        </a>
+      </nav>
     </header>
   );
 }

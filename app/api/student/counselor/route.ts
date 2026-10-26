@@ -6,6 +6,7 @@ import {
 } from "@/lib/student/server";
 import { STUDENT_NOTICE_VERSION } from "@/lib/student/policy";
 import { deliverCounselorRequest } from "@/lib/student/counselor-notification";
+import { resolveCounselorRecipient } from "@/lib/student/notification-settings";
 
 export const dynamic = "force-dynamic";
 const reply = (body: unknown, status = 200) =>
@@ -37,16 +38,12 @@ export async function POST(request: Request) {
   ]);
   if (profile?.notice_version !== STUDENT_NOTICE_VERSION)
     return reply({ error: "Please complete student onboarding first." }, 403);
-  const recipient = process.env.STUDENT_COUNSELOR_EMAIL?.trim();
   const from = process.env.STUDENT_COUNSELOR_FROM?.trim();
   const apiKey = process.env.RESEND_API_KEY;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (
     process.env.STUDENT_COUNSELOR_NOTIFICATIONS_ENABLED !== "true" ||
-    membership.school_id !== process.env.STUDENT_COUNSELOR_SCHOOL_ID ||
     !school ||
-    !recipient ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient) ||
     !from ||
     !apiKey ||
     !serviceKey
@@ -59,6 +56,30 @@ export async function POST(request: Request) {
       503,
     );
   }
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceKey,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+  const { data: setting, error: settingError } = await admin
+    .from("student_counselor_settings")
+    .select("recipient_email")
+    .eq("school_id", membership.school_id)
+    .maybeSingle();
+  const recipient = resolveCounselorRecipient({
+    databaseEmail: setting?.recipient_email ?? null,
+    schoolId: membership.school_id,
+    legacyEmail: process.env.STUDENT_COUNSELOR_EMAIL,
+    legacySchoolId: process.env.STUDENT_COUNSELOR_SCHOOL_ID,
+  });
+  if (settingError || !recipient)
+    return reply(
+      {
+        error:
+          "Counselor delivery settings are unavailable. No email has been sent. Please contact your school directly.",
+      },
+      503,
+    );
   const { data: record, error } = await supabase.rpc(
     "student_create_counselor_request",
     { p_request_id: body.requestId },
@@ -84,14 +105,31 @@ export async function POST(request: Request) {
       },
       409,
     );
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceKey,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  // Pin the original destination before the first attempt. A later admin change
+  // must not redirect a retry or change a provider idempotency payload.
+  const { error: pinError } = await admin
+    .from("student_counselor_requests")
+    .update({ recipient_email: recipient })
+    .eq("id", record.id)
+    .eq("user_id", user.id)
+    .is("recipient_email", null);
+  const { data: delivery, error: deliveryError } = await admin
+    .from("student_counselor_requests")
+    .select("recipient_email")
+    .eq("id", record.id)
+    .eq("user_id", user.id)
+    .single();
+  if (pinError || deliveryError || !delivery?.recipient_email)
+    return reply(
+      {
+        error:
+          "The delivery address could not be confirmed. No email has been sent.",
+      },
+      503,
+    );
   try {
     const providerId = await deliverCounselorRequest(
-      { apiKey, from, to: recipient },
+      { apiKey, from, to: delivery.recipient_email },
       {
         id: record.id,
         displayName: record.display_name,

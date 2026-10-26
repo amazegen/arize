@@ -13,12 +13,19 @@ grant usage on schema auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
 \ir ../supabase/migrations/20261026154409_student_edition_pilot.sql
 \ir ../supabase/migrations/20261026164541_student_counselor_requests.sql
+\ir ../supabase/migrations/20261026171229_student_counselor_admin_settings.sql
 
 insert into auth.users(id) values
 ('10000000-0000-4000-8000-000000000001'),
 ('10000000-0000-4000-8000-000000000002'),
-('10000000-0000-4000-8000-000000000003');
+('10000000-0000-4000-8000-000000000003'),
+('10000000-0000-4000-8000-000000000004'),
+('10000000-0000-4000-8000-000000000005');
 insert into public.student_schools(id,name) values('20000000-0000-4000-8000-000000000001','Synthetic school');
+insert into public.student_schools(id,name) values('20000000-0000-4000-8000-000000000002','Other school');
+insert into public.student_notification_admins(user_id,school_id) values
+('10000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000001'),
+('10000000-0000-4000-8000-000000000005','20000000-0000-4000-8000-000000000002');
 insert into public.student_pilot_memberships(user_id,school_id,status,consent_verified_at) values
 ('10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','active',now()),
 ('10000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000001','active',now());
@@ -79,6 +86,69 @@ do $$ begin
     insert into public.student_profiles(user_id,display_name,grade,notice_version) values(auth.uid(),'Unenrolled','10','test');
     raise exception 'Non-member can create student data';
   exception when insufficient_privilege then null; end;
+end $$;
+
+-- Student cannot acquire the staff role or change the delivery destination.
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+do $$ begin
+  begin
+    perform public.student_save_counselor_email('forged@example.test');
+    raise exception 'Student can change counselor destination';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into public.student_notification_admins(user_id,school_id) values(auth.uid(),'20000000-0000-4000-8000-000000000001');
+    raise exception 'Student can self-grant staff role';
+  exception when insufficient_privilege then null; end;
+  begin
+    perform recipient_email from public.student_counselor_requests;
+    raise exception 'Student can read private recipient snapshot';
+  exception when insufficient_privilege then null; end;
+end $$;
+
+reset role;
+update public.student_counselor_requests set recipient_email='original@example.test' where id='50000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
+select public.student_save_counselor_email(' FIRST@example.test ');
+select public.student_save_counselor_email('updated@example.test');
+select public.student_save_counselor_email('updated@example.test');
+do $$ begin
+  if (select recipient_email from public.student_counselor_settings) != 'updated@example.test' then raise exception 'Admin setting not saved'; end if;
+  if (select count(*) from public.student_counselor_email_audit) != 2 then raise exception 'Audit duplicates or missing changes'; end if;
+  if exists(select 1 from public.student_counselor_email_audit where changed_by != auth.uid()) then raise exception 'Audit actor incorrect'; end if;
+  if exists(select 1 from public.student_profiles) or exists(select 1 from public.student_messages) then raise exception 'Notification role grants private student data'; end if;
+  begin
+    update public.student_counselor_email_audit set new_email='fake@example.test';
+    raise exception 'Admin can forge change history';
+  exception when insufficient_privilege then null; end;
+end $$;
+
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000005',true);
+do $$ begin
+  if exists(select 1 from public.student_counselor_settings) or exists(select 1 from public.student_counselor_email_audit) then raise exception 'Cross-school admin leak'; end if;
+  begin
+    insert into public.student_counselor_settings(school_id,recipient_email) values('20000000-0000-4000-8000-000000000001','cross-school@example.test');
+    raise exception 'Admin can edit another school';
+  exception when insufficient_privilege then null; end;
+end $$;
+
+reset role;
+do $$ begin
+  if (select recipient_email from public.student_counselor_requests where id='50000000-0000-4000-8000-000000000001') != 'original@example.test' then raise exception 'Saved change redirects pending request'; end if;
+end $$;
+update public.student_notification_admins set active=false where user_id='10000000-0000-4000-8000-000000000004';
+set local role authenticated;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
+do $$ begin
+  if exists(select 1 from public.student_counselor_settings) then raise exception 'Revoked admin retains access'; end if;
+  begin
+    perform public.student_save_counselor_email('revoked@example.test');
+    raise exception 'Revoked admin can save';
+  exception when insufficient_privilege then null; end;
+end $$;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+do $$ begin
+  if exists(select 1 from public.student_counselor_settings) or exists(select 1 from public.student_counselor_email_audit) then raise exception 'Student can read counselor email settings'; end if;
 end $$;
 
 reset role;

@@ -26,7 +26,10 @@ export default function StudentSignIn() {
         );
         return;
       }
-      window.location.assign("/student");
+      const next = new URLSearchParams(window.location.search).get("next");
+      window.location.assign(
+        next === "/student/admin/notifications" ? next : "/student",
+      );
     } catch {
       setError(
         "Student sign-in is temporarily unavailable. Please try again later.",

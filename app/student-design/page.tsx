@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import StudentWorkspace from "@/components/student/StudentWorkspace";
 import type { StudentScreen } from "@/components/student/StudentShell";
 import StudentPreviewControls from "@/components/student/StudentPreviewControls";
+import StudentNotificationSettings from "@/components/student/StudentNotificationSettings";
 import { STUDENT_NOTICE_VERSION } from "@/lib/student/policy";
 import "../student/student.css";
 
@@ -14,6 +15,25 @@ export default async function StudentDesign({
 }) {
   if (process.env.NODE_ENV !== "development") notFound();
   const params = await searchParams;
+  if (params.screen === "admin-notifications")
+    return (
+      <div className="student-app">
+        <StudentPreviewControls
+          screen="admin-notifications"
+          state="default"
+          device="desktop"
+        />
+        <StudentNotificationSettings
+          preview
+          schoolName="Sample school"
+          initial={{
+            email: "counselor@example.test",
+            updatedAt: null,
+            history: [],
+          }}
+        />
+      </div>
+    );
   const screen = [
     "home",
     "check-in",

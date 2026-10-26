@@ -92,6 +92,31 @@
   object-fit: contain;
   flex-shrink: 0;
 }
+.student-admin-settings {
+  max-width: 980px;
+  padding: 0 28px;
+  margin: 0 auto;
+}
+.student-admin-settings .student-header .student-brand {
+  position: static;
+}
+.student-admin-settings .student-header {
+  justify-content: space-between;
+}
+.student-admin-history {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+}
+.student-admin-history li {
+  padding: 16px 0;
+  border-top: 1px solid #e0e7dc;
+  overflow-wrap: anywhere;
+}
+.student-admin-history p {
+  margin-top: 6px;
+  font-size: 0.9rem;
+}
 .student-preview-controls {
   padding: 18px 24px;
   display: flex;
