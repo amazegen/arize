@@ -41,6 +41,7 @@ export default async function StudentDesign({
     "clarity",
     "counselor",
     "profile",
+    "feedback",
   ].includes(String(params.screen))
     ? (String(params.screen) as StudentScreen)
     : "home";

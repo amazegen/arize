@@ -19,7 +19,7 @@ export default async function StudentPage({
   }
   const { data: profile, error } = await session.supabase
     .from("student_profiles")
-    .select("display_name, grade, notice_version")
+    .select("display_name,username,grade,notice_version")
     .eq("user_id", session.user.id)
     .maybeSingle();
   if (error)
@@ -43,6 +43,7 @@ export default async function StudentPage({
     "clarity",
     "counselor",
     "profile",
+    "feedback",
   ];
   const screen = screens.includes(params.screen as StudentScreen)
     ? (params.screen as StudentScreen)

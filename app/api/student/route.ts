@@ -9,6 +9,7 @@ import {
   validateCheckIn,
   validateStudentProfile,
 } from "@/lib/student/policy";
+import { getUsernameError, normalizeUsername } from "@/lib/profile/username";
 
 export const dynamic = "force-dynamic";
 const reply = (body: unknown, status = 200) =>
@@ -61,19 +62,32 @@ export async function POST(request: Request) {
   if (body.action === "profile") {
     const error = validateStudentProfile(body);
     if (error) return reply({ error }, 400);
+    const username =
+      typeof body.username === "string" ? normalizeUsername(body.username) : "";
+    const usernameError = getUsernameError(username);
+    if (usernameError) return reply({ error: usernameError }, 400);
     const result = await supabase
       .from("student_profiles")
       .upsert({
         user_id: user.id,
         display_name: String(body.displayName).trim(),
+        username: username || null,
         grade: body.grade,
         notice_version: STUDENT_NOTICE_VERSION,
         acknowledged_at: new Date().toISOString(),
       })
-      .select("display_name, grade, notice_version")
+      .select("display_name,username,grade,notice_version")
       .single();
     if (result.error)
-      return reply({ error: "Your profile could not be saved." }, 503);
+      return reply(
+        {
+          error:
+            result.error.code === "23505"
+              ? "That username is already taken. Choose another nickname."
+              : "Your profile could not be saved.",
+        },
+        result.error.code === "23505" ? 409 : 503,
+      );
     return reply({ profile: result.data });
   }
   const { data: profile } = await supabase
@@ -106,7 +120,7 @@ export async function POST(request: Request) {
     // INSERT only: adding a goal never replaces or resets existing goals.
     const result = await supabase
       .from("student_goals")
-      .insert({ user_id: user.id, day: body.day, title })
+      .insert({ user_id: user.id, day: body.day, deadline: body.day, title })
       .select("id, title, is_complete, day")
       .single();
     return result.error
@@ -122,7 +136,7 @@ export async function POST(request: Request) {
       return reply({ error: "Choose a valid goal." }, 400);
     const result = await supabase
       .from("student_goals")
-      .update({ is_complete: body.complete })
+      .update({ is_complete: body.complete, progress: body.complete ? 100 : 0 })
       .eq("id", body.id)
       .eq("user_id", user.id)
       .select("id, title, is_complete, day")

@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Check,
-  ChevronLeft,
   ChevronRight,
   History,
   Send,
@@ -24,15 +22,23 @@ import {
   StudentShell,
   type StudentScreen,
 } from "./StudentShell";
+import StudentGoals from "./StudentGoals";
+import StudentHistory, { SAMPLE_CONVERSATIONS } from "./StudentHistory";
+import { getUsernameError, normalizeUsername } from "@/lib/profile/username";
 
-type Profile = { display_name: string; grade: string; notice_version: string };
+type Profile = {
+  display_name: string;
+  username?: string | null;
+  grade: string;
+  notice_version: string;
+};
 type School = {
   name: string;
   counselor_url: string | null;
   counselor_instructions: string;
 };
 type Goal = { id: string; title: string; is_complete: boolean; day: string };
-type Message = { role: "user" | "assistant"; content: string };
+type Message = { id?: string; role: "user" | "assistant"; content: string };
 type Activity = {
   checkIn: { score: number; day: string } | null;
   goals: Goal[];
@@ -42,11 +48,6 @@ type Activity = {
 function localDay() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
-function previousDay(day: string, offset: number) {
-  const date = new Date(`${day}T12:00:00`);
-  date.setDate(date.getDate() + offset);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export default function StudentWorkspace({
@@ -71,14 +72,18 @@ export default function StudentWorkspace({
     initialProfile?.display_name ?? "",
   );
   const [grade, setGrade] = useState(initialProfile?.grade ?? "");
-  const [acknowledged, setAcknowledged] = useState(false);
+  const [username, setUsername] = useState(initialProfile?.username ?? "");
+  const [acknowledged, setAcknowledged] = useState(
+    initialProfile?.notice_version === STUDENT_NOTICE_VERSION,
+  );
   const [day, setDay] = useState(localDay);
   const [score, setScore] = useState(6);
-  const [goalTitle, setGoalTitle] = useState("");
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [conversationHasMore, setConversationHasMore] = useState(false);
+  const [conversationOffset, setConversationOffset] = useState(0);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [busy, setBusy] = useState(false);
@@ -214,17 +219,32 @@ export default function StudentWorkspace({
     setError("");
     setSuccess("");
     try {
+      const usernameError = getUsernameError(username);
+      if (usernameError) throw new Error(usernameError);
+      if (!displayName.trim() || displayName.trim().length > 50)
+        throw new Error("Choose a name between 1 and 50 characters.");
       const next = preview
         ? {
             profile: {
               display_name: displayName.trim(),
+              username: normalizeUsername(username) || null,
               grade,
               notice_version: STUDENT_NOTICE_VERSION,
             },
           }
-        : await mutate({ action: "profile", displayName, grade, acknowledged });
+        : await mutate({
+            action: "profile",
+            displayName,
+            username,
+            grade,
+            acknowledged,
+          });
       setProfile(next.profile);
-      setSuccess("Your profile is saved.");
+      setSuccess(
+        preview
+          ? "Profile updated in this preview only. No account was changed."
+          : "Your profile is saved.",
+      );
       setReload((n) => n + 1);
     } catch (reason) {
       setError(
@@ -261,80 +281,45 @@ export default function StudentWorkspace({
       setBusy(false);
     }
   }
-  async function addGoal(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      const result = preview
-        ? {
-            goal: {
-              id: crypto.randomUUID(),
-              title: goalTitle.trim(),
-              is_complete: false,
-              day,
-            },
-          }
-        : await mutate({ action: "add-goal", title: goalTitle, day });
-      setActivity((old) => ({
-        checkIn: old?.checkIn ?? null,
-        conversations: old?.conversations ?? [],
-        goals: [...(old?.goals ?? []), result.goal],
-      }));
-      setGoalTitle("");
-    } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : "Your goal could not be added.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function toggleGoal(goal: Goal) {
-    setBusy(true);
-    setError("");
-    try {
-      const result = preview
-        ? { goal: { ...goal, is_complete: !goal.is_complete } }
-        : await mutate({
-            action: "toggle-goal",
-            id: goal.id,
-            complete: !goal.is_complete,
-          });
-      setActivity((old) =>
-        old
-          ? {
-              ...old,
-              goals: old.goals.map((item) =>
-                item.id === goal.id ? result.goal : item,
-              ),
-            }
-          : old,
-      );
-    } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : "Your goal could not be updated.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function loadConversation(id: string) {
+  async function loadConversation(id: string, offset = 0) {
     if (busy) return;
     setBusy(true);
     setError("");
     try {
+      if (preview) {
+        const sample = SAMPLE_CONVERSATIONS.find((c) => c.id === id);
+        if (!sample) throw new Error("Preview conversation not found.");
+        setMessages([
+          { role: "user", content: sample.title },
+          {
+            role: "assistant",
+            content:
+              "This is a sample saved conversation. In the connected app, this is where you can review your own messages and continue the conversation.",
+          },
+        ]);
+        setConversationId(id);
+        setConversationHasMore(false);
+        setConversationOffset(0);
+        setShowHistory(false);
+        return;
+      }
       const response = await fetch(
-        `/api/student/coach?conversation=${encodeURIComponent(id)}`,
+        `/api/student/history?conversation=${encodeURIComponent(id)}&offset=${offset}`,
         { cache: "no-store" },
       );
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
-      setMessages(result.messages);
+      setMessages((old) =>
+        offset
+          ? Array.from(
+              new Map(
+                [...old, ...result.messages].map((m: Message) => [m.id, m]),
+              ).values(),
+            )
+          : result.messages,
+      );
+      setConversationHasMore(result.hasMore);
+      setConversationOffset(result.nextOffset);
       setConversationId(id);
       setShowHistory(false);
     } catch {
@@ -429,6 +414,22 @@ export default function StudentWorkspace({
         />
       </label>
       <label>
+        Username (optional)
+        <input
+          value={username}
+          maxLength={30}
+          onChange={(e) => setUsername(e.target.value)}
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder="your_nickname"
+        />
+        <small>
+          3–30 letters, numbers, or underscores. Use a nickname, not personal
+          contact information. There is no public student directory.
+        </small>
+      </label>
+      <label>
         Your grade
         <select
           value={grade}
@@ -443,25 +444,32 @@ export default function StudentWorkspace({
           ))}
         </select>
       </label>
-      <div className="student-note">
-        <h3>A quick note before you start</h3>
-        <p>
-          Clarity is an AI coach, not a counselor or emergency service. Your
-          check-ins, goals, and chats are saved to your account. Chat messages
-          are sent to our AI provider to generate a reply. Do not include
-          sensitive details about yourself or other people.
-        </p>
-        <p>
-          This pilot does not give teachers a live view of your activity. Nobody
-          monitors this chat for emergencies. School or guardian permission is
-          handled separately by your pilot coordinator.
-        </p>
-        <p>
-          If you choose Talk to your counselor, your preferred name and a
-          request to connect are sent to Shelby. Your chats, goals, and check-in
-          scores are not attached.
-        </p>
-      </div>
+      <details className="student-profile-privacy" open={!profile}>
+        <summary>
+          {profile
+            ? "Review your student privacy notice"
+            : "Before you start: your student privacy"}
+        </summary>
+        <div className="student-note">
+          <h3>Your student privacy</h3>
+          <p>
+            Clarity is an AI coach, not a counselor or emergency service. Your
+            check-ins, goals, and chats are saved to your account. Chat messages
+            are sent to our AI provider to generate a reply. Do not include
+            sensitive details about yourself or other people.
+          </p>
+          <p>
+            This pilot does not give teachers a live view of your activity.
+            Nobody monitors this chat for emergencies. School or guardian
+            permission is handled separately by your pilot coordinator.
+          </p>
+          <p>
+            If you choose Talk to your counselor, your preferred name and a
+            request to connect are sent to Shelby. Your chats, goals, and
+            check-in scores are not attached.
+          </p>
+        </div>
+      </details>
       <div className="student-privacy-links">
         <a
           href="https://amazegen.com/privacy.html"
@@ -684,112 +692,15 @@ export default function StudentWorkspace({
       ) : null}
 
       {screen === "goals" ? (
-        <div className="student-narrow">
-          <div className="student-intro">
-            <h1>Small steps count.</h1>
-            <p>One doable thing can be enough.</p>
-          </div>
-          <div className="student-inline" style={{ marginBottom: 24 }}>
-            <button
-              className="student-action plain"
-              aria-label="Previous day’s goals"
-              disabled={busy}
-              onClick={() => {
-                chooseDay(previousDay(day, -1));
-              }}
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <label>
-              Goals for{" "}
-              <input
-                className="student-date"
-                aria-label="Goal date"
-                type="date"
-                value={day}
-                max={localDay()}
-                disabled={busy}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    chooseDay(e.target.value);
-                  }
-                }}
-              />
-            </label>
-            <button
-              className="student-action plain"
-              aria-label="Next day’s goals"
-              disabled={busy || day >= localDay()}
-              onClick={() => {
-                chooseDay(previousDay(day, 1));
-              }}
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-          {notices}
-          <section className="student-card">
-            {activity ? (
-              activity.goals.length ? (
-                <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                  {activity.goals.map((goal) => (
-                    <li
-                      key={goal.id}
-                      className={`student-goal${goal.is_complete ? " complete" : ""}`}
-                    >
-                      <button
-                        type="button"
-                        role="checkbox"
-                        aria-checked={goal.is_complete}
-                        aria-label={`${goal.is_complete ? "Reopen" : "Complete"} ${goal.title}`}
-                        onClick={() => toggleGoal(goal)}
-                        disabled={busy}
-                      >
-                        {goal.is_complete ? <Check size={20} /> : null}
-                      </button>
-                      <span>{goal.title}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>
-                  No goals for this day. Keep your next step small and kind.
-                </p>
-              )
-            ) : (
-              <p role="status">Loading your goals…</p>
-            )}
-            {day === localDay() ? (
-              <form
-                className="student-form"
-                style={{ marginTop: 26 }}
-                onSubmit={addGoal}
-              >
-                <label>
-                  What is one thing you want to do?
-                  <input
-                    maxLength={160}
-                    required
-                    value={goalTitle}
-                    onChange={(e) => setGoalTitle(e.target.value)}
-                    placeholder="For example, take a break after class"
-                  />
-                </label>
-                <button
-                  className="student-action"
-                  disabled={busy || !goalTitle.trim()}
-                >
-                  {busy ? "Saving…" : "Add a goal"}
-                </button>
-              </form>
-            ) : (
-              <p style={{ marginTop: 20 }}>
-                Looking back at a previous day. You can check off a goal you
-                completed.
-              </p>
-            )}
-          </section>
-        </div>
+        <StudentGoals
+          preview={preview}
+          onCoach={() => {
+            setDraft(
+              "Help me plan a meaningful, manageable school week. What is one small goal I could start with?",
+            );
+            navigate("clarity");
+          }}
+        />
       ) : null}
 
       {screen === "counselor" ? (
@@ -901,6 +812,9 @@ export default function StudentWorkspace({
                 onClick={() => {
                   setMessages([]);
                   setConversationId(null);
+                  setConversationHasMore(false);
+                  setConversationOffset(0);
+                  setDraft("");
                   setShowHistory(false);
                   setError("");
                 }}
@@ -916,30 +830,13 @@ export default function StudentWorkspace({
               sensitive details. Nobody watches this chat live.
             </p>
           </div>
+          {notices}
           {showHistory ? (
-            <section
-              className="student-card student-history"
-              aria-label="Your conversation history"
-            >
-              <h2>Your conversations</h2>
-              {activity?.conversations.length ? (
-                activity.conversations.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => loadConversation(item.id)}
-                    disabled={busy}
-                  >
-                    {item.title}
-                    <br />
-                    <small>
-                      {new Date(item.created_at).toLocaleDateString()}
-                    </small>
-                  </button>
-                ))
-              ) : (
-                <p>No saved conversations yet.</p>
-              )}
-            </section>
+            <StudentHistory
+              preview={preview}
+              onOpen={loadConversation}
+              disabled={busy}
+            />
           ) : (
             <>
               <div
@@ -953,7 +850,10 @@ export default function StudentWorkspace({
                   school day or find one small next step. What’s on your mind?
                 </div>
                 {messages.map((message, i) => (
-                  <div key={i} className={`student-bubble ${message.role}`}>
+                  <div
+                    key={message.id ?? i}
+                    className={`student-bubble ${message.role}`}
+                  >
                     <span className="student-edition-label">
                       {message.role === "user" ? "You" : "Clarity · AI coach"}
                     </span>
@@ -962,7 +862,17 @@ export default function StudentWorkspace({
                 ))}
                 {busy ? <p role="status">One moment…</p> : null}
               </div>
-              {notices}
+              {conversationHasMore && conversationId ? (
+                <button
+                  className="student-action plain"
+                  disabled={busy}
+                  onClick={() =>
+                    loadConversation(conversationId, conversationOffset)
+                  }
+                >
+                  Load more messages before continuing
+                </button>
+              ) : null}
               <form className="student-chat-composer" onSubmit={sendMessage}>
                 <textarea
                   aria-label="Message Clarity"
@@ -971,12 +881,12 @@ export default function StudentWorkspace({
                   onChange={(e) => setDraft(e.target.value)}
                   maxLength={2000}
                   rows={2}
-                  disabled={busy}
+                  disabled={busy || conversationHasMore}
                 />
                 <button
                   className="student-action"
                   type="submit"
-                  disabled={busy || !draft.trim()}
+                  disabled={busy || conversationHasMore || !draft.trim()}
                   aria-label="Send message"
                 >
                   <Send size={22} />
@@ -991,11 +901,43 @@ export default function StudentWorkspace({
       {screen === "profile" ? (
         <div className="student-narrow">
           <div className="student-intro">
-            <h1>Your profile</h1>
+            <h1>Profile & settings</h1>
             <p>Use a first name or nickname that feels like you.</p>
           </div>
           {notices}
           <section className="student-card">{profileForm}</section>
+          <section
+            className="student-card student-settings-links"
+            style={{ marginTop: 24 }}
+          >
+            <h2>Support & privacy</h2>
+            <button
+              className="student-settings-link"
+              onClick={() => navigate("feedback")}
+            >
+              Share feedback <ChevronRight size={20} />
+            </button>
+            <a
+              className="student-settings-link"
+              href="https://amazegen.com/privacy.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy <ChevronRight size={20} />
+            </a>
+            <a
+              className="student-settings-link"
+              href="https://amazegen.com/terms.html"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Terms of Use <ChevronRight size={20} />
+            </a>
+            <p>
+              Student pilot access is managed by your school. No purchases or
+              adult membership controls are included.
+            </p>
+          </section>
           <div className="student-inline" style={{ marginTop: 24 }}>
             <button
               className="student-action plain"
@@ -1006,6 +948,47 @@ export default function StudentWorkspace({
             </button>
             <span>Student pilot · {school.name}</span>
           </div>
+        </div>
+      ) : null}
+      {screen === "feedback" ? (
+        <div className="student-narrow">
+          <div className="student-intro">
+            <h1>Your voice matters.</h1>
+            <p>Help us make Arize more useful for students.</p>
+          </div>
+          <section className="student-card">
+            <h2>Share feedback</h2>
+            <p style={{ margin: "16px 0" }}>
+              Do not include private details about yourself or another student.
+              Feedback is not monitored for emergencies.
+            </p>
+            {safeCounselorUrl(process.env.NEXT_PUBLIC_STUDENT_FEEDBACK_URL) ? (
+              <a
+                className="student-action"
+                href={
+                  safeCounselorUrl(
+                    process.env.NEXT_PUBLIC_STUDENT_FEEDBACK_URL,
+                  )!
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open the student feedback survey
+              </a>
+            ) : (
+              <p>
+                The student feedback survey is not connected yet. Your pilot
+                coordinator can help you share app feedback.
+              </p>
+            )}
+            <button
+              className="student-action plain"
+              style={{ marginTop: 20 }}
+              onClick={() => navigate("profile")}
+            >
+              Back to Profile & Settings
+            </button>
+          </section>
         </div>
       ) : null}
     </StudentShell>

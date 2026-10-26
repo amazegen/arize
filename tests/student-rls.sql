@@ -14,6 +14,16 @@ grant execute on function auth.uid() to anon, authenticated, service_role;
 \ir ../supabase/migrations/20261026154409_student_edition_pilot.sql
 \ir ../supabase/migrations/20261026164541_student_counselor_requests.sql
 \ir ../supabase/migrations/20261026171229_student_counselor_admin_settings.sql
+insert into auth.users(id) values('10000000-0000-4000-8000-000000000009');
+insert into public.student_goals(id,user_id,day,title,is_complete)
+  values('30000000-0000-4000-8000-000000000009','10000000-0000-4000-8000-000000000009','2026-10-26','Legacy completed goal',true);
+\ir ../supabase/migrations/20261026192934_student_feature_carryover.sql
+do $$ begin
+  if not exists(select 1 from public.student_goals where id='30000000-0000-4000-8000-000000000009'
+    and deadline='2026-10-26' and week_of='2026-10-25' and is_complete and progress=100)
+    then raise exception 'Migration did not preserve a pre-existing completed goal'; end if;
+end $$;
+delete from auth.users where id='10000000-0000-4000-8000-000000000009';
 
 insert into auth.users(id) values
 ('10000000-0000-4000-8000-000000000001'),
@@ -50,8 +60,23 @@ end $$;
 insert into public.student_goals(id,user_id,day,title,is_complete) values
 ('30000000-0000-4000-8000-000000000001',auth.uid(),current_date,'Already done',true);
 insert into public.student_goals(user_id,day,title) values(auth.uid(),current_date,'A new goal');
+update public.student_profiles set username='student_a' where user_id=auth.uid();
+update public.student_goals set category='School',notes='Private synthetic notes',deadline=current_date
+  where id='30000000-0000-4000-8000-000000000001';
+update public.student_goals set archived_at=now() where id='30000000-0000-4000-8000-000000000001';
+update public.student_goals set archived_at=null where id='30000000-0000-4000-8000-000000000001';
 do $$ begin
   if (select count(*) from public.student_goals where is_complete) != 1 then raise exception 'Adding a goal reset completion'; end if;
+  if (select week_of from public.student_goals where id='30000000-0000-4000-8000-000000000001') != current_date-extract(dow from current_date)::integer then raise exception 'Generated goal week incorrect'; end if;
+  if (select notes from public.student_goals where id='30000000-0000-4000-8000-000000000001') != 'Private synthetic notes' then raise exception 'Goal notes not saved'; end if;
+  begin
+    update public.student_goals set category='Deliverable';
+    raise exception 'Invalid goal category accepted';
+  exception when check_violation then null; end;
+  begin
+    update public.student_goals set deadline=current_date+8;
+    raise exception 'Cross-week deadline accepted';
+  exception when check_violation then null; end;
   begin
     update public.student_pilot_memberships set status='active' where user_id=auth.uid();
     raise exception 'Student can change enrollment';
@@ -64,6 +89,7 @@ end $$;
 select public.student_reserve_coach_turn('40000000-0000-4000-8000-000000000001','Synthetic message') where false;
 select public.student_reserve_coach_turn(null,'Synthetic message');
 do $$ begin
+  if not exists(select 1 from public.student_conversations where title='Synthetic message') then raise exception 'Conversation title not derived from first saved message'; end if;
   begin
     perform public.student_save_coach_reply(auth.uid(),gen_random_uuid(),'Forged assistant');
     raise exception 'Student can forge assistant replies';
@@ -73,6 +99,12 @@ end $$;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
 do $$ begin
   if exists(select 1 from public.student_goals) then raise exception 'Student B can see Student A goals'; end if;
+  update public.student_goals set archived_at=now() where id='30000000-0000-4000-8000-000000000001';
+  if found then raise exception 'Student B can archive Student A goal'; end if;
+  begin
+    insert into public.student_profiles(user_id,display_name,grade,notice_version,username) values(auth.uid(),'Student B','11','test','student_a');
+    raise exception 'Duplicate student username accepted';
+  exception when unique_violation then null; end;
   if exists(select 1 from public.student_messages) then raise exception 'Student B can see Student A messages'; end if;
   if exists(select 1 from public.student_profiles) then raise exception 'Student B can see Student A profile'; end if;
   if exists(select 1 from public.student_counselor_requests) then raise exception 'Student B can see Student A counselor request'; end if;

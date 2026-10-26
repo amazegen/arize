@@ -12,7 +12,13 @@ import {
 } from "lucide-react";
 
 export type StudentScreen =
-  "home" | "check-in" | "goals" | "clarity" | "counselor" | "profile";
+  | "home"
+  | "check-in"
+  | "goals"
+  | "clarity"
+  | "counselor"
+  | "profile"
+  | "feedback";
 
 export function StudentSafety() {
   return (

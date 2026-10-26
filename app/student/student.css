@@ -561,6 +561,186 @@
   gap: 12px;
   margin-top: 20px;
 }
+.student-week-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 24px 0 16px;
+}
+.student-week-bar > div {
+  flex: 1;
+  text-align: center;
+}
+.student-week-bar p {
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+.student-week-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+.student-week-days button {
+  display: grid;
+  gap: 5px;
+  min-height: 68px;
+  padding: 8px 2px;
+  border: 1px solid #d4e0d0;
+  background: white;
+  color: var(--ink);
+  border-radius: 14px;
+}
+.student-week-days button span {
+  font-size: 0.8rem;
+}
+.student-week-days button[aria-pressed="true"] {
+  background: #fff1c5;
+  border: 2px solid #a46c05;
+}
+.student-goal-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 22px 0;
+}
+.student-goal-tools .student-action {
+  padding: 12px 16px;
+  font-size: 0.95rem;
+}
+.student-goal-editor {
+  margin: 24px 0;
+}
+.student-goal-editor .student-form {
+  margin-top: 22px;
+}
+.student-goal-day-title {
+  margin-top: 28px !important;
+  margin-bottom: 8px !important;
+}
+.student-goal-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+}
+.student-goal-detail.complete {
+  background: #f0f3ed;
+  border-color: #cdd7c9;
+}
+.student-goal-detail.complete h3 {
+  color: #657263;
+}
+.student-goal-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.student-goal-heading h3 {
+  overflow-wrap: anywhere;
+  padding-top: 8px;
+}
+.student-goal-check {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: 2px solid #2f7e50;
+  border-radius: 50%;
+  background: white;
+  color: #245f3d;
+}
+.student-goal-check[aria-checked="true"] {
+  background: #dceadc;
+}
+.student-goal-meta {
+  font-size: 0.9rem;
+  margin: 16px 0 10px !important;
+}
+.student-goal-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 10px 0 18px !important;
+}
+.student-progress {
+  height: 7px;
+  background: #e1e7dc;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 18px 0 10px;
+}
+.student-progress span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+}
+.student-goal-detail .student-inline {
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+.student-goal-detail .student-action {
+  font-size: 0.85rem;
+  padding: 10px 12px;
+}
+.student-pattern-chart {
+  width: 100%;
+  margin: 28px 0;
+  min-height: 140px;
+}
+.student-pattern-chart text {
+  fill: var(--muted);
+  font-size: 14px;
+}
+.student-pattern-values {
+  margin-top: 24px;
+}
+.student-pattern-values summary {
+  cursor: pointer;
+  padding: 12px 0;
+  font-weight: 700;
+}
+.student-pattern-values ul {
+  padding-left: 20px;
+}
+.student-settings-links {
+  display: grid;
+  gap: 14px;
+}
+.student-settings-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #d4e0d0;
+  border-radius: 16px;
+  padding: 18px;
+  min-height: 52px;
+  background: #f5f8f0;
+  color: var(--ink);
+  text-align: left;
+  text-decoration: none;
+}
+.student-settings-links p {
+  font-size: 0.9rem;
+}
+.student-profile-privacy summary {
+  padding: 14px 0;
+  cursor: pointer;
+  font-weight: 700;
+}
+.student-history .student-form {
+  gap: 10px;
+}
+.student-history input {
+  min-width: 0;
+}
+.student-app small {
+  color: var(--muted);
+  line-height: 1.5;
+}
 .student-history button {
   padding: 16px;
   border: 1px solid #d4e0d0;
