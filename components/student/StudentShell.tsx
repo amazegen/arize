@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLayoutEffect, useRef } from "react";
 import StudentBrand from "./StudentBrand";
 import {
   ArrowLeft,
@@ -80,6 +81,25 @@ export function StudentShell({
   counselorStatus?: "idle" | "sending" | "sent" | "pending" | "preview";
   counselorDisabled?: boolean;
 }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    const nav = navRef.current;
+    if (!wrap || !nav) return;
+    // Match the real navigation height, including font zoom and safe-area padding.
+    // A fixed offset leaves a window for chat bubbles to peek through on phones.
+    const syncHeight = () => {
+      wrap.style.setProperty(
+        "--student-nav-height",
+        `${nav.getBoundingClientRect().height}px`,
+      );
+    };
+    syncHeight();
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, []);
   const tabs = [
     { id: "home", label: "Home", Icon: Home },
     { id: "goals", label: "Goals", Icon: Target },
@@ -96,7 +116,7 @@ export function StudentShell({
       <a className="student-skip" href="#student-main">
         Skip to content
       </a>
-      <div className="student-wrap">
+      <div className="student-wrap" ref={wrapRef}>
         <header className="student-header">
           <a
             href="/student"
@@ -186,7 +206,7 @@ export function StudentShell({
           {children}
         </main>
       </div>
-      <nav className="student-nav" aria-label="Student navigation">
+      <nav ref={navRef} className="student-nav" aria-label="Student navigation">
         {tabs.map(({ id, label, Icon }) => (
           <a
             key={id}

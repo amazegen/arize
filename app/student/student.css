@@ -530,7 +530,8 @@
 }
 .student-chat-composer {
   position: sticky;
-  bottom: 100px;
+  /* Overlap the nav edge by one pixel to avoid a fractional-pixel seam. */
+  bottom: calc(var(--student-nav-height, 100px) - 1px);
   z-index: 15;
   background: linear-gradient(transparent, var(--cream) 14px);
   padding: 18px 0 8px;
