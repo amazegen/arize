@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useStudentLanguage } from "./StudentLanguage";
 type Conversation = { id: string; title: string; created_at: string };
 export const SAMPLE_CONVERSATIONS: Conversation[] = [
   {
@@ -22,6 +23,7 @@ export default function StudentHistory({
   onOpen: (id: string) => void;
   disabled: boolean;
 }) {
+  const { language, t } = useStudentLanguage();
   const [items, setItems] = useState<Conversation[]>(
     preview ? SAMPLE_CONVERSATIONS : [],
   );
@@ -62,34 +64,48 @@ export default function StudentHistory({
           setError(
             reason instanceof Error
               ? reason.message
-              : "Your history could not be loaded.",
+              : t(
+                  "Your history could not be loaded.",
+                  "No se pudo cargar tu historial.",
+                ),
           );
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [offset, preview, retry]);
+  }, [offset, preview, retry, t]);
   const visible = items.filter((c) =>
     c.title.toLowerCase().includes(search.toLowerCase()),
   );
   return (
     <section
       className="student-card student-history"
-      aria-label="Your conversation history"
+      aria-label={t(
+        "Your conversation history",
+        "Tu historial de conversaciones",
+      )}
     >
-      <h2>Your conversations</h2>
+      <h2>{t("Your conversations", "Tus conversaciones")}</h2>
       <p>
-        Reopen a saved chat to review it or continue. Only your student
-        conversations appear here.
+        {t(
+          "Reopen a saved chat to review it or continue. Only your student conversations appear here.",
+          "Abre un chat guardado para revisarlo o continuar. Aquí solo aparecen tus conversaciones de la edición estudiantil.",
+        )}{" "}
       </p>
       <label className="student-form">
-        Find a loaded conversation
+        {t(
+          "Find a loaded conversation",
+          "Busca en las conversaciones cargadas",
+        )}{" "}
         <input
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search conversation titles"
+          placeholder={t(
+            "Search conversation titles",
+            "Buscar títulos de conversaciones",
+          )}
         />
       </label>
       {error ? (
@@ -103,11 +119,15 @@ export default function StudentHistory({
               setRetry((n) => n + 1);
             }}
           >
-            Retry history
+            {t("Retry history", "Reintentar historial")}{" "}
           </button>
         </div>
       ) : null}
-      {loading ? <p role="status">Loading conversations…</p> : null}
+      {loading ? (
+        <p role="status">
+          {t("Loading conversations…", "Cargando conversaciones…")}
+        </p>
+      ) : null}
       {visible.map((item) => (
         <button
           key={item.id}
@@ -117,7 +137,7 @@ export default function StudentHistory({
           <strong>{item.title}</strong>
           <br />
           <time dateTime={item.created_at}>
-            {new Date(item.created_at).toLocaleDateString(undefined, {
+            {new Date(item.created_at).toLocaleDateString(language, {
               month: "short",
               day: "numeric",
               year: "numeric",
@@ -128,8 +148,14 @@ export default function StudentHistory({
       {!loading && !visible.length ? (
         <p>
           {items.length
-            ? "No matches among loaded conversations."
-            : "No saved conversations yet. Your chats will appear here after you use Clarity."}
+            ? t(
+                "No matches among loaded conversations.",
+                "No hay coincidencias en las conversaciones cargadas.",
+              )
+            : t(
+                "No saved conversations yet. Your chats will appear here after you use Clarity.",
+                "Aún no hay conversaciones guardadas. Tus chats aparecerán aquí después de usar Clarity.",
+              )}
         </p>
       ) : null}
       {hasMore ? (
@@ -142,7 +168,10 @@ export default function StudentHistory({
             setOffset((n) => n + 20);
           }}
         >
-          Load older conversations
+          {t(
+            "Load older conversations",
+            "Cargar conversaciones anteriores",
+          )}{" "}
         </button>
       ) : null}
     </section>

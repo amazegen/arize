@@ -19,6 +19,9 @@ import StudentGoals from "./StudentGoals";
 import StudentHistory, { SAMPLE_CONVERSATIONS } from "./StudentHistory";
 import StudentChatComposer from "./StudentChatComposer";
 import { getUsernameError, normalizeUsername } from "@/lib/profile/username";
+import { StudentLanguageProvider, useStudentLanguage } from "./StudentLanguage";
+import StudentLearningHub, { StudentTopicStarters } from "./StudentLearningHub";
+import StudentClassReset from "./StudentClassReset";
 
 type Profile = {
   display_name: string;
@@ -44,7 +47,17 @@ function localDay() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-export default function StudentWorkspace({
+export default function StudentWorkspace(
+  props: Parameters<typeof StudentWorkspaceContent>[0],
+) {
+  return (
+    <StudentLanguageProvider>
+      <StudentWorkspaceContent {...props} />
+    </StudentLanguageProvider>
+  );
+}
+
+function StudentWorkspaceContent({
   initialProfile,
   school,
   preview = false,
@@ -59,6 +72,7 @@ export default function StudentWorkspace({
   firstUse?: boolean;
   loadingPreview?: boolean;
 }) {
+  const { language, t } = useStudentLanguage();
   const router = useRouter();
   const screen = initialScreen;
   const [profile, setProfile] = useState(initialProfile);
@@ -125,11 +139,14 @@ export default function StudentWorkspace({
           setError(
             reason instanceof Error
               ? reason.message
-              : "Your activity could not be loaded.",
+              : t(
+                  "Your activity could not be loaded.",
+                  "No se pudo cargar tu actividad.",
+                ),
           );
       });
     return () => controller.abort();
-  }, [day, preview, profile, reload]);
+  }, [day, preview, profile, reload, t]);
 
   function chooseDay(next: string) {
     if (next === day) return;
@@ -190,7 +207,10 @@ export default function StudentWorkspace({
       setCounselorError(
         reason instanceof Error
           ? reason.message
-          : "We could not confirm that your request was sent. Please try again.",
+          : t(
+              "We could not confirm that your request was sent. Please try again.",
+              "No pudimos confirmar el envío de tu solicitud. Inténtalo de nuevo.",
+            ),
       );
     }
   }
@@ -216,7 +236,12 @@ export default function StudentWorkspace({
       const usernameError = getUsernameError(username);
       if (usernameError) throw new Error(usernameError);
       if (!displayName.trim() || displayName.trim().length > 50)
-        throw new Error("Choose a name between 1 and 50 characters.");
+        throw new Error(
+          t(
+            "Choose a name between 1 and 50 characters.",
+            "Elige un nombre de 1 a 50 caracteres.",
+          ),
+        );
       const next = preview
         ? {
             profile: {
@@ -236,15 +261,21 @@ export default function StudentWorkspace({
       setProfile(next.profile);
       setSuccess(
         preview
-          ? "Profile updated in this preview only. No account was changed."
-          : "Your profile is saved.",
+          ? t(
+              "Profile updated in this preview only. No account was changed.",
+              "El perfil solo se actualizó en esta vista previa. No se cambió ninguna cuenta.",
+            )
+          : t("Your profile is saved.", "Tu perfil está guardado."),
       );
       setReload((n) => n + 1);
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
-          : "Your profile could not be saved.",
+          : t(
+              "Your profile could not be saved.",
+              "No se pudo guardar tu perfil.",
+            ),
       );
     } finally {
       setBusy(false);
@@ -263,13 +294,21 @@ export default function StudentWorkspace({
         goals: old?.goals ?? [],
         conversations: old?.conversations ?? [],
       }));
-      setSuccess("Check-in saved. Thanks for taking a moment for yourself.");
+      setSuccess(
+        t(
+          "Check-in saved. Thanks for taking a moment for yourself.",
+          "Registro guardado. Gracias por darte un momento.",
+        ),
+      );
       setReload((n) => n + 1);
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
-          : "Your check-in could not be saved.",
+          : t(
+              "Your check-in could not be saved.",
+              "No se pudo guardar tu registro de ánimo.",
+            ),
       );
     } finally {
       setBusy(false);
@@ -317,7 +356,12 @@ export default function StudentWorkspace({
       setConversationId(id);
       setShowHistory(false);
     } catch {
-      setError("Your conversation could not be loaded. Please try again.");
+      setError(
+        t(
+          "Your conversation could not be loaded. Please try again.",
+          "No se pudo cargar tu conversación. Inténtalo de nuevo.",
+        ),
+      );
     } finally {
       setBusy(false);
     }
@@ -327,7 +371,10 @@ export default function StudentWorkspace({
     if (!draft.trim() || busy) return;
     if (preview) {
       setError(
-        "This is a design preview. No messages are sent to AI or saved.",
+        t(
+          "This is a design preview. No messages are sent to AI or saved.",
+          "Esta es una vista de diseño. No se envían mensajes a la IA ni se guardan.",
+        ),
       );
       return;
     }
@@ -338,7 +385,7 @@ export default function StudentWorkspace({
       const response = await fetch("/api/student/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, conversationId }),
+        body: JSON.stringify({ content, conversationId, language }),
       });
       const result = await response.json();
       if (result.conversationId) {
@@ -361,7 +408,10 @@ export default function StudentWorkspace({
       setError(
         reason instanceof Error
           ? reason.message
-          : "Clarity is unavailable right now. Please try later.",
+          : t(
+              "Clarity is unavailable right now. Please try later.",
+              "Clarity no está disponible ahora. Inténtalo más tarde.",
+            ),
       );
     } finally {
       setBusy(false);
@@ -373,9 +423,15 @@ export default function StudentWorkspace({
     try {
       const { error } = await createClient().auth.signOut();
       if (error) throw error;
-      window.location.assign("/student/sign-in");
+      router.replace("/student/sign-in");
+      router.refresh();
     } catch {
-      setError("We could not sign you out. Please try again.");
+      setError(
+        t(
+          "We could not sign you out. Please try again.",
+          "No pudimos cerrar tu sesión. Inténtalo de nuevo.",
+        ),
+      );
       setBusy(false);
     }
   }
@@ -397,18 +453,18 @@ export default function StudentWorkspace({
   const profileForm = (
     <form className="student-form" onSubmit={saveProfile}>
       <label>
-        What should we call you?
+        {t("What should we call you?", "¿Cómo quieres que te llamemos?")}{" "}
         <input
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="First name or nickname"
+          placeholder={t("First name or nickname", "Nombre o apodo")}
           required
           maxLength={50}
           autoComplete="given-name"
         />
       </label>
       <label>
-        Username (optional)
+        {t("Username (optional)", "Nombre de usuario (opcional)")}{" "}
         <input
           value={username}
           maxLength={30}
@@ -419,21 +475,23 @@ export default function StudentWorkspace({
           placeholder="your_nickname"
         />
         <small>
-          3–30 letters, numbers, or underscores. Use a nickname, not personal
-          contact information. There is no public student directory.
+          {t(
+            "3–30 letters, numbers, or underscores. Use a nickname, not personal contact information. There is no public student directory.",
+            "De 3 a 30 letras, números o guiones bajos. Usa un apodo, no información de contacto personal. No hay un directorio público de estudiantes.",
+          )}{" "}
         </small>
       </label>
       <label>
-        Your grade
+        {t("Your grade", "Tu grado")}{" "}
         <select
           value={grade}
           onChange={(e) => setGrade(e.target.value)}
           required
         >
-          <option value="">Choose your grade</option>
+          <option value="">{t("Choose your grade", "Elige tu grado")}</option>
           {STUDENT_GRADES.map((item) => (
             <option key={item} value={item}>
-              Grade {item}
+              {t("Grade", "Grado")} {item}
             </option>
           ))}
         </select>
@@ -441,26 +499,34 @@ export default function StudentWorkspace({
       <details className="student-profile-privacy" open={!profile}>
         <summary>
           {profile
-            ? "Review your student privacy notice"
-            : "Before you start: your student privacy"}
+            ? t(
+                "Review your student privacy notice",
+                "Revisa tu aviso de privacidad estudiantil",
+              )
+            : t(
+                "Before you start: your student privacy",
+                "Antes de empezar: tu privacidad",
+              )}
         </summary>
         <div className="student-note">
-          <h3>Your student privacy</h3>
+          <h3>{t("Your student privacy", "Tu privacidad estudiantil")}</h3>
           <p>
-            Clarity is an AI coach, not a counselor or emergency service. Your
-            check-ins, goals, and chats are saved to your account. Chat messages
-            are sent to our AI provider to generate a reply. Do not include
-            sensitive details about yourself or other people.
+            {t(
+              "Clarity is an AI coach, not a counselor or emergency service. Your check-ins, goals, and chats are saved to your account. Chat messages are sent to our AI provider to generate a reply. Do not include sensitive details about yourself or other people.",
+              "Clarity es una guía de IA, no un consejero ni un servicio de emergencias. Tus registros de ánimo, metas y chats se guardan en tu cuenta. Los mensajes se envían a nuestro proveedor de IA para generar una respuesta. No incluyas detalles sensibles sobre ti ni sobre otras personas.",
+            )}{" "}
           </p>
           <p>
-            This pilot does not give teachers a live view of your activity.
-            Nobody monitors this chat for emergencies. School or guardian
-            permission is handled separately by your pilot coordinator.
+            {t(
+              "This pilot does not give teachers a live view of your activity. Nobody monitors this chat for emergencies. School or guardian permission is handled separately by your pilot coordinator.",
+              "Este piloto no permite que tus docentes vean tu actividad en vivo. Nadie vigila este chat para responder a emergencias. Quien coordina el piloto gestiona por separado el permiso de la escuela o de tu tutor.",
+            )}{" "}
           </p>
           <p>
-            If you choose Talk to your counselor, your preferred name and a
-            request to connect are sent to Shelby. Your chats, goals, and
-            check-in scores are not attached.
+            {t(
+              "If you choose Talk to your counselor, your preferred name and a request to connect are sent to Shelby. Your chats, goals, and check-in scores are not attached.",
+              "Si eliges Habla con tu consejero, se envían a Shelby tu nombre preferido y una solicitud de contacto. No se adjuntan chats, metas ni registros de ánimo.",
+            )}{" "}
           </p>
         </div>
       </details>
@@ -470,14 +536,14 @@ export default function StudentWorkspace({
           target="_blank"
           rel="noopener noreferrer"
         >
-          Read the privacy policy
+          {t("Read the privacy policy", "Leer la política de privacidad")}{" "}
         </a>
         <a
           href="https://amazegen.com/terms.html"
           target="_blank"
           rel="noopener noreferrer"
         >
-          Read the terms of use
+          {t("Read the terms of use", "Leer los términos de uso")}{" "}
         </a>
       </div>
       <label className="student-checkbox">
@@ -488,12 +554,18 @@ export default function StudentWorkspace({
           required
         />
         <span>
-          I have read the student pilot notice and agree to the terms of use and
-          privacy policy.
+          {t(
+            "I have read the student pilot notice and agree to the terms of use and privacy policy.",
+            "Leí el aviso del piloto estudiantil y acepto los términos de uso y la política de privacidad.",
+          )}{" "}
         </span>
       </label>
       <button className="student-action" disabled={busy || !acknowledged}>
-        {busy ? "Saving…" : profile ? "Save profile" : "Let’s get started"}
+        {busy
+          ? t("Saving…", "Guardando…")
+          : profile
+            ? t("Save profile", "Guardar perfil")
+            : t("Let’s get started", "Empecemos")}
       </button>
     </form>
   );
@@ -507,9 +579,24 @@ export default function StudentWorkspace({
         preview={preview}
       >
         <div className="student-intro">
-          <p className="student-edition-label">Welcome to your student pilot</p>
-          <h1>Make a little room for you.</h1>
-          <p>A few details to make Arize feel like your space.</p>
+          <p className="student-edition-label">
+            {t(
+              "Welcome to your student pilot",
+              "Bienvenido a tu piloto estudiantil",
+            )}
+          </p>
+          <h1>
+            {t(
+              "Make a little room for you.",
+              "Haz un poco de espacio para ti.",
+            )}
+          </h1>
+          <p>
+            {t(
+              "A few details to make Arize feel like your space.",
+              "Unos detalles para que Arize sea tu espacio.",
+            )}
+          </p>
         </div>
         <div className="student-card student-narrow">
           {notices}
@@ -535,17 +622,23 @@ export default function StudentWorkspace({
         <>
           <div className="student-intro">
             <h1>
-              {firstUse ? "Welcome" : "Hey"}, {profile.display_name}.
+              {firstUse ? t("Welcome", "Bienvenido") : t("Hey", "Hola")},{" "}
+              {profile.display_name}.
             </h1>
-            <p>Private support for you, built by people like you.</p>
+            <p>
+              {t(
+                "Private support for you, built by people like you.",
+                "Un espacio personal de apoyo, creado por personas como tú.",
+              )}
+            </p>
           </div>
           {notices}
           <div className="student-grid">
             <div className="student-stack">
               <div className="student-banner">
                 <div>
-                  <h2>Ready when you are.</h2>
-                  <p>One small step today.</p>
+                  <h2>{t("Ready when you are.", "Cuando tú quieras.")}</h2>
+                  <p>{t("One small step today.", "Un paso pequeño hoy.")}</p>
                 </div>
                 <div className="student-sun" aria-hidden="true">
                   <Sun size={42} />
@@ -557,11 +650,17 @@ export default function StudentWorkspace({
                     <Sun size={30} aria-hidden />
                   </span>
                   <div>
-                    <h2>Check in</h2>
+                    <h2>{t("Check in", "Registra tu ánimo")}</h2>
                     <p>
                       {firstUse
-                        ? "No check-ins yet. Try your first."
-                        : "Notice how you feel. One minute."}
+                        ? t(
+                            "No check-ins yet. Try your first.",
+                            "Aún no tienes registros de ánimo. Prueba el primero.",
+                          )
+                        : t(
+                            "Notice how you feel. One minute.",
+                            "Observa cómo te sientes. Solo un minuto.",
+                          )}
                     </p>
                   </div>
                 </div>
@@ -569,9 +668,9 @@ export default function StudentWorkspace({
                   <>
                     {activity.checkIn ? (
                       <p style={{ marginBottom: 18 }}>
-                        Today:{" "}
+                        {t("Today:", "Hoy:")}{" "}
                         <strong>
-                          {feelingLabel(activity.checkIn.score)} ·{" "}
+                          {feelingLabel(activity.checkIn.score, language)} ·{" "}
                           {activity.checkIn.score}/10
                         </strong>
                       </p>
@@ -581,14 +680,23 @@ export default function StudentWorkspace({
                       onClick={() => navigate("check-in")}
                     >
                       {activity.checkIn
-                        ? "Update check-in"
+                        ? t("Update check-in", "Actualizar mi registro")
                         : firstUse
-                          ? "Start my first check-in"
-                          : "Start check-in"}
+                          ? t(
+                              "Start my first check-in",
+                              "Hacer mi primer registro",
+                            )
+                          : t("Start check-in", "Registrar mi ánimo")}
                     </button>
                   </>
                 ) : (
-                  <div aria-label="Loading check-in" role="status">
+                  <div
+                    aria-label={t(
+                      "Loading check-in",
+                      "Cargando tu registro de ánimo",
+                    )}
+                    role="status"
+                  >
                     <div className="student-skeleton" />
                     <div className="student-skeleton" style={{ height: 52 }} />
                   </div>
@@ -608,7 +716,7 @@ export default function StudentWorkspace({
                   </span>
                   <div>
                     <h2>Clarity</h2>
-                    <p>AI coach</p>
+                    <p>{t("AI coach", "Guía de IA")}</p>
                   </div>
                 </a>
                 <a
@@ -623,38 +731,69 @@ export default function StudentWorkspace({
                     <Target size={26} aria-hidden />
                   </span>
                   <div>
-                    <h2>Goals</h2>
-                    <p>Your steps</p>
+                    <h2>{t("Goals", "Metas")}</h2>
+                    <p>{t("Your steps", "Tus pasos")}</p>
                   </div>
                 </a>
               </div>
+              <button
+                className="student-action secondary wide"
+                onClick={() => navigate("toolkit")}
+              >
+                {t(
+                  "Explore your school-day toolkit",
+                  "Explorar herramientas para tu día",
+                )}
+              </button>
             </div>
             <aside className="student-stack">
               <StudentSafety />
               <section className="student-note">
-                <h3>Your space. Your pace.</h3>
+                <h3>{t("Your space. Your pace.", "Tu espacio. Tu ritmo.")}</h3>
                 <p>
-                  Talk through a school day, set a small goal, or take a breath.
-                  You choose where to start.
+                  {t(
+                    "Talk through a school day, set a small goal, or take a breath. You choose where to start.",
+                    "Habla sobre tu día escolar, elige una meta pequeña o haz una pausa. Tú decides por dónde empezar.",
+                  )}{" "}
                 </p>
-                <p>Student pilot · {school.name}</p>
+                <p>
+                  {t("Student pilot ·", "Piloto estudiantil ·")} {school.name}
+                </p>
               </section>
             </aside>
           </div>
         </>
       ) : null}
 
+      {screen === "toolkit" ? (
+        <StudentLearningHub
+          preview={preview}
+          onReset={() => navigate("class-reset")}
+          onCoach={(prompt) => {
+            setDraft(prompt);
+            setShowHistory(false);
+            navigate("clarity");
+          }}
+        />
+      ) : null}
+      {screen === "class-reset" ? <StudentClassReset /> : null}
+
       {screen === "check-in" ? (
         <div className="student-narrow">
           <div className="student-intro">
-            <h1>How are you feeling?</h1>
-            <p>No right answer. Just notice where you are today.</p>
+            <h1>{t("How are you feeling?", "¿Cómo te sientes?")}</h1>
+            <p>
+              {t(
+                "No right answer. Just notice where you are today.",
+                "No hay una respuesta correcta. Solo observa cómo estás hoy.",
+              )}
+            </p>
           </div>
           {notices}
           <div className="student-card">
             <form className="student-form" onSubmit={saveCheckIn}>
               <label htmlFor="student-score">
-                Your feeling score, from 1 to 10
+                {t("Your feeling score, from 1 to 10", "Tu ánimo, del 1 al 10")}{" "}
                 <input
                   id="student-score"
                   type="range"
@@ -663,19 +802,23 @@ export default function StudentWorkspace({
                   step={1}
                   value={score}
                   onChange={(e) => setScore(Number(e.target.value))}
-                  aria-valuetext={`${score} out of 10, ${feelingLabel(score)}`}
+                  aria-valuetext={`${score} ${t("out of 10", "de 10")}, ${feelingLabel(score, language)}`}
                 />
               </label>
               <div className="student-score" aria-live="polite">
                 <strong>{score}/10</strong>
-                <p>{feelingLabel(score)}</p>
+                <p>{feelingLabel(score, language)}</p>
               </div>
               <p>
-                1 means having a very hard time. 10 means feeling great. This is
-                a personal check-in, not a diagnosis.
+                {t(
+                  "1 means having a very hard time. 10 means feeling great. This is a personal check-in, not a diagnosis.",
+                  "1 significa que estás pasando un momento muy difícil. 10 significa que te sientes muy bien. Es una reflexión personal, no un diagnóstico.",
+                )}{" "}
               </p>
               <button className="student-action" disabled={busy}>
-                {busy ? "Saving…" : "Save check-in"}
+                {busy
+                  ? t("Saving…", "Guardando…")
+                  : t("Save check-in", "Guardar mi registro")}
               </button>
             </form>
           </div>
@@ -690,7 +833,10 @@ export default function StudentWorkspace({
           preview={preview}
           onCoach={() => {
             setDraft(
-              "Help me plan a meaningful, manageable school week. What is one small goal I could start with?",
+              t(
+                "Help me plan a meaningful, manageable school week. What is one small goal I could start with?",
+                "Ayúdame a planear una semana escolar útil y posible. ¿Con qué meta pequeña podría empezar?",
+              ),
             );
             navigate("clarity");
           }}
@@ -700,21 +846,35 @@ export default function StudentWorkspace({
       {screen === "counselor" ? (
         <div className="student-narrow">
           <div className="student-intro">
-            <h1>Talk to your counselor</h1>
-            <p>You do not have to figure everything out alone.</p>
+            <h1>{t("Talk to your counselor", "Habla con tu consejero")}</h1>
+            <p>
+              {t(
+                "You do not have to figure everything out alone.",
+                "No tienes que resolver todo por tu cuenta.",
+              )}
+            </p>
           </div>
           <section className="student-card">
-            <h2>Connect with Shelby</h2>
+            <h2>{t("Connect with Shelby", "Pide hablar con Shelby")}</h2>
             <p style={{ margin: "16px 0" }}>
-              Send your preferred name and a request to connect. Your chats,
-              goals, and check-in scores stay out of this notification.
+              {t(
+                "Send your preferred name and a request to connect. Your chats, goals, and check-in scores stay out of this notification.",
+                "Envía tu nombre preferido y una solicitud de contacto. Esta notificación no incluye chats, metas ni registros de ánimo.",
+              )}{" "}
             </p>
             {counselorStatus === "sent" ? (
               <div className="student-success" role="status">
-                <strong>Your request has been sent to Shelby.</strong>
+                <strong>
+                  {t(
+                    "Your request has been sent to Shelby.",
+                    "Tu solicitud se envió a Shelby.",
+                  )}
+                </strong>
                 <p>
-                  The email service accepted your notification. This does not
-                  mean Shelby has read it. Your school’s response times apply.
+                  {t(
+                    "The email service accepted your notification. This does not mean Shelby has read it. Your school’s response times apply.",
+                    "El servicio de correo aceptó tu notificación. Esto no significa que Shelby la haya leído. Se aplican los tiempos de respuesta de tu escuela.",
+                  )}{" "}
                 </p>
               </div>
             ) : (
@@ -726,10 +886,10 @@ export default function StudentWorkspace({
                 }
               >
                 {counselorStatus === "sending"
-                  ? "Sending your request…"
+                  ? t("Sending your request…", "Enviando tu solicitud…")
                   : counselorStatus === "pending"
-                    ? "Confirmation pending"
-                    : "Notify Shelby"}
+                    ? t("Confirmation pending", "Confirmación pendiente")
+                    : t("Notify Shelby", "Avisar a Shelby")}
               </button>
             )}
             {counselorStatus === "preview" ? (
@@ -738,11 +898,17 @@ export default function StudentWorkspace({
                 role="status"
                 style={{ margin: "18px 0" }}
               >
-                <strong>Preview only — no email has been sent.</strong>
+                <strong>
+                  {t(
+                    "Preview only — no email has been sent.",
+                    "Solo vista previa: no se envió ningún correo.",
+                  )}
+                </strong>
                 <p>
-                  In the connected app, this action sends your request to Shelby
-                  and shows a sent confirmation only after the email service
-                  accepts it.
+                  {t(
+                    "In the connected app, this action sends your request to Shelby and shows a sent confirmation only after the email service accepts it.",
+                    "En la aplicación conectada, esta acción envía tu solicitud a Shelby. Solo confirma el envío cuando el servicio de correo la acepta.",
+                  )}{" "}
                 </p>
               </div>
             ) : null}
@@ -761,22 +927,28 @@ export default function StudentWorkspace({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Open school counselor contact <ChevronRight size={20} />
+                {t(
+                  "Open school counselor contact",
+                  "Abrir el contacto de orientación escolar",
+                )}{" "}
+                <ChevronRight size={20} />
               </a>
             ) : (
               <div className="student-note">
-                <h3>Ask at your school</h3>
+                <h3>{t("Ask at your school", "Pregunta en tu escuela")}</h3>
                 <p>
-                  Your school has not added an online contact link yet. A
-                  teacher or the school office can help you reach your
-                  counselor.
+                  {t(
+                    "Your school has not added an online contact link yet. A teacher or the school office can help you reach your counselor.",
+                    "Tu escuela aún no ha añadido un enlace de contacto. Un docente o la oficina escolar puede ayudarte a contactar con tu consejero.",
+                  )}{" "}
                 </p>
               </div>
             )}
             <p style={{ marginTop: 22 }}>
-              Viewing this page or sending a Clarity message does not notify
-              anyone. Notifications are sent only when you choose Talk to your
-              counselor or Notify Shelby. This is not monitored for emergencies.
+              {t(
+                "Viewing this page or sending a Clarity message does not notify anyone. Notifications are sent only when you choose Talk to your counselor or Notify Shelby. This is not monitored for emergencies.",
+                "Ver esta página o enviar un mensaje a Clarity no avisa a nadie. Solo se envían avisos cuando eliges Habla con tu consejero o Avisar a Shelby. No se vigila para responder a emergencias.",
+              )}{" "}
             </p>
           </section>
           <div style={{ marginTop: 22 }}>
@@ -789,8 +961,13 @@ export default function StudentWorkspace({
         <div className="student-narrow">
           <div className="student-page-title">
             <div>
-              <h1>Work it out with Clarity.</h1>
-              <p>School, friendships, or whatever is on your mind.</p>
+              <h1>{t("Work it out with Clarity.", "Piénsalo con Clarity.")}</h1>
+              <p>
+                {t(
+                  "School, friendships, or whatever is on your mind.",
+                  "La escuela, tus amistades o lo que tengas en mente.",
+                )}
+              </p>
             </div>
             <div className="student-inline">
               <button
@@ -798,7 +975,7 @@ export default function StudentWorkspace({
                 disabled={busy}
                 onClick={() => setShowHistory(!showHistory)}
               >
-                <History size={18} /> History
+                <History size={18} /> {t("History", "Historial")}{" "}
               </button>
               <button
                 className="student-action secondary"
@@ -813,18 +990,22 @@ export default function StudentWorkspace({
                   setError("");
                 }}
               >
-                New chat
+                {t("New chat", "Nuevo chat")}{" "}
               </button>
             </div>
           </div>
           <div className="student-note">
             <p>
-              Clarity is an AI coach, not a real counselor. Chats are saved for
-              your history and processed by our AI provider. Avoid sharing
-              sensitive details. Nobody watches this chat live.
+              {t(
+                "Clarity is an AI coach, not a real counselor. Chats are saved for your history and processed by our AI provider. Avoid sharing sensitive details. Nobody watches this chat live.",
+                "Clarity es una guía de IA, no un consejero real. Los chats se guardan en tu historial y nuestro proveedor de IA los procesa. Evita compartir detalles sensibles. Nadie observa este chat en vivo.",
+              )}{" "}
             </p>
           </div>
           {notices}
+          {!showHistory && !messages.length ? (
+            <StudentTopicStarters disabled={busy} onChoose={setDraft} />
+          ) : null}
           {showHistory ? (
             <StudentHistory
               preview={preview}
@@ -836,12 +1017,17 @@ export default function StudentWorkspace({
               <div
                 className="student-chat"
                 role="log"
-                aria-label="Clarity conversation"
+                aria-label={t(
+                  "Clarity conversation",
+                  "Conversación con Clarity",
+                )}
                 aria-live="polite"
               >
                 <div className="student-bubble">
-                  I’m Clarity, your AI coach. We can think through a tough
-                  school day or find one small next step. What’s on your mind?
+                  {t(
+                    "I’m Clarity, your AI coach. We can think through a tough school day or find one small next step. What’s on your mind?",
+                    "Soy Clarity, tu guía de IA. Podemos pensar en un día escolar difícil o buscar un próximo paso pequeño. ¿Qué tienes en mente?",
+                  )}{" "}
                 </div>
                 {messages.map((message, i) => (
                   <div
@@ -849,12 +1035,16 @@ export default function StudentWorkspace({
                     className={`student-bubble ${message.role}`}
                   >
                     <span className="student-edition-label">
-                      {message.role === "user" ? "You" : "Clarity · AI coach"}
+                      {message.role === "user"
+                        ? t("You", "Tú")
+                        : t("Clarity · AI coach", "Clarity · guía de IA")}
                     </span>
                     {message.content}
                   </div>
                 ))}
-                {busy ? <p role="status">One moment…</p> : null}
+                {busy ? (
+                  <p role="status">{t("One moment…", "Un momento…")}</p>
+                ) : null}
               </div>
               {conversationHasMore && conversationId ? (
                 <button
@@ -864,7 +1054,10 @@ export default function StudentWorkspace({
                     loadConversation(conversationId, conversationOffset)
                   }
                 >
-                  Load more messages before continuing
+                  {t(
+                    "Load more messages before continuing",
+                    "Carga más mensajes antes de continuar",
+                  )}{" "}
                 </button>
               ) : null}
               <StudentChatComposer
@@ -883,8 +1076,13 @@ export default function StudentWorkspace({
       {screen === "profile" ? (
         <div className="student-narrow">
           <div className="student-intro">
-            <h1>Profile & settings</h1>
-            <p>Use a first name or nickname that feels like you.</p>
+            <h1>{t("Profile & settings", "Perfil y ajustes")}</h1>
+            <p>
+              {t(
+                "Use a first name or nickname that feels like you.",
+                "Usa un nombre o apodo con el que te identifiques.",
+              )}
+            </p>
           </div>
           {notices}
           <section className="student-card">{profileForm}</section>
@@ -892,12 +1090,20 @@ export default function StudentWorkspace({
             className="student-card student-settings-links"
             style={{ marginTop: 24 }}
           >
-            <h2>Support & privacy</h2>
+            <h2>{t("Support & privacy", "Apoyo y privacidad")}</h2>
+            <button
+              className="student-settings-link"
+              onClick={() => navigate("toolkit")}
+            >
+              {t("School-day toolkit", "Herramientas para tu día")}{" "}
+              <ChevronRight size={20} />
+            </button>
             <button
               className="student-settings-link"
               onClick={() => navigate("feedback")}
             >
-              Share feedback <ChevronRight size={20} />
+              {t("Share feedback", "Comparte tus ideas")}{" "}
+              <ChevronRight size={20} />
             </button>
             <a
               className="student-settings-link"
@@ -905,7 +1111,8 @@ export default function StudentWorkspace({
               target="_blank"
               rel="noopener noreferrer"
             >
-              Privacy Policy <ChevronRight size={20} />
+              {t("Privacy Policy", "Política de privacidad")}{" "}
+              <ChevronRight size={20} />
             </a>
             <a
               className="student-settings-link"
@@ -913,11 +1120,13 @@ export default function StudentWorkspace({
               target="_blank"
               rel="noopener noreferrer"
             >
-              Terms of Use <ChevronRight size={20} />
+              {t("Terms of Use", "Términos de uso")} <ChevronRight size={20} />
             </a>
             <p>
-              Student pilot access is managed by your school. No purchases or
-              adult membership controls are included.
+              {t(
+                "Student pilot access is managed by your school. No purchases or adult membership controls are included.",
+                "Tu escuela gestiona el acceso al piloto estudiantil. No incluye compras ni controles de membresías para adultos.",
+              )}{" "}
             </p>
           </section>
           <div className="student-inline" style={{ marginTop: 24 }}>
@@ -926,23 +1135,32 @@ export default function StudentWorkspace({
               onClick={signOut}
               disabled={busy || preview}
             >
-              Sign out
+              {t("Sign out", "Cerrar sesión")}{" "}
             </button>
-            <span>Student pilot · {school.name}</span>
+            <span>
+              {t("Student pilot ·", "Piloto estudiantil ·")} {school.name}
+            </span>
           </div>
         </div>
       ) : null}
       {screen === "feedback" ? (
         <div className="student-narrow">
           <div className="student-intro">
-            <h1>Your voice matters.</h1>
-            <p>Help us make Arize more useful for students.</p>
+            <h1>{t("Your voice matters.", "Tu voz importa.")}</h1>
+            <p>
+              {t(
+                "Help us make Arize more useful for students.",
+                "Ayúdanos a mejorar Arize para estudiantes.",
+              )}
+            </p>
           </div>
           <section className="student-card">
-            <h2>Share feedback</h2>
+            <h2>{t("Share feedback", "Comparte tus ideas")}</h2>
             <p style={{ margin: "16px 0" }}>
-              Do not include private details about yourself or another student.
-              Feedback is not monitored for emergencies.
+              {t(
+                "Do not include private details about yourself or another student. Feedback is not monitored for emergencies.",
+                "No incluyas detalles privados sobre ti ni sobre otro estudiante. Los comentarios no se vigilan para responder a emergencias.",
+              )}{" "}
             </p>
             {safeCounselorUrl(process.env.NEXT_PUBLIC_STUDENT_FEEDBACK_URL) ? (
               <a
@@ -955,12 +1173,17 @@ export default function StudentWorkspace({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Open the student feedback survey
+                {t(
+                  "Open the student feedback survey",
+                  "Abrir la encuesta de comentarios",
+                )}{" "}
               </a>
             ) : (
               <p>
-                The student feedback survey is not connected yet. Your pilot
-                coordinator can help you share app feedback.
+                {t(
+                  "The student feedback survey is not connected yet. Your pilot coordinator can help you share app feedback.",
+                  "La encuesta de comentarios aún no está conectada. Quien coordina tu piloto puede ayudarte a compartir tus ideas.",
+                )}{" "}
               </p>
             )}
             <button
@@ -968,7 +1191,10 @@ export default function StudentWorkspace({
               style={{ marginTop: 20 }}
               onClick={() => navigate("profile")}
             >
-              Back to Profile & Settings
+              {t(
+                "Back to Profile & Settings",
+                "Volver a Perfil y ajustes",
+              )}{" "}
             </button>
           </section>
         </div>

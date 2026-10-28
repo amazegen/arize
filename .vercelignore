@@ -1,0 +1,13 @@
+.git
+.vercel
+.claude
+.next
+.next-student-dev
+node_modules
+.env*
+!.env.example
+*.tsbuildinfo
+supabase/.temp
+tests
+docs
+scripts/localize-student-ui.mjs

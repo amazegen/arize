@@ -2,6 +2,7 @@
 
 import { useId, useLayoutEffect, useRef } from "react";
 import { ArrowUp, LoaderCircle } from "lucide-react";
+import { useStudentLanguage } from "./StudentLanguage";
 
 /** Presentation only: uses the existing chat submit handler and limits. */
 export default function StudentChatComposer({
@@ -17,6 +18,7 @@ export default function StudentChatComposer({
   disabled: boolean;
   busy: boolean;
 }) {
+  const { t } = useStudentLanguage();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hintId = useId();
   const canSend = !disabled && Boolean(value.trim());
@@ -33,9 +35,9 @@ export default function StudentChatComposer({
       <div className="student-composer-box">
         <textarea
           ref={textareaRef}
-          aria-label="Message Clarity"
+          aria-label={t("Message Clarity", "Escribe a Clarity")}
           aria-describedby={hintId}
-          placeholder="Message Clarity…"
+          placeholder={t("Message Clarity…", "Escribe a Clarity…")}
           enterKeyHint="send"
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -55,14 +57,16 @@ export default function StudentChatComposer({
           disabled={disabled}
         />
         <div className="student-composer-toolbar">
-          <span className="student-composer-label">Clarity · AI coach</span>
+          <span className="student-composer-label">
+            {t("Clarity · AI coach", "Clarity · guía de IA")}
+          </span>
           <button
             className="student-composer-send"
             type="submit"
             disabled={!canSend}
-            aria-label="Send message"
+            aria-label={t("Send message", "Enviar mensaje")}
             aria-busy={busy}
-            title="Send message"
+            title={t("Send message", "Enviar mensaje")}
           >
             {busy ? (
               <LoaderCircle
@@ -77,7 +81,10 @@ export default function StudentChatComposer({
         </div>
       </div>
       <p id={hintId} className="student-composer-hint">
-        Enter to send · Shift + Enter for a new line
+        {t(
+          "Enter to send · Shift + Enter for a new line",
+          "Enter para enviar · Mayús + Enter para una nueva línea",
+        )}
       </p>
     </form>
   );

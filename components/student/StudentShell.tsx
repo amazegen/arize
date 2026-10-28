@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLayoutEffect, useRef } from "react";
 import StudentBrand from "./StudentBrand";
+import { StudentLanguageSwitch, useStudentLanguage } from "./StudentLanguage";
 import {
   ArrowLeft,
   Check,
@@ -19,15 +20,27 @@ export type StudentScreen =
   | "clarity"
   | "counselor"
   | "profile"
-  | "feedback";
+  | "feedback"
+  | "toolkit"
+  | "class-reset";
 
 export function StudentSafety() {
+  const { t } = useStudentLanguage();
   return (
     <div className="student-safety">
-      <p>Not an emergency service. Nobody is watching this chat live.</p>
       <p>
-        In immediate danger, call <a href="tel:911">911</a>. For crisis support
-        in the U.S., call or text{" "}
+        {t(
+          "Not an emergency service. Nobody is watching this chat live.",
+          "No es un servicio de emergencias. Nadie observa este chat en vivo.",
+        )}
+      </p>
+      <p>
+        {t("In immediate danger, call", "En peligro inmediato, llama al")}{" "}
+        <a href="tel:911">911</a>.{" "}
+        {t(
+          "For crisis support in the U.S., call or text",
+          "Para apoyo en una crisis en EE. UU., llama o envía un texto al",
+        )}{" "}
         <a href="tel:988?oai_link_source=model_response_hotline">988</a>.
       </p>
     </div>
@@ -35,6 +48,7 @@ export function StudentSafety() {
 }
 
 export function StudentAccessMessage({ message }: { message: string }) {
+  const { t } = useStudentLanguage();
   return (
     <div className="student-wrap">
       <header className="student-header">
@@ -43,17 +57,19 @@ export function StudentAccessMessage({ message }: { message: string }) {
         </Link>
       </header>
       <main className="student-main student-narrow">
-        <h1>Student pilot</h1>
+        <h1>{t("Student pilot", "Piloto estudiantil")}</h1>
         <p className="student-error" role="alert">
           {message}
         </p>
         <p>
-          Student access is invitation-only. Signing in does not enroll you or
-          approve school consent.
+          {t(
+            "Student access is invitation-only. Signing in does not enroll you or approve school consent.",
+            "Solo puedes acceder al piloto con una invitación. Iniciar sesión no te inscribe ni aprueba el permiso escolar.",
+          )}{" "}
         </p>
         <div className="student-inline" style={{ margin: "24px 0" }}>
           <Link className="student-action" href="/student/sign-in">
-            Student sign-in
+            {t("Student sign-in", "Acceso estudiantil")}{" "}
           </Link>
         </div>
         <StudentSafety />
@@ -81,6 +97,7 @@ export function StudentShell({
   counselorStatus?: "idle" | "sending" | "sent" | "pending" | "preview";
   counselorDisabled?: boolean;
 }) {
+  const { language, t } = useStudentLanguage();
   const wrapRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
@@ -101,22 +118,25 @@ export function StudentShell({
     return () => observer.disconnect();
   }, []);
   const tabs = [
-    { id: "home", label: "Home", Icon: Home },
-    { id: "goals", label: "Goals", Icon: Target },
+    { id: "home", label: t("Home", "Inicio"), Icon: Home },
+    { id: "goals", label: t("Goals", "Metas"), Icon: Target },
     { id: "clarity", label: "Clarity", Icon: MessageCircle },
-    { id: "profile", label: "Profile", Icon: UserRound },
+    { id: "profile", label: t("Profile", "Perfil"), Icon: UserRound },
   ] as const;
   return (
     <>
       {preview ? (
         <div className="student-preview-label">
-          Design preview · Sample data only · No student information is saved
+          {t(
+            "Design preview · Sample data only · No student information is saved",
+            "Vista de diseño · Solo datos de ejemplo · No se guarda información estudiantil",
+          )}{" "}
         </div>
       ) : null}
       <a className="student-skip" href="#student-main">
-        Skip to content
+        {t("Skip to content", "Ir al contenido")}{" "}
       </a>
-      <div className="student-wrap" ref={wrapRef}>
+      <div className="student-wrap" ref={wrapRef} lang={language}>
         <header className="student-header">
           <a
             href="/student"
@@ -136,14 +156,29 @@ export function StudentShell({
                 onClick={onRequestCounselor}
                 aria-label={
                   counselorStatus === "sent"
-                    ? "Counselor request sent"
+                    ? t(
+                        "Counselor request sent",
+                        "Solicitud al consejero enviada",
+                      )
                     : counselorStatus === "sending"
-                      ? "Sending counselor request"
+                      ? t(
+                          "Sending counselor request",
+                          "Enviando solicitud al consejero",
+                        )
                       : counselorStatus === "pending"
-                        ? "Counselor request confirmation pending"
-                        : "Talk to your counselor — send a request to Shelby"
+                        ? t(
+                            "Counselor request confirmation pending",
+                            "Confirmación de solicitud al consejero pendiente",
+                          )
+                        : t(
+                            "Talk to your counselor — send a request to Shelby",
+                            "Habla con tu consejero: envía una solicitud a Shelby",
+                          )
                 }
-                title="Send only your preferred name and a request to connect. No chats, goals, or scores."
+                title={t(
+                  "Send only your preferred name and a request to connect. No chats, goals, or scores.",
+                  "Envía solo tu nombre preferido y una solicitud de contacto. Sin chats, metas ni puntuaciones.",
+                )}
                 disabled={
                   counselorDisabled ||
                   counselorStatus === "sending" ||
@@ -159,19 +194,23 @@ export function StudentShell({
                 <span>
                   {counselorStatus === "sent" ? (
                     <>
-                      Request <strong>sent</strong>
+                      {t("Request", "Solicitud")}{" "}
+                      <strong>{t("sent", "enviada")}</strong>
                     </>
                   ) : counselorStatus === "sending" ? (
                     <>
-                      Sending <strong>request…</strong>
+                      {t("Sending", "Enviando")}{" "}
+                      <strong>{t("request…", "solicitud…")}</strong>
                     </>
                   ) : counselorStatus === "pending" ? (
                     <>
-                      Confirmation <strong>pending</strong>
+                      {t("Confirmation", "Confirmación")}{" "}
+                      <strong>{t("pending", "pendiente")}</strong>
                     </>
                   ) : (
                     <>
-                      Talk to your <strong>counselor</strong>
+                      {t("Talk to your", "Habla con tu")}{" "}
+                      <strong>{t("counselor", "consejero")}</strong>
                     </>
                   )}
                 </span>
@@ -180,7 +219,7 @@ export function StudentShell({
             <a
               className="student-avatar"
               href="/student?screen=profile"
-              aria-label="Your profile"
+              aria-label={t("Your profile", "Tu perfil")}
               onClick={(e) => {
                 e.preventDefault();
                 onNavigate("profile");
@@ -191,6 +230,9 @@ export function StudentShell({
           </div>
         </header>
         <main id="student-main" className="student-main">
+          <div className="student-language-row">
+            <StudentLanguageSwitch />
+          </div>
           {screen !== "home" ? (
             <a
               className="student-back"
@@ -200,13 +242,17 @@ export function StudentShell({
                 onNavigate("home");
               }}
             >
-              <ArrowLeft size={18} /> Back home
+              <ArrowLeft size={18} /> {t("Back home", "Volver al inicio")}
             </a>
           ) : null}
           {children}
         </main>
       </div>
-      <nav ref={navRef} className="student-nav" aria-label="Student navigation">
+      <nav
+        ref={navRef}
+        className="student-nav"
+        aria-label={t("Student navigation", "Navegación estudiantil")}
+      >
         {tabs.map(({ id, label, Icon }) => (
           <a
             key={id}

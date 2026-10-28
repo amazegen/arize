@@ -2,6 +2,43 @@
 
 The first Student Edition is a separate browser-based pilot for grades 9–12, based on the existing Arize product. Work is isolated on `codex/student-edition-phase-2`; the adult app, billing launch, production database, and main branch are not changed by this implementation.
 
+## October 28 expanded scope and Friday handoff
+
+Target handoff: Friday, October 30, 2026. A review deployment is not approval to invite real students. The user approved the full six-item student feature list, with deeper work allowed to be deferred explicitly, and approved the separate database's additional $10/month. No voice-service subscription or paid voice-cloning service has been purchased.
+
+| Requested outcome | Implemented now | Remaining before live use / explicitly deferred |
+| --- | --- | --- |
+| Student-initiated counselor contact, not surveillance | Existing request flow, private school-scoped settings/audit, verified `notify.arizeapp.com`, sending-only domain-restricted Resend key installed as a server-only Secret in the student hosting project | School name, approved staff Auth account, roster/consent process, saved destination, actual delivery test and response expectations; notification switch remains off. Nobody is granted student-activity access. |
+| All eight teen topic areas | English/Spanish draft starters for tests/AP, college/career, social media, relationships, identity/belonging, sleep, jobs/family responsibilities, and grief; explicit prompt coverage and Spanish moderation fallbacks | Live AI tests, under-18 provider/data-retention review and school approval. Selecting a starter never sends a message automatically. |
+| Five-minute advisory Class Reset | Three original bilingual lessons, five 60-second steps each; pause/resume/restart, participant opt-out language, transparent mapping to the five CASEL competencies; dedicated `/student/class-reset` classroom view that reads/writes no student data | School curriculum/content review, including Spanish. Mapping is descriptive, not CASEL certification/endorsement. Classroom mode is lesson content, not a teacher dashboard, and collects no participation or attendance. |
+| Belonging and attendance pilot metric | Optional three-question private weekly belonging survey and self-only history, current-notice acknowledgement, 1–5 bounded scores with per-question skip, school-approval feature gate; schema and row-security tests | Collection stays off pending school approval. Staff aggregate reporting, attendance-data linkage/import, sample-size safeguards, and an approved evaluation plan are deferred. No attendance data is collected, no causal claims are made, and private wellness data is not exposed to teachers. |
+| Student Wellness Ambassadors | Bilingual program information, safe role boundaries, optional school-approved HTTPS information link, explicit not-yet-open status when no link is supplied | School to approve program owner, youth advisory workflow, recruitment/safeguarding, interest process and any service-hour eligibility. No public directory, fake sign-up, hours certification, or peer access to private records. |
+| Accessible, bilingual student edition and Shelby voice | English/Spanish primary student navigation, onboarding, goals, feeling labels, Pattern Map, chat/history UI, counselor copy, sign-in and learning tools; editable user/school text and saved history are not machine-translated; responsive phone/Chromebook layouts | School/native-speaker review of Spanish and reading level, real managed-Chromebook/accessibility tests, remaining server-error/school-supplied/legal copy localization. Shelby's cloned voice is deferred until documented consent and approved recording are supplied, a provider/budget is agreed, and synthetic-voice/minor-safety behavior is tested. No audio is recorded or uploaded by this implementation. |
+
+### Infrastructure status
+
+- Created dedicated Supabase **Arize Student Edition**, project `kqwlqdsyocawljofrsvt`, in AmazeGen, Micro compute, North Virginia. The approved additional charge is $10/month. The adult `alzvzrfwvxxmqdgkkkae` project is unchanged.
+- Applied the four existing student migrations plus `20261028171209_student_belonging_pulse.sql` through the new project's SQL editor, after inspecting its empty application schema. These SQL-editor applications are not entries in Supabase CLI migration history; do not blindly replay them with `db push` without reconciling migration history first.
+- Verified row-level security on every student table. Ran the synthetic adversarial assertions against both disposable local Postgres and the hosted student database, with all test records rolled back. No school, real student, or staff enrollment has been created.
+- Created Vercel **Arize Team / arize-student**, project `prj_xFxdpxs5BR6RRcFLdZiok6h0Lqvi`, isolated from the adult hosting project, with deployment protection retained. Server credentials are Production-only; no adult Supabase/Stripe secrets are copied. Preview/development do not have privileged backend/email keys.
+- Installed the new student backend public key, its server secret, the domain-restricted Resend key, and `Arize Student Support <notifications@notify.arizeapp.com>` as sender. AI, counselor notifications, belonging collection, and billing remain explicitly disabled until their applicable launch gates pass.
+- User chose to reuse Curtis's existing Arize OpenAI key. Its saved Vercel value is Secret and cannot be retrieved for copying. Secure re-entry in the **student** project's `OPENAI_API_KEY` setting is required. No replacement key or alternative AI account was silently created; no live model call has been made.
+- New student notice version is `student-pilot-2026-10-28-v3`; existing student acknowledgements must be renewed if any pilot accounts are later migrated.
+
+### Inputs Jaivien is collecting
+
+These are also saved as two owner-review tasks in Mission Control (October 28):
+
+- [ ] Approved pilot school display name and Shelby's admin sign-in email; verify the Auth account before assigning school-scoped permission. Do not assume the notification destination is also the admin login.
+- [ ] Documented permission for Shelby's AI voice use and his approved clean recording. Jaivien says Shelby agreed and can provide both; the materials have not yet been received.
+- [ ] School-approved student roster, consent/retention and incident-response arrangements, counselor response expectations, activity/Spanish review and optional-survey approval.
+- [ ] Original OpenAI key entered directly into the student Vercel Secret setting; then provider under-18/data-controls review and synthetic safety tests.
+- [ ] Real school-managed Chromebook testing and pilot release sign-off before invitations.
+
+Security/dependency update: Next.js and eslint-config-next are pinned to 16.4.3; sharp to 0.35.5, nanoid to 3.3.18, source-map-js to 1.2.2, and zod to 4.6.6 through tested overrides. Compatible development-tool fixes are in the lockfile. October 28 `npm audit` reports **0 vulnerabilities** (an audit is not a comprehensive security certification). The expanded suite has **41 passing unit tests**, plus local and hosted rollback-only RLS tests. No additional paid SDK is needed for the timer, curriculum screens, local language preference, or topic library.
+
+CASEL reference: [official framework](https://casel.org/fundamentals-of-sel/what-is-the-casel-framework/). The lesson copy is original, not copied curriculum.
+
 ## Scope from More Life OS
 
 Source: [Arize project workspace](https://more-life-os.vercel.app/admin/projects/e381bf1b-6952-4a8b-95ba-5ff49da29f68/workspace). The “Arize Student Edition — First Version” milestone is due November 1, 2026.

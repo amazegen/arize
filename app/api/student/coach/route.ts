@@ -6,7 +6,7 @@ import {
   studentNoStore,
 } from "@/lib/student/server";
 import { STUDENT_NOTICE_VERSION } from "@/lib/student/policy";
-import { STUDENT_COACH_PROMPT } from "@/lib/student/coach";
+import { studentCoachPrompt } from "@/lib/student/coach";
 import { studentSafetyReply } from "@/lib/student/safety";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +35,13 @@ export async function POST(request: Request) {
   const session = await getStudentSession();
   if (!session.ok) return reply({ error: session.error }, session.status);
   const body = await readStudentBody(request);
+  if (
+    body?.language !== undefined &&
+    body.language !== "en" &&
+    body.language !== "es"
+  )
+    return reply({ error: "Choose English or Spanish." }, 400);
+  const language = body?.language === "es" ? "es" : "en";
   const content = typeof body?.content === "string" ? body.content.trim() : "";
   const conversationId = body?.conversationId ?? null;
   if (
@@ -82,10 +89,13 @@ export async function POST(request: Request) {
     });
     const classification = moderation.results[0];
     if (!classification) throw new Error("Missing safety classification");
-    const safetyReply = studentSafetyReply({
-      flagged: classification.flagged,
-      categories: { ...classification.categories },
-    });
+    const safetyReply = studentSafetyReply(
+      {
+        flagged: classification.flagged,
+        categories: { ...classification.categories },
+      },
+      language,
+    );
     // No blocked raw text is stored in student history or sent to the coach.
     if (safetyReply)
       return reply({
@@ -136,7 +146,7 @@ export async function POST(request: Request) {
       model: process.env.STUDENT_COACH_MODEL,
       store: false,
       messages: [
-        { role: "system", content: STUDENT_COACH_PROMPT },
+        { role: "system", content: studentCoachPrompt(language) },
         ...(history ?? []).reverse().map((message) => ({
           role: message.role as "user" | "assistant",
           content: message.content,
@@ -154,10 +164,13 @@ export async function POST(request: Request) {
     if (!classification)
       throw new Error("Missing output safety classification");
     const safeResponse =
-      studentSafetyReply({
-        flagged: classification.flagged,
-        categories: { ...classification.categories },
-      }) ?? response;
+      studentSafetyReply(
+        {
+          flagged: classification.flagged,
+          categories: { ...classification.categories },
+        },
+        language,
+      ) ?? response;
     const admin = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,

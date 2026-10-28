@@ -45,6 +45,8 @@ export default function StudentPreviewControls({
           ["goals", "Goals"],
           ["clarity", "Clarity"],
           ["counselor", "Counselor"],
+          ["toolkit", "Toolkit"],
+          ["class-reset", "Class Reset"],
           ["profile", "Profile"],
         ].map(([value, label]) => (
           <a

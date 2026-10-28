@@ -1,4 +1,4 @@
-export const STUDENT_NOTICE_VERSION = "student-pilot-2026-10-26-v2";
+export const STUDENT_NOTICE_VERSION = "student-pilot-2026-10-28-v3";
 export const STUDENT_GRADES = ["9", "10", "11", "12"] as const;
 
 export type StudentMembership = {
@@ -87,10 +87,17 @@ export function validateCheckIn(value: Record<string, unknown>) {
   return null;
 }
 
-export function feelingLabel(score: number) {
-  if (score <= 2) return "Having a hard time";
-  if (score <= 4) return "Feeling low";
-  if (score <= 6) return "Somewhere in the middle";
-  if (score <= 8) return "Feeling good";
-  return "Feeling great";
+export function feelingLabel(score: number, language: "en" | "es" = "en") {
+  if (score <= 2)
+    return language === "es"
+      ? "Pasando un momento difícil"
+      : "Having a hard time";
+  if (score <= 4)
+    return language === "es" ? "Con el ánimo bajo" : "Feeling low";
+  if (score <= 6)
+    return language === "es"
+      ? "En un punto intermedio"
+      : "Somewhere in the middle";
+  if (score <= 8) return language === "es" ? "Me siento bien" : "Feeling good";
+  return language === "es" ? "Me siento muy bien" : "Feeling great";
 }

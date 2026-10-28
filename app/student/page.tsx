@@ -44,6 +44,8 @@ export default async function StudentPage({
     "counselor",
     "profile",
     "feedback",
+    "toolkit",
+    "class-reset",
   ];
   const screen = screens.includes(params.screen as StudentScreen)
     ? (params.screen as StudentScreen)

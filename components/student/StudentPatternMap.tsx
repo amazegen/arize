@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { dateKey, shiftDay } from "@/lib/student/features";
 import { feelingLabel } from "@/lib/student/policy";
+import { useStudentLanguage } from "./StudentLanguage";
 type CheckIn = { day: string; score: number };
 export default function StudentPatternMap({
   preview,
@@ -10,6 +11,7 @@ export default function StudentPatternMap({
   preview: boolean;
   onBack: () => void;
 }) {
+  const { language, t } = useStudentLanguage();
   const [range, setRange] = useState("30");
   const [data, setData] = useState<CheckIn[]>([]);
   const [loading, setLoading] = useState(!preview);
@@ -39,14 +41,17 @@ export default function StudentPatternMap({
           setError(
             reason instanceof Error
               ? reason.message
-              : "Your Pattern Map could not be loaded.",
+              : t(
+                  "Your Pattern Map could not be loaded.",
+                  "No se pudo cargar tu mapa de ánimo.",
+                ),
           );
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [range, offset, preview, retry]);
+  }, [range, offset, preview, retry, t]);
   const rows = (
     preview
       ? Array.from({ length: range === "7" ? 7 : 12 }, (_, i) => ({
@@ -69,16 +74,27 @@ export default function StudentPatternMap({
   return (
     <div className="student-narrow">
       <button className="student-back" onClick={onBack}>
-        ← Back to Goals
+        {t("← Back to Goals", "← Volver a Metas")}{" "}
       </button>
       <div className="student-intro">
-        <p className="student-edition-label">Your Pattern Map</p>
-        <h1>Notice your rhythm.</h1>
+        <p className="student-edition-label">
+          {t("Your Pattern Map", "Tu mapa de ánimo")}
+        </p>
+        <h1>{t("Notice your rhythm.", "Observa tu ritmo.")}</h1>
         <p>
-          Your own check-ins, at your own pace. Not a diagnosis or a scorecard.
+          {t(
+            "Your own check-ins, at your own pace. Not a diagnosis or a scorecard.",
+            "Tus registros de ánimo, a tu ritmo. No es un diagnóstico ni una calificación.",
+          )}{" "}
         </p>
       </div>
-      <div className="student-inline" aria-label="Pattern history range">
+      <div
+        className="student-inline"
+        aria-label={t(
+          "Pattern history range",
+          "Período del historial de ánimo",
+        )}
+      >
         {["7", "30", "90", "all"].map((value) => (
           <button
             key={value}
@@ -93,7 +109,9 @@ export default function StudentPatternMap({
               setLoading(!preview);
             }}
           >
-            {value === "all" ? "All time" : `${value} days`}
+            {value === "all"
+              ? t("All time", "Todo el historial")
+              : `${value} ${t("days", "días")}`}
           </button>
         ))}
       </div>
@@ -108,24 +126,30 @@ export default function StudentPatternMap({
               setRetry((n) => n + 1);
             }}
           >
-            Retry Pattern Map
+            {t("Retry Pattern Map", "Reintentar mapa de ánimo")}{" "}
           </button>
         </p>
       ) : null}
       <section className="student-card" style={{ marginTop: 24 }}>
-        <h2>Your check-in landscape</h2>
+        <h2>{t("Your check-in landscape", "Tu recorrido de ánimo")}</h2>
         {loading ? (
-          <p role="status">Loading check-ins…</p>
+          <p role="status">
+            {t("Loading check-ins…", "Cargando registros de ánimo…")}
+          </p>
         ) : rows.length ? (
           <>
             <p>
-              {rows.length} check-ins · Average {average.toFixed(1)}/10
+              {rows.length} {t("check-ins · Average", "registros · Promedio")}{" "}
+              {average.toFixed(1)}/10
             </p>
             <svg
               viewBox="0 0 600 190"
               className="student-pattern-chart"
               role="img"
-              aria-label="Feeling scores over time. Exact values are listed below."
+              aria-label={t(
+                "Feeling scores over time. Exact values are listed below.",
+                "Puntuaciones de ánimo a lo largo del tiempo. Los valores exactos aparecen abajo.",
+              )}
             >
               <text x="0" y="24">
                 10
@@ -151,15 +175,22 @@ export default function StudentPatternMap({
               ))}
             </svg>
             <p>
-              Higher and lower days both belong here. This chart does not
-              explain why you felt a certain way.
+              {t(
+                "Higher and lower days both belong here. This chart does not explain why you felt a certain way.",
+                "Aquí caben los días altos y bajos. Este gráfico no explica por qué te sentiste de cierta manera.",
+              )}{" "}
             </p>
             <details className="student-pattern-values">
-              <summary>Read exact check-in values</summary>
+              <summary>
+                {t(
+                  "Read exact check-in values",
+                  "Leer los valores exactos de ánimo",
+                )}
+              </summary>
               <ul>
                 {rows.map((c) => (
                   <li key={c.day}>
-                    {c.day}: {feelingLabel(c.score)} · {c.score}/10
+                    {c.day}: {feelingLabel(c.score, language)} · {c.score}/10
                   </li>
                 ))}
               </ul>
@@ -167,7 +198,10 @@ export default function StudentPatternMap({
           </>
         ) : (
           <p>
-            No check-ins in this range yet. Your map will grow as you check in.
+            {t(
+              "No check-ins in this range yet. Your map will grow as you check in.",
+              "Aún no hay registros en este período. Tu mapa crecerá con tus registros.",
+            )}{" "}
           </p>
         )}
         {hasMore ? (
@@ -179,7 +213,7 @@ export default function StudentPatternMap({
               setOffset((n) => n + 100);
             }}
           >
-            Load older check-ins
+            {t("Load older check-ins", "Cargar registros anteriores")}{" "}
           </button>
         ) : null}
       </section>

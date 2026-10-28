@@ -5,8 +5,21 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StudentSafety } from "@/components/student/StudentShell";
 import StudentBrand from "@/components/student/StudentBrand";
+import {
+  StudentLanguageProvider,
+  StudentLanguageSwitch,
+  useStudentLanguage,
+} from "@/components/student/StudentLanguage";
 
 export default function StudentSignIn() {
+  return (
+    <StudentLanguageProvider>
+      <SignInForm />
+    </StudentLanguageProvider>
+  );
+}
+function SignInForm() {
+  const { language, t } = useStudentLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -22,7 +35,10 @@ export default function StudentSignIn() {
       });
       if (error) {
         setError(
-          "We could not sign you in. Check your school invitation and sign-in details.",
+          t(
+            "We could not sign you in. Check your school invitation and sign-in details.",
+            "No pudimos iniciar tu sesión. Revisa tu invitación escolar y tus datos de acceso.",
+          ),
         );
         return;
       }
@@ -32,28 +48,37 @@ export default function StudentSignIn() {
       );
     } catch {
       setError(
-        "Student sign-in is temporarily unavailable. Please try again later.",
+        t(
+          "Student sign-in is temporarily unavailable. Please try again later.",
+          "El acceso estudiantil no está disponible por ahora. Inténtalo más tarde.",
+        ),
       );
     } finally {
       setBusy(false);
     }
   }
   return (
-    <div className="student-wrap">
+    <div className="student-wrap" lang={language}>
       <header className="student-header">
         <Link className="student-brand" href="/student">
           <StudentBrand />
         </Link>
+        <StudentLanguageSwitch />
       </header>
       <main className="student-main student-narrow">
         <div className="student-intro">
-          <h1>A little space for you.</h1>
-          <p>Sign in with the account from your student pilot invitation.</p>
+          <h1>{t("A little space for you.", "Un pequeño espacio para ti.")}</h1>
+          <p>
+            {t(
+              "Sign in with the account from your student pilot invitation.",
+              "Inicia sesión con la cuenta de tu invitación al piloto estudiantil.",
+            )}
+          </p>
         </div>
         <div className="student-card">
           <form className="student-form" onSubmit={signIn}>
             <label>
-              Email
+              {t("Email", "Correo electrónico")}
               <input
                 type="email"
                 autoComplete="username"
@@ -64,7 +89,7 @@ export default function StudentSignIn() {
               />
             </label>
             <label>
-              Password
+              {t("Password", "Contraseña")}
               <input
                 type="password"
                 autoComplete="current-password"
@@ -80,11 +105,15 @@ export default function StudentSignIn() {
               </p>
             ) : null}
             <button className="student-action" disabled={busy}>
-              {busy ? "Signing in…" : "Sign in"}
+              {busy
+                ? t("Signing in…", "Iniciando sesión…")
+                : t("Sign in", "Iniciar sesión")}
             </button>
             <p>
-              This pilot is invitation-only. Need help with your account? Ask
-              your school or pilot coordinator.
+              {t(
+                "This pilot is invitation-only. Need help with your account? Ask your school or pilot coordinator.",
+                "Solo puedes entrar con una invitación. ¿Necesitas ayuda con tu cuenta? Consulta con tu escuela o con quien coordina el piloto.",
+              )}
             </p>
           </form>
         </div>
@@ -94,14 +123,14 @@ export default function StudentSignIn() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Privacy policy
+            {t("Privacy policy", "Política de privacidad")}
           </a>
           <a
             href="https://amazegen.com/terms.html"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Terms of use
+            {t("Terms of use", "Términos de uso")}
           </a>
         </div>
         <StudentSafety />

@@ -19,6 +19,7 @@ import {
   type StudentGoal,
 } from "@/lib/student/features";
 import StudentPatternMap from "./StudentPatternMap";
+import { useStudentLanguage } from "./StudentLanguage";
 
 function sampleGoals(): StudentGoal[] {
   const week = weekStart();
@@ -63,6 +64,7 @@ export default function StudentGoals({
   preview: boolean;
   onCoach: () => void;
 }) {
+  const { language, t } = useStudentLanguage();
   const [week, setWeek] = useState(weekStart);
   const [selectedDay, setSelectedDay] = useState(dateKey);
   const [goals, setGoals] = useState<StudentGoal[]>(() =>
@@ -97,14 +99,17 @@ export default function StudentGoals({
           setError(
             reason instanceof Error
               ? reason.message
-              : "Your goals could not be loaded.",
+              : t(
+                  "Your goals could not be loaded.",
+                  "No se pudieron cargar tus metas.",
+                ),
           );
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [week, preview, reload]);
+  }, [week, preview, reload, t]);
   const weekGoals = goals.filter((g) => g.week_of === week && !g.archived_at);
   const visible = weekGoals.filter(
     (g) => !g.deadline || g.deadline === selectedDay,
@@ -180,14 +185,20 @@ export default function StudentGoals({
       setEditing(undefined);
       setMessage(
         preview
-          ? "Goal saved in this preview only."
-          : "Your goal is saved. Other goals are unchanged.",
+          ? t(
+              "Goal saved in this preview only.",
+              "La meta solo se guardó en esta vista previa.",
+            )
+          : t(
+              "Your goal is saved. Other goals are unchanged.",
+              "Tu meta está guardada. Las demás metas no cambiaron.",
+            ),
       );
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
-          : "Your goal could not be saved.",
+          : t("Your goal could not be saved.", "No se pudo guardar tu meta."),
       );
     } finally {
       setBusy(false);
@@ -220,14 +231,22 @@ export default function StudentGoals({
       if (action === "archive-goal") {
         setRemoved(value ? goal : null);
         setMessage(
-          value ? "Goal removed. You can undo this below." : "Goal restored.",
+          value
+            ? t(
+                "Goal removed. You can undo this below.",
+                "Meta eliminada. Puedes deshacerlo abajo.",
+              )
+            : t("Goal restored.", "Meta restaurada."),
         );
       }
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
-          : "Your goal could not be updated.",
+          : t(
+              "Your goal could not be updated.",
+              "No se pudo actualizar tu meta.",
+            ),
       );
     } finally {
       setBusy(false);
@@ -241,15 +260,22 @@ export default function StudentGoals({
     <div className="student-narrow">
       <div className="student-page-title">
         <div>
-          <p className="student-edition-label">Goals & accountability</p>
-          <h1>Your goals. Your pace.</h1>
-          <p>Plan a week that leaves room for you.</p>
+          <p className="student-edition-label">
+            {t("Goals & accountability", "Metas y seguimiento")}
+          </p>
+          <h1>{t("Your goals. Your pace.", "Tus metas. Tu ritmo.")}</h1>
+          <p>
+            {t(
+              "Plan a week that leaves room for you.",
+              "Planea una semana que deje espacio para ti.",
+            )}
+          </p>
         </div>
       </div>
       <div className="student-week-bar">
         <button
           className="student-action plain"
-          aria-label="View previous week"
+          aria-label={t("View previous week", "Ver la semana anterior")}
           disabled={busy}
           onClick={() => moveWeek(-1)}
         >
@@ -257,27 +283,31 @@ export default function StudentGoals({
         </button>
         <div>
           <strong>
-            Week of{" "}
-            {new Date(`${week}T12:00:00`).toLocaleDateString(undefined, {
+            {t("Week of", "Semana del")}{" "}
+            {new Date(`${week}T12:00:00`).toLocaleDateString(language, {
               month: "short",
               day: "numeric",
               year: "numeric",
             })}
           </strong>
           <p>
-            {done} of {weekGoals.length} complete
+            {done} {t("of", "de")} {weekGoals.length}{" "}
+            {t("complete", "completadas")}{" "}
           </p>
         </div>
         <button
           className="student-action plain"
-          aria-label="View next week"
+          aria-label={t("View next week", "Ver la semana siguiente")}
           disabled={busy || week >= weekStart()}
           onClick={() => moveWeek(1)}
         >
           <ChevronRight size={20} />
         </button>
       </div>
-      <div className="student-week-days" aria-label="Choose a day">
+      <div
+        className="student-week-days"
+        aria-label={t("Choose a day", "Elige un día")}
+      >
         {Array.from({ length: 7 }, (_, i) => {
           const day = shiftDay(week, i);
           const date = new Date(`${day}T12:00:00`);
@@ -293,7 +323,7 @@ export default function StudentGoals({
               }}
             >
               <span>
-                {date.toLocaleDateString(undefined, { weekday: "short" })}
+                {date.toLocaleDateString(language, { weekday: "short" })}
               </span>
               <strong>{date.getDate()}</strong>
             </button>
@@ -306,21 +336,21 @@ export default function StudentGoals({
           disabled={busy || loading}
           onClick={() => edit(null)}
         >
-          <Plus size={18} /> Plan a goal
+          <Plus size={18} /> {t("Plan a goal", "Planear una meta")}{" "}
         </button>
         <button
           className="student-action secondary"
           disabled={busy}
           onClick={() => setView("patterns")}
         >
-          <TrendingUp size={18} /> Pattern Map
+          <TrendingUp size={18} /> {t("Pattern Map", "Mapa de ánimo")}{" "}
         </button>
         <button
           className="student-action plain"
           disabled={busy}
           onClick={onCoach}
         >
-          Think it through with Clarity
+          {t("Think it through with Clarity", "Piénsalo con Clarity")}{" "}
         </button>
       </div>
       {error ? (
@@ -335,7 +365,7 @@ export default function StudentGoals({
             }}
             disabled={busy}
           >
-            Reload goals
+            {t("Reload goals", "Volver a cargar las metas")}{" "}
           </button>
         </div>
       ) : null}
@@ -350,26 +380,38 @@ export default function StudentGoals({
           disabled={busy}
           onClick={() => update(removed, "archive-goal", false)}
         >
-          <Undo2 size={18} /> Undo removal
+          <Undo2 size={18} /> {t("Undo removal", "Deshacer eliminación")}{" "}
         </button>
       ) : null}
       {editing !== undefined ? (
         <section className="student-card student-goal-editor">
-          <h2>{editing ? "Edit your goal" : "Plan this week"}</h2>
-          <p>Choose a date, or leave it open for the whole week.</p>
+          <h2>
+            {editing
+              ? t("Edit your goal", "Editar tu meta")
+              : t("Plan this week", "Planea esta semana")}
+          </h2>
+          <p>
+            {t(
+              "Choose a date, or leave it open for the whole week.",
+              "Elige una fecha o deja la meta abierta para toda la semana.",
+            )}
+          </p>
           <form className="student-form" onSubmit={save}>
             <label>
-              Your goal
+              {t("Your goal", "Tu meta")}{" "}
               <input
                 required
                 maxLength={160}
                 value={draft.title}
                 onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                placeholder="One small, meaningful step"
+                placeholder={t(
+                  "One small, meaningful step",
+                  "Un paso pequeño y útil",
+                )}
               />
             </label>
             <label>
-              Category
+              {t("Category", "Categoría")}{" "}
               <select
                 value={draft.category}
                 onChange={(e) =>
@@ -377,12 +419,21 @@ export default function StudentGoals({
                 }
               >
                 {GOAL_CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {language === "es"
+                      ? {
+                          School: "Escuela",
+                          Wellness: "Bienestar",
+                          Reflection: "Reflexión",
+                          Personal: "Personal",
+                        }[c]
+                      : c}
+                  </option>
                 ))}
               </select>
             </label>
             <label>
-              Deadline (optional)
+              {t("Deadline (optional)", "Fecha límite (opcional)")}{" "}
               <input
                 type="date"
                 min={week}
@@ -394,18 +445,23 @@ export default function StudentGoals({
               />
             </label>
             <label>
-              Notes (optional)
+              {t("Notes (optional)", "Notas (opcional)")}{" "}
               <textarea
                 rows={3}
                 maxLength={1600}
                 value={draft.notes}
                 onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
-                placeholder="What would make this easier?"
+                placeholder={t(
+                  "What would make this easier?",
+                  "¿Qué haría esto más fácil?",
+                )}
               />
             </label>
             <div className="student-inline">
               <button className="student-action" disabled={busy}>
-                {busy ? "Saving…" : "Save goal"}
+                {busy
+                  ? t("Saving…", "Guardando…")
+                  : t("Save goal", "Guardar meta")}
               </button>
               <button
                 type="button"
@@ -413,22 +469,27 @@ export default function StudentGoals({
                 disabled={busy}
                 onClick={() => setEditing(undefined)}
               >
-                Cancel
+                {t("Cancel", "Cancelar")}{" "}
               </button>
             </div>
           </form>
         </section>
       ) : null}
       <h2 className="student-goal-day-title">
-        {new Date(`${selectedDay}T12:00:00`).toLocaleDateString(undefined, {
+        {new Date(`${selectedDay}T12:00:00`).toLocaleDateString(language, {
           weekday: "long",
           month: "short",
           day: "numeric",
         })}
       </h2>
-      <p>Goals for this day, plus your week-long commitments.</p>
+      <p>
+        {t(
+          "Goals for this day, plus your week-long commitments.",
+          "Las metas de este día y tus compromisos de la semana.",
+        )}
+      </p>
       {loading ? (
-        <p role="status">Loading your goals…</p>
+        <p role="status">{t("Loading your goals…", "Cargando tus metas…")}</p>
       ) : visible.length ? (
         <ul className="student-goal-list">
           {visible.map((goal) => (
@@ -442,7 +503,7 @@ export default function StudentGoals({
                   className="student-goal-check"
                   role="checkbox"
                   aria-checked={goal.is_complete}
-                  aria-label={`${goal.is_complete ? "Reopen" : "Complete"} ${goal.title}`}
+                  aria-label={`${goal.is_complete ? t("Reopen", "Reabrir") : t("Complete", "Completar")} ${goal.title}`}
                   disabled={busy}
                   onClick={() =>
                     update(goal, "complete-goal", !goal.is_complete)
@@ -453,10 +514,18 @@ export default function StudentGoals({
                 <h3>{goal.title}</h3>
               </div>
               <p className="student-goal-meta">
-                {goal.category} ·{" "}
+                {language === "es"
+                  ? ({
+                      School: "Escuela",
+                      Wellness: "Bienestar",
+                      Reflection: "Reflexión",
+                      Personal: "Personal",
+                    }[goal.category] ?? goal.category)
+                  : goal.category}{" "}
+                ·{" "}
                 {goal.deadline
-                  ? `Due ${new Date(`${goal.deadline}T12:00:00`).toLocaleDateString()}`
-                  : "Week-long goal"}
+                  ? `${t("Due", "Para el")} ${new Date(`${goal.deadline}T12:00:00`).toLocaleDateString(language)}`
+                  : t("Week-long goal", "Meta de la semana")}
               </p>
               {goal.notes ? (
                 <p className="student-goal-notes">{goal.notes}</p>
@@ -478,7 +547,7 @@ export default function StudentGoals({
                   onClick={() => edit(goal)}
                   aria-label={`Edit ${goal.title}`}
                 >
-                  <Pencil size={16} /> Edit
+                  <Pencil size={16} /> {t("Edit", "Editar")}{" "}
                 </button>
                 <button
                   className="student-action plain"
@@ -486,19 +555,25 @@ export default function StudentGoals({
                   onClick={() => update(goal, "archive-goal", true)}
                   aria-label={`Remove ${goal.title}`}
                 >
-                  <Archive size={16} /> Remove
+                  <Archive size={16} /> {t("Remove", "Quitar")}{" "}
                 </button>
-                <span>{goal.is_complete ? "Completed" : "In progress"}</span>
+                <span>
+                  {goal.is_complete
+                    ? t("Completed", "Completada")
+                    : t("In progress", "En progreso")}
+                </span>
               </div>
             </li>
           ))}
         </ul>
       ) : (
         <section className="student-note" style={{ marginTop: 20 }}>
-          <h3>A little room to start.</h3>
+          <h3>{t("A little room to start.", "Un espacio para empezar.")}</h3>
           <p>
-            No goals scheduled for this day. Add a small step or browse another
-            day.
+            {t(
+              "No goals scheduled for this day. Add a small step or browse another day.",
+              "No hay metas para este día. Añade un paso pequeño o revisa otro día.",
+            )}{" "}
           </p>
         </section>
       )}
