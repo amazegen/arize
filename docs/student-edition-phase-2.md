@@ -25,6 +25,15 @@ Target handoff: Friday, October 30, 2026. A review deployment is not approval to
 - User chose to reuse Curtis's existing Arize OpenAI key. Its saved Vercel value is Secret and cannot be retrieved for copying. Secure re-entry in the **student** project's `OPENAI_API_KEY` setting is required. No replacement key or alternative AI account was silently created; no live model call has been made.
 - New student notice version is `student-pilot-2026-10-28-v3`; existing student acknowledgements must be renewed if any pilot accounts are later migrated.
 
+### Protected review deployment — October 28
+
+- Review classroom activity: [Class Reset](https://arize-student-arize-team.vercel.app/student/class-reset).
+- Invitation-only application: [Student sign-in](https://arize-student-arize-team.vercel.app/student).
+- Deployment `dpl_8tgGTJC89orwPLgrZMTsLbWV9DJY` is READY, built from commit `388cf2f` by an explicit CLI upload to the isolated `arize-student` project. It is the Production target of that separate project, not the adult application's production release. Deployment protection remains enabled; reviewers may need approved Vercel access. No Git/main-branch auto-deployment was configured.
+- Verified on the hosted deployment: Class Reset returns 200; the synthetic design-preview route and adult billing checkout return 404; unauthenticated student data and belonging APIs return 401. Browser navigation to `/student` redirects to the invitation-only sign-in page. Classroom content renders with the original Arize flower logo.
+- These checks do **not** verify authenticated student persistence, real counselor email delivery, live model responses, or school-managed devices. AI, notification sending, and belonging collection remain off. This is a review handoff, not a student launch approval.
+- `.vercelignore` excludes local credentials, development/build caches, tests, and internal implementation notes from deployment uploads.
+
 ### Inputs Jaivien is collecting
 
 These are also saved as two owner-review tasks in Mission Control (October 28):
@@ -113,6 +122,8 @@ These are local design fixtures, not a hosted pilot or evidence that live sign-i
 
 ## Required before students are invited
 
+The numbered list below records the original October 26 checklist. The October 28 status above supersedes its infrastructure and dependency statements: the isolated projects and five migrations now exist, credentials other than OpenAI are installed, and the dependency audit is clean. School approvals, real-account acceptance tests, live delivery/AI checks and device testing remain open.
+
 1. Create/select a separate student hosting project/URL and dedicated student backend. Do not copy adult production credentials or point the student app at adult production data. No new paid service is provisioned by this branch.
 2. Apply the student migrations in timestamp order to that student backend only: `20261026154409_student_edition_pilot.sql`, `20261026164541_student_counselor_requests.sql`, `20261026171229_student_counselor_admin_settings.sql`, and `20261026192934_student_feature_carryover.sql`. The carryover migration backfills legacy goal dates/completion, adds private goal details and optional unique usernames, and titles saved chats from existing messages. Configure `ARIZE_EDITION=student`, public student backend settings, and the correct auth callback/redirect allowlist. Keep billing disabled and Stripe credentials absent.
 3. Confirm the roster, age eligibility, staff facilitator role, and school/guardian consent process with AmazeGen. Only an administrator can insert/activate enrollment and set `consent_verified_at`. No real students have been provisioned here.
@@ -142,4 +153,4 @@ Official references: [Supabase row-level security](https://supabase.com/docs/gui
 - Clarity's composer now uses an integrated rounded text box with a circular send arrow, bounded auto-growing multiline input, Enter-to-send (except during IME composition), Shift+Enter newline, keyboard hints, and visible focus states. Browser checks confirmed multiline growth, an empty disabled send button, new-chat reset, and Enter reaching the existing preview-only submit notice. No provider, history, notification, or credential behavior changes; no live AI request was made.
 - Production-mode localhost checks: `/student-design`, `/api/coach`, and `/api/billing/checkout` return 404; an unauthenticated `/api/student` call returns 401. Development with absent backend settings returns the explicit setup error rather than granting access.
 
-No More Life OS completion statuses, client notifications, production settings, or real student records were changed by this work.
+The October 26 implementation did not change More Life OS completion statuses, client notifications, production settings, or real student records. October 28 additionally provisioned and deployed only the approved isolated student infrastructure described above; the adult application remains unchanged.
