@@ -1,5 +1,13 @@
 # Arize Student Edition implementation and launch checklist
 
+## October 29 — existing-account staff entry correction
+
+Staff entry now defaults to sign-in, with new registration as an explicit secondary action. Existing-email provider responses (including an obfuscated user with empty identities) switch to sign-in with a clear existing-account message rather than claiming a new account was created. Generic unconfirmed responses do not assert a new registration. Switching modes clears the password but retains the email. A stale entry tab first checks its authenticated user, and a successful approved staff/operator sign-in redirects immediately to its verified role destination instead of displaying the new role-request form. No public email enumeration endpoint or user-editable role authorization was added.
+
+Read-only hosted verification found exactly one account for Jaivien’s supplied email, one confirmed email and one active project-admin assignment. The apparent extra account was a pending teacher application under that same identity, created through the old misleading post-login form. It was declined through the operator UI (status retained, not deleted); pending count is now zero and project-admin access is unchanged. No user account or password was deleted, replaced or merged.
+
+66 unit tests, TypeScript and zero-error lint pass (seven unchanged adult warnings). Hosted synthetic acceptance proved duplicate signup recognition, original password preservation, existing-admin routing, invite/recovery and temporary-fixture cleanup. Deployment `dpl_7jvCDq4NedU6XYTf98FBDxgHh1ZF`, app commit `15c1750` (11-second build including checks), was promoted. Signed-out public HTML renders Staff sign-in; signed-in browser navigation from `/student/staff` reaches `/student/operator`. Runtime error scan is clean.
+
 ## October 29 — project administration workspace repair
 
 The initial operator page was functional infrastructure but an incomplete administration experience. Replaced it with a dedicated responsive sidebar shell and six sections: Overview, Schools, People & Access, Reports & Insights, Clarity Test Lab and Settings. It includes real KPI totals, actionable setup progress, operator-only school creation (collection/reporting off by default), branded staff invitation controls, pending-role review, staff search/revocation, school authorization controls, completed-month report publication and existing privacy-preserving charts. Empty reports explain prerequisites; no fabricated results or individual student activity is supplied. Account settings include password setup/sign-out and accurate read-only release configuration, including counselor delivery still off. No AI-prompt editing or model fine-tuning is claimed.
