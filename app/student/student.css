@@ -510,6 +510,31 @@
 .student-narrow {
   max-width: 760px;
 }
+/* Auth pages do not have the signed-in desktop sidebar. Keep their content
+   centered and let the form fill its card instead of reserving sidebar space. */
+.student-app .student-wrap.student-auth-wrap {
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 4vw, 36px);
+}
+.student-auth-wrap .student-header {
+  justify-content: space-between;
+}
+.student-auth-wrap .student-header .student-brand {
+  position: static;
+}
+.student-auth-wrap .student-main.student-narrow {
+  width: 100%;
+  max-width: 680px;
+  margin-inline: auto;
+  padding: 24px 0 48px;
+}
+.student-auth-wrap .student-form {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
 .student-chat {
   display: grid;
   gap: 16px;

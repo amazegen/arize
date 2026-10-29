@@ -35,7 +35,7 @@ export default function StudentStaffEntry({ initial, error: setupError, preview 
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not continue."); }
     finally { setBusy(false); }
   }
-  return <div className="student-wrap"><header className="student-header"><Link className="student-brand" href={preview ? "/student-design?screen=home" : "/student/staff"}><StudentBrand /></Link>{state&&!preview&&<StaffSignOut />}</header><main className="student-main student-narrow">
+  return <div className="student-wrap student-auth-wrap"><header className="student-header"><Link className="student-brand" href={preview ? "/student-design?screen=home" : "/student/staff"}><StudentBrand /></Link>{state&&!preview&&<StaffSignOut />}</header><main className="student-main student-narrow">
     <div className="student-intro"><p className="staff-eyebrow">STAFF ONBOARDING</p><h1>A workspace for your role.</h1><p>Teachers, counselors and school administrators use separate views. Creating an account never grants access to student information.</p></div>
     {preview && <p className="staff-preview-note">Local onboarding review. No accounts are created here.</p>}
     {error && <p role="alert" className="student-error">{error}</p>}{message && <p role="status" className="student-success">{message}</p>}

@@ -61,7 +61,7 @@ function SignInForm() {
     }
   }
   return (
-    <div className="student-wrap" lang={language}>
+    <div className="student-wrap student-auth-wrap" lang={language}>
       <header className="student-header">
         <Link className="student-brand" href="/student">
           <StudentBrand />
