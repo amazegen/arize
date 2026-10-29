@@ -4,11 +4,20 @@ import { studentCoachPrompt, STUDENT_COACH_PROMPT_VERSION } from "../lib/student
 import { studentSafetyReply } from "../lib/student/safety.ts";
 
 test("coaching style is versioned, brief and does not impersonate Shelby", () => {
-  assert.equal(STUDENT_COACH_PROMPT_VERSION, "student-clarity-2026-10-29-v2");
+  assert.equal(STUDENT_COACH_PROMPT_VERSION, "student-clarity-2026-10-29-v3");
   for (const language of ["en", "es"] as const) {
     const prompt = studentCoachPrompt(language);
     for (const instruction of ["40–100 words", "one manageable next step", "Never claim to be Shelby", "respect that choice", "Safety guidance takes priority", "Never diagnose", "Do not claim confidentiality"])
       assert.ok(prompt.includes(instruction), instruction);
+  }
+});
+
+test("summary-derived approach preserves student agency and excludes adult clinical advice", () => {
+  for (const language of ["en", "es"] as const) {
+    const prompt = studentCoachPrompt(language);
+    for (const instruction of ["Validate before gently challenging", "their identity", "one short, respectful sentence", "Progress", "their worth", "Do not import adult session advice", "Never suggest that a student's abuse"])
+      assert.ok(prompt.toLowerCase().includes(instruction.toLowerCase()), instruction);
+    assert.ok(prompt.includes("not a person, counselor, therapist"));
   }
 });
 
