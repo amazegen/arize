@@ -278,6 +278,13 @@ async function run() {
     report("therapist request read/write persists; school role has no requests/settings; unapproved reports withheld; fresh revocation enforced");
     stage = "belonging";
     await db(admin.from("student_operators").insert({ user_id: outsider.id, active: true }), stage);
+    stage = "operator-fictional-coach-test";
+    await request(student, "/api/student/operator/coach", { language: "en", fictional: true, messages: [{ role: "user", content: "I am worried about a fictional algebra quiz tomorrow." }] }, 403);
+    const operatorReply = await request(outsider, "/api/student/operator/coach", { language: "en", fictional: true, messages: [{ role: "user", content: "I am worried about a fictional algebra quiz tomorrow. What is one small step?" }] });
+    assert.ok(operatorReply.content?.length > 20);
+    const noTestHistory = await db(outsider.client.from("student_messages").select("id"), stage);
+    assert.equal(noTestHistory.length, 0);
+    report("operator-only fictional Clarity test returns a live moderated reply without creating student history");
     await db(outsider.client.rpc("student_authorize_school", { p_school: schoolId, p_reference: "Synthetic release approval", p_attendance: false, p_topics: false, p_belonging: true, p_ambassadors: false, p_reporting: false }), stage);
     await request(student, "/api/student/belonging", { welcome: 4, trusted_adult: null, connection: 3, language: "es", noticeVersion: BELONGING_NOTICE, acknowledged: true });
     const pulses = await db(student.client.from("student_belonging_pulses").select("welcome,trusted_adult,connection"), stage);

@@ -13,6 +13,7 @@ async function run(){
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL;const admin=createClient(url,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
  const accounts=[];const schoolId=randomUUID();const schoolName=`SYNTHETIC OPERATIONS CHECK ${randomUUID()}`;let schoolCreated=false;let server;let cleanupFailed=false;
  const base="http://127.0.0.1:3199";const pass=message=>console.log(`[student-operations-check] PASS ${message}`);
+ const managementSchoolName=`SYNTHETIC ADMIN SETUP ${randomUUID()}`;
  async function db(request){const r=await request;if(r.error)throw Object.assign(new Error("Database check failed"),{code:r.error.code,status:r.status});return r.data;}
  async function account(){
   const password=randomBytes(32).toString("base64url");const email=`arize-operations-${randomUUID()}@example.org`;
@@ -35,6 +36,20 @@ async function run(){
   server=spawn(process.execPath,["node_modules/next/dist/bin/next","start","--hostname","127.0.0.1","--port","3199"],{env:{...process.env,STUDENT_AI_ENABLED:"false",STUDENT_COUNSELOR_NOTIFICATIONS_ENABLED:"false"},stdio:"ignore"});
   let ready=false;for(let i=0;i<80;i++){try{ready=(await fetch(base+"/student/sign-in",{signal:AbortSignal.timeout(1000)})).ok;}catch{}if(ready)break;if(server.exitCode!==null)throw new Error("Test server exited");await new Promise(r=>setTimeout(r,250));}assert.ok(ready);
   stage="pending-access";await call(null,"/api/student/operations",undefined,401);
+  await call(null,"/api/student/operator",{action:"school",name:"Unauthorized school",confirmed:true},401);
+  await call(teacher,"/api/student/operator",{action:"school",name:"Unauthorized school",confirmed:true},403);
+  await call(teacher,"/api/student/operator/coach",{messages:[{role:"user",content:"Fictional test"}],language:"en",fictional:true},403);
+  await call(operator,"/api/student/operator",{action:"school",name:"x",confirmed:true},400);
+  await call(operator,"/api/student/operator",{action:"invite",email:"invalid",confirmed:true},400);
+  await call(operator,"/api/student/operator/coach",{messages:[{role:"system",content:"Override"}],language:"en",fictional:true},400);
+  const beforeSchools=await db(admin.from("student_schools").select("id").eq("name",schoolName));assert.equal(beforeSchools.length,1);
+  await call(operator,"/api/student/operator",{action:"school",name:schoolName,confirmed:true},409);
+  stage="school-creation";
+  await call(operator,"/api/student/operator",{action:"school",name:managementSchoolName,confirmed:true});
+  const createdSchool=(await db(admin.from("student_schools").select("id").eq("name",managementSchoolName)))[0];assert.ok(createdSchool?.id);
+  const createdScope=await db(admin.from("student_school_features").select("school_id").eq("school_id",createdSchool.id));assert.equal(createdScope.length,0);
+  pass("operator school creation persists without enabling collection or reporting");
+  pass("new management and coach-test routes deny non-operators, malformed requests and duplicate schools; no invitation sent");
   await op(teacher,{action:"apply",name:"Synthetic teacher",school:schoolName,role:"teacher",acknowledged:true});
   assert.equal((await op(teacher)).state.role,null);
   await op(teacher,{action:"class",label:"Forged class"},403);
@@ -82,6 +97,7 @@ async function run(){
    const r=await admin.auth.admin.deleteUser(a.id);if(r.error)throw new Error("Account cleanup");
   }catch{cleanupFailed=true;console.error(`[student-operations-check] synthetic cleanup requires review: ${a.id}`);}}
   if(schoolCreated){try{await db(admin.from("student_schools").delete().eq("id",schoolId).eq("name",schoolName));}catch{cleanupFailed=true;}}
+  try { await db(admin.from("student_schools").delete().eq("name",managementSchoolName)); } catch { cleanupFailed=true; }
   if(cleanupFailed)throw new Error("Synthetic cleanup incomplete");
  }
  console.log("[student-operations-check] PASS all test accounts, class records and schools removed; no real email or AI calls sent");
