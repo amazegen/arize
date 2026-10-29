@@ -14,7 +14,7 @@ async function run() {
   const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   const marker = randomUUID();
   const email = `arize-account-check-${marker}@example.org`;
-  const base = "http://127.0.0.1:3196";
+  const base = "http://localhost:3196";
   let id; let server;
   try {
     stage = "invite-generation";
@@ -32,8 +32,9 @@ async function run() {
     assert.ok(ready);
     const token = invite.data.properties.hashed_token;
     const confirm = (body, origin = base) => fetch(base + "/api/student/auth/confirm", { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify(body), redirect: "manual" });
-    stage = "invalid-and-cross-origin";
+    stage = "cross-origin";
     assert.equal((await confirm({ token_hash: token, type: "invite" }, "https://untrusted.example.org")).status, 403);
+    stage = "malformed-link";
     assert.equal((await confirm({ token_hash: "bad", type: "invite" })).status, 400);
     stage = "verify-invitation";
     const verified = await confirm({ token_hash: token, type: "invite" });
@@ -76,4 +77,4 @@ async function run() {
     }
   }
 }
-run().catch(() => { console.error(`[student-account-check] FAILED ${stage} (credentials and tokens omitted)`); process.exitCode = 1; });
+run().catch(error => { console.error(`[student-account-check] FAILED ${stage} expected=${typeof error.expected === "number" ? error.expected : "unknown"} actual=${typeof error.actual === "number" ? error.actual : "unknown"} (credentials and tokens omitted)`); process.exitCode = 1; });
