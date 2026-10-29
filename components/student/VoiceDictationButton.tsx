@@ -14,6 +14,7 @@ export default function VoiceDictationButton({ value, onChange, language, disabl
   const t = (en: string, es: string) => language === "es" ? es : en;
   useEffect(() => () => { session.current?.cancel(); }, []);
   useEffect(() => { if (disabled) session.current?.stop(); }, [disabled]);
+  useEffect(() => { session.current?.stop(); }, [language]);
   function start() {
     const Engine = getSpeechConstructor(window);
     if (!Engine) { setSupported(false); setNotice(true); return; }

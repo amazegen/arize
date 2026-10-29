@@ -10,7 +10,8 @@ export type SpeechConstructor = new () => SpeechEngine;
 export function getSpeechConstructor(value: unknown): SpeechConstructor | null {
   if (!value || typeof value !== "object") return null;
   const browser = value as { SpeechRecognition?: SpeechConstructor; webkitSpeechRecognition?: SpeechConstructor };
-  return browser.SpeechRecognition ?? browser.webkitSpeechRecognition ?? null;
+  const Engine = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
+  return typeof Engine === "function" ? Engine : null;
 }
 export function dictationText(base: string, spoken: string, maxLength = 2000) {
   const words = spoken.trim();
