@@ -1,5 +1,11 @@
 # Arize Student Edition implementation and launch checklist
 
+## October 29 — Clarity lab disabled/loading distinction
+
+Reproduced the reported loading-looking Send control: a filled fictional draft remained disabled because the required fictional-scenarios checkbox was unchecked in the side panel, while the shared disabled-button CSS displayed `cursor:wait`. Moved that acknowledgement into the composer above the draft, added an accessible status explaining each blocked state and used a non-loading cursor unless an actual request is busy. Added a 45-second browser request timeout, safe handling for interrupted/non-JSON/empty responses and preservation of the draft on failure. The backend authorization, safety checks, current model/prompt and existing API key are unchanged.
+
+70 tests, TypeScript and zero-error lint pass (seven pre-existing adult warnings), including checkbox/busy gating, success/error responses and bounded timeout recovery. Deployment `dpl_9mfNnCtAUK21pfFqWgXi9qH5Nqyi`, commit `c3254c1` (11-second build), was promoted. Live signed-in browser verification confirms the unchecked control has a non-loading disabled cursor and explicit guidance, checking the nearby notice enables Send for a draft, an original fictional math-test message returns a live reply and the subsequent draft has an enabled Send button with pointer cursor. No test conversation was saved in student history or used to enroll an admin as a student.
+
 ## October 29 — existing-account staff entry correction
 
 Staff entry now defaults to sign-in, with new registration as an explicit secondary action. Existing-email provider responses (including an obfuscated user with empty identities) switch to sign-in with a clear existing-account message rather than claiming a new account was created. Generic unconfirmed responses do not assert a new registration. Switching modes clears the password but retains the email. A stale entry tab first checks its authenticated user, and a successful approved staff/operator sign-in redirects immediately to its verified role destination instead of displaying the new role-request form. No public email enumeration endpoint or user-editable role authorization was added.
