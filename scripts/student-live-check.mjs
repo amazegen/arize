@@ -65,12 +65,15 @@ async function run() {
     a.token = signed.data.session.access_token;
     return a;
   }
-  async function request(a, path, body, expected = 200) {
+  async function request(a, path, body, expected = 200, origin) {
     const response = await fetch(`${base}${path}`, {
       method: body === undefined ? "GET" : "POST",
       headers: {
         ...(a ? { Cookie: [...a.cookies].map(([n, v]) => `${n}=${v}`).join("; ") } : {}),
-        ...(body === undefined ? {} : { "Content-Type": "application/json", Origin: base }),
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+        // This harness is a server-to-server client, not a browser. Test the
+        // browser's cross-origin rejection explicitly rather than inventing an Origin.
+        ...(origin ? { Origin: origin } : {}),
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal: AbortSignal.timeout(65000),
@@ -78,7 +81,7 @@ async function run() {
     });
     // Never print response bodies, session cookies or provider-generated text.
     if (response.status !== expected)
-      throw Object.assign(new Error("Unexpected test response"), { status: response.status });
+      throw Object.assign(new Error("Unexpected test response"), { status: response.status, checkPath: path, expected });
     return response.headers.get("content-type")?.includes("application/json") ? response.json() : null;
   }
   try {
@@ -113,9 +116,11 @@ async function run() {
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
     assert.ok(started, "Student test server did not start");
-    stage = "authorization";
+    stage = "authorization-anonymous";
     await request(null, "/api/student?day=2026-10-29", undefined, 401);
+    stage = "authorization-unapproved";
     await request(outsider, "/api/student?day=2026-10-29", undefined, 403);
+    stage = "authorization-not-onboarded";
     await request(student, "/api/student/coach", { content: "Synthetic test", language: "en" }, 403);
     report("anonymous, unapproved and not-onboarded access denied");
 
@@ -123,6 +128,7 @@ async function run() {
     await request(student, "/api/student", { action: "profile", displayName: "Synthetic tester", username: "", grade: "10", acknowledged: true });
     const profile = await db(student.client.from("student_profiles").select("display_name,notice_version").single(), stage);
     assert.equal(profile.notice_version, STUDENT_NOTICE_VERSION);
+    await request(student, "/api/student", { action: "check-in", day: "2026-10-29", score: 7 }, 400, "https://untrusted.example.org");
     const day = "2026-10-29";
     await request(student, "/api/student", { action: "check-in", day, score: 7 });
     const first = await request(student, "/api/student", { action: "add-goal", day, title: "Synthetic goal one" });
@@ -209,6 +215,8 @@ run().catch((error) => {
   const status = typeof error?.status === "number" ? error.status : "unknown";
   const code = typeof error?.code === "string" && /^[A-Z0-9_]{1,32}$/.test(error.code) ? error.code : "unknown";
   console.error(`[student-release-check] FAIL stage=${stage} status=${status} code=${code}`);
+  if (typeof error?.checkPath === "string" && error.checkPath.startsWith("/api/student"))
+    console.error(`[student-release-check] expected=${error.expected} path=${error.checkPath.split("?")[0]}`);
   if (error instanceof assert.AssertionError)
     console.error(`[student-release-check] assertion failed at ${stage}`);
   process.exitCode = 1;
