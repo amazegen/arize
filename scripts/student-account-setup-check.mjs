@@ -4,6 +4,7 @@ import { randomUUID, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
+import { staffSignupOutcome } from "../lib/student/staff-auth.ts";
 let stage = "disabled";
 async function run() {
   if (process.env.ARIZE_STUDENT_ACCOUNT_CHECK !== "synthetic-only") return;
@@ -60,6 +61,20 @@ async function run() {
     const state = await client.rpc("student_operations_state");
     assert.equal(state.data.operator, false);
     assert.equal(state.data.role, null);
+    stage = "existing-email-signup";
+    const anonymous = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+    const duplicate = await anonymous.auth.signUp({ email, password: randomBytes(32).toString("base64url") });
+    assert.equal(staffSignupOutcome(duplicate), "existing");
+    assert.equal((await admin.auth.admin.getUserById(id)).data.user?.id, id);
+    assert.equal((await anonymous.auth.signInWithPassword({ email, password })).data.user?.id, id);
+    console.log("[student-account-check] PASS existing-email signup is recognized; original account/password preserved");
+    stage = "approved-staff-destination";
+    const grant = await admin.from("student_operators").insert({ user_id: id, active: true });
+    assert.equal(grant.error, null);
+    const staff = await fetch(base + "/student/staff", { headers: { Cookie: [...cookieJar].map(([name, value]) => `${name}=${value}`).join("; ") }, redirect: "manual" });
+    assert.equal(staff.status, 307);
+    assert.equal(new URL(staff.headers.get("location"), base).pathname, "/student/operator");
+    console.log("[student-account-check] PASS authenticated project admin is redirected from staff entry to the existing dashboard");
     console.log("[student-account-check] PASS invite verification, one-time replay denial, password creation, sign-out/sign-in and no self-granted role");
     stage = "recovery";
     const recovery = await admin.auth.admin.generateLink({ type: "recovery", email });
