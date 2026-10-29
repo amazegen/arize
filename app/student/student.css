@@ -1077,7 +1077,8 @@
 /* Student learning tools: no third-party player, fonts, or tracking SDK. */
 /* Project administration has its own shell, not the student sidebar reservation. */
 .student-app .operator-console { grid-template-columns:250px minmax(0,1fr); background:#f8f8f1; font-size:16px; }
-.operator-console .op-sidebar { position:sticky; top:0; height:100dvh; padding:32px 20px 22px; gap:28px; }
+.operator-console .op-sidebar { position:sticky; top:0; height:100dvh; padding:32px 20px 22px; gap:28px; min-width:0; }
+.operator-console .op-sidebar nav { min-width:0; max-width:100%; }
 .operator-console .student-brand { position:static; font-size:27px; gap:10px; text-decoration:none; }
 .operator-console .student-brand-image { width:38px; height:36px; }
 .operator-console .student-edition-label { font-size:10px; letter-spacing:.12em; }
