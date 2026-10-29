@@ -41,7 +41,7 @@ async function run() {
   const base = "http://127.0.0.1:3197";
   async function db(result, label) {
     const r = await result;
-    if (r.error) throw Object.assign(new Error("Database check failed"), { code: r.error.code, status: r.status });
+    if (r.error) throw Object.assign(new Error("Database check failed"), { code: r.error.code, status: r.status, check: label });
     return r.data;
   }
   async function account() {
