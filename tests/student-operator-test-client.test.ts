@@ -10,6 +10,7 @@ test("operator send state explains the checkbox gate rather than pretending to l
   assert.match(operatorTestBlock({ ...ready, content: " " })!, /Write/);
   assert.match(operatorTestBlock({ ...ready, exhausted: true })!, /New test/);
   assert.match(operatorTestBlock({ ...ready, enabled: false })!, /not enabled/);
+  assert.match(operatorTestBlock({ ...ready, dictating: true })!, /Press Stop/);
 });
 test("operator test returns a validated reply and propagates safe API errors", async () => {
   const success = (async () => Response.json({ content: "A fictional reply." })) as typeof fetch;

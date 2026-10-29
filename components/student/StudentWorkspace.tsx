@@ -88,6 +88,8 @@ function StudentWorkspaceContent({
   const [score, setScore] = useState(6);
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const sendingMessage = useRef(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [conversationHasMore, setConversationHasMore] = useState(false);
@@ -368,7 +370,7 @@ function StudentWorkspaceContent({
   }
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
-    if (!draft.trim() || busy) return;
+    if (!draft.trim() || busy || sendingMessage.current) return;
     if (preview) {
       setError(
         t(
@@ -379,6 +381,10 @@ function StudentWorkspaceContent({
       return;
     }
     const content = draft.trim();
+    sendingMessage.current = true;
+    let saved = false;
+    setPendingMessage(content);
+    setDraft("");
     setBusy(true);
     setError("");
     try {
@@ -386,9 +392,11 @@ function StudentWorkspaceContent({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content, conversationId, language }),
+        signal: AbortSignal.timeout(60000),
       });
       const result = await response.json();
       if (result.conversationId) {
+        saved = true;
         setConversationId(result.conversationId);
         setReload((n) => n + 1);
       }
@@ -405,8 +413,11 @@ function StudentWorkspaceContent({
       setMessages((old) => [...old, { role: "user", content }, result.message]);
       setDraft("");
     } catch (reason) {
+      if (!saved) setDraft(content);
       setError(
-        reason instanceof Error
+        reason instanceof Error && ["TimeoutError", "AbortError", "TypeError", "SyntaxError"].includes(reason.name)
+          ? t("We could not confirm the reply. Check your conversation history before sending again; your message may already have been saved.", "No pudimos confirmar la respuesta. Revisa tu historial antes de volver a enviar; es posible que tu mensaje ya se haya guardado.")
+          : reason instanceof Error
           ? reason.message
           : t(
               "Clarity is unavailable right now. Please try later.",
@@ -414,6 +425,8 @@ function StudentWorkspaceContent({
             ),
       );
     } finally {
+      setPendingMessage(null);
+      sendingMessage.current = false;
       setBusy(false);
     }
   }
@@ -1043,7 +1056,7 @@ function StudentWorkspaceContent({
                   </div>
                 ))}
                 {busy ? (
-                  <p role="status">{t("One moment…", "Un momento…")}</p>
+                  <>{pendingMessage && <div className="student-bubble user"><span className="student-edition-label">{t("You · sending", "Tú · enviando")}</span>{pendingMessage}</div>}<p role="status">{t("Clarity is responding…", "Clarity está respondiendo…")}</p></>
                 ) : null}
               </div>
               {conversationHasMore && conversationId ? (

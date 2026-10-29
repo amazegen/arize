@@ -1,11 +1,12 @@
 import type { TestMessage } from "./operator.ts";
 
-export function operatorTestBlock({ busy, enabled, exhausted, fictional, content }: { busy: boolean; enabled: boolean; exhausted: boolean; fictional: boolean; content: string }): string | null {
+export function operatorTestBlock({ busy, enabled, exhausted, fictional, content, dictating = false }: { busy: boolean; enabled: boolean; exhausted: boolean; fictional: boolean; content: string; dictating?: boolean }): string | null {
   if (busy) return "Sending your test. Clarity is responding…";
+  if (dictating) return "Listening. Press Stop, review your text, then send.";
   if (!enabled) return "Live testing is not enabled in this environment.";
   if (exhausted) return "This test reached eight turns. Choose New test to continue.";
   if (!fictional) return "Check the fictional-scenarios notice above to enable Send test.";
-  if (!content.trim()) return "Write a fictional message or choose an example above.";
+  if (!content.trim()) return "Write or dictate a fictional message to enable Send test.";
   return null;
 }
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useLayoutEffect, useRef } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { ArrowUp, LoaderCircle } from "lucide-react";
 import { useStudentLanguage } from "./StudentLanguage";
+import VoiceDictationButton from "./VoiceDictationButton";
 
 /** Presentation only: uses the existing chat submit handler and limits. */
 export default function StudentChatComposer({
@@ -18,10 +19,11 @@ export default function StudentChatComposer({
   disabled: boolean;
   busy: boolean;
 }) {
-  const { t } = useStudentLanguage();
+  const { t, language } = useStudentLanguage();
+  const [dictating, setDictating] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hintId = useId();
-  const canSend = !disabled && Boolean(value.trim());
+  const canSend = !disabled && !dictating && Boolean(value.trim());
 
   useLayoutEffect(() => {
     const textarea = textareaRef.current;
@@ -54,13 +56,13 @@ export default function StudentChatComposer({
           }}
           maxLength={2000}
           rows={1}
-          disabled={disabled}
+          disabled={disabled || dictating}
         />
         <div className="student-composer-toolbar">
           <span className="student-composer-label">
             {t("Clarity · AI coach", "Clarity · guía de IA")}
           </span>
-          <button
+          <div className="student-composer-actions"><VoiceDictationButton value={value} onChange={onChange} language={language} disabled={disabled} onActiveChange={setDictating} /><button
             className="student-composer-send"
             type="submit"
             disabled={!canSend}
@@ -78,6 +80,7 @@ export default function StudentChatComposer({
               <ArrowUp size={22} strokeWidth={2.5} aria-hidden />
             )}
           </button>
+          </div>
         </div>
       </div>
       <p id={hintId} className="student-composer-hint">

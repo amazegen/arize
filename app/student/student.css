@@ -600,6 +600,14 @@
   gap: 12px;
   margin-top: 12px;
 }
+.student-composer-actions { display:flex; align-items:center; justify-content:flex-end; gap:9px; }
+.voice-control { display:inline-flex; align-items:center; flex-shrink:0; }
+.student-app .voice-mic { display:inline-flex; align-items:center; justify-content:center; gap:7px; width:auto; min-width:44px; height:44px; padding:0 11px; border:1px solid #cdd9c3; border-radius:50%; background:#f1f5e9; color:#426a3e; cursor:pointer; }
+.student-app .voice-mic.listening { border-radius:14px; border-color:#cf8a63; background:#ffe4d0; color:#873f25; }
+.voice-mic span { font-size:12px; font-weight:700; }.student-app .voice-mic:disabled { cursor:not-allowed; }
+.voice-notice { position:fixed; z-index:150; bottom:24px; left:50%; transform:translateX(-50%); width:min(480px,calc(100vw - 32px)); max-height:calc(100dvh - 48px); overflow-y:auto; padding:24px; border:1px solid #cbd8be; border-radius:20px; box-shadow:0 12px 55px #152b2850; background:#fffef8; color:#24432d; text-align:left; }
+.voice-notice>div { display:flex; align-items:center; justify-content:space-between; gap:15px; }.voice-notice>div>button { border:0; background:transparent; color:inherit; display:grid; place-items:center; padding:7px; border-radius:6px; }
+.student-app .voice-notice p { margin:14px 0; font-size:14px; line-height:1.7; }.voice-notice>.student-action { margin-top:8px; }.voice-notice>.op-text-button { display:block; font-size:13px; margin-top:15px; }
 .student-composer-label {
   padding-left: 6px;
   color: var(--muted);
