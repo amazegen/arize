@@ -13,7 +13,7 @@ export type SupportRequest = {
 export type SchoolReport = {
   month: string;
   published_at: string;
-  report: { cohort: string | null; checkins: string | null; goals: string | null; clarity: string | null; minimumGroup: number; status: string };
+  report: { cohort: string | null; checkins: string | null; goals: string | null; clarity: string | null; minimumGroup: number; status: string } & ReportInsights;
 };
 export type StaffDashboardData = {
   role: StaffRole;
@@ -39,7 +39,8 @@ export function staffDashboardDTO(value: StaffDashboardData): StaffDashboardData
     reportingApproved: value.role === "school_staff" && value.reportingApproved,
     reports: value.role === "school_staff" && value.reportingApproved ? value.reports.map((r) => ({
       month: r.month, published_at: r.published_at,
-      report: { cohort: r.report.cohort, checkins: r.report.checkins, goals: r.report.goals, clarity: r.report.clarity, minimumGroup: 10, status: r.report.status },
+      report: { cohort: r.report.cohort, checkins: r.report.checkins, goals: r.report.goals, clarity: r.report.clarity, minimumGroup: 10, status: r.report.status, ...reportInsights(r.report) },
     })) : [],
   };
 }
+import { reportInsights, type ReportInsights } from "./reporting.ts";

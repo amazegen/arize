@@ -1,4 +1,4 @@
-export const STUDENT_NOTICE_VERSION = "student-pilot-2026-10-28-v3";
+export const STUDENT_NOTICE_VERSION = "student-pilot-2026-10-29-v4";
 export const STUDENT_GRADES = ["9", "10", "11", "12"] as const;
 
 export type StudentMembership = {

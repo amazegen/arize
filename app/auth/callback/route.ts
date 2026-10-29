@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      if (isStudentEdition()) return NextResponse.redirect(`${origin}/student`);
+      if (isStudentEdition()) return NextResponse.redirect(`${origin}${["/student/staff","/student/admin","/student/teacher","/student/operator"].includes(next) ? next : "/student"}`);
       // Check if user has completed onboarding
       const {
         data: { user },

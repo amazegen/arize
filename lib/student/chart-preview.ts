@@ -31,8 +31,7 @@ export function schoolChartPreview(period: number) {
       { label: "Feel connected", range: "10–19" },
     ],
     attendance: [
-      { label: "School-provided baseline", range: "80–89" },
-      { label: "Selected month", range: "80–89" },
+      { label: "Recorded attendance rate", range: "80–89" },
     ],
     resets: [
       { label: "A fresh start", value: [4, 6, 8][index] },

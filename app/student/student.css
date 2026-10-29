@@ -1058,6 +1058,8 @@
 .staff-insights { margin-top:26px; }
 .staff-design-review .staff-page-heading { margin:24px 0 20px; }.staff-design-review .staff-page-heading h1 { font-size:clamp(28px,3vw,36px); }.staff-design-review .staff-preview-note { padding:10px 14px; font-size:12px; }.staff-design-review .staff-page-heading>p:last-child { font-size:15px; }
 .staff-chart-more { border:0; background:transparent; color:#345c3a; text-decoration:underline; padding:8px 0; cursor:pointer; font:inherit; font-size:12px; }
+.staff-table-scroll { overflow-x:auto; }.staff-data-table { width:100%; border-collapse:collapse; font-size:15px; }.staff-data-table th,.staff-data-table td { padding:12px; border-bottom:1px solid #d7dfd0; text-align:left; }.staff-access-request { border-top:1px solid #d7dfd0; padding:24px 0; margin-top:20px; }
+.student-card>summary { font-weight:700; cursor:pointer; padding:10px 0; }.student-card[open]>.staff-resource-grid { margin-top:22px; }
 .staff-insights-toolbar { display:flex; flex-wrap:wrap; justify-content:space-between; gap:20px; align-items:end; margin-bottom:24px; }
 .staff-insights-toolbar>div>strong { font-size:24px; }.staff-insights-toolbar p { margin-top:7px; font-size:14px; color:#5f705f; }
 .staff-insights-selects { display:flex; flex-wrap:wrap; gap:12px; }.staff-insights-selects label { display:grid; gap:8px; font-size:12px; font-weight:700; }

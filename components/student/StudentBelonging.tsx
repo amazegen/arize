@@ -117,8 +117,8 @@ export default function StudentBelonging({ preview }: { preview: boolean }) {
       <div className="student-note" style={{ margin: "18px 0" }}>
         <p>
           {t(
-            "If enabled, your answers are saved to your account for your own review and can be accessed by authorized service operators. This pilot does not give teachers or counselors individual answers, link them to attendance, or monitor emergencies. No chats, goals, or check-ins are included.",
-            "Si se activa, tus respuestas se guardan en tu cuenta para que las revises; el personal autorizado del servicio puede acceder a ellas. Este piloto no muestra respuestas individuales a docentes ni consejeros, no las vincula con asistencia ni vigila emergencias. No incluye chats, metas ni registros de ánimo.",
+            "Optional: your answers are saved for your own review. With school authorization, your latest response in a completed month may contribute to protected group counts shown to school administrators. Small groups are withheld. Teachers and counselors do not receive your individual answers, and answers are not linked to attendance or chats. Older answers saved under the private-only notice are excluded from this reporting. This is not emergency monitoring.",
+            "Opcional: tus respuestas se guardan para que las revises. Con autorización escolar, tu última respuesta de un mes terminado puede contribuir a conteos grupales protegidos para la administración escolar. Se ocultan los grupos pequeños. Docentes y consejeros no reciben respuestas individuales y no se vinculan con asistencia ni chats. Las respuestas anteriores guardadas bajo el aviso de uso privado se excluyen de estos informes. Esto no es vigilancia de emergencias.",
           )}
         </p>
       </div>

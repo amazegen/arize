@@ -12,7 +12,8 @@ const reply = (body: unknown, status = 200) =>
 export async function GET() {
   const session = await getStudentSession();
   if (!session.ok) return reply({ error: session.error }, session.status);
-  if (process.env.STUDENT_BELONGING_ENABLED !== "true")
+  const approval = await session.supabase.rpc("student_feature_enabled", { p_feature: "belonging" });
+  if (approval.error || approval.data !== true)
     return reply({ enabled: false, history: [] });
   const { data, error } = await session.supabase
     .from("student_belonging_pulses")
@@ -27,7 +28,8 @@ export async function GET() {
 export async function POST(request: Request) {
   const session = await getStudentSession();
   if (!session.ok) return reply({ error: session.error }, session.status);
-  if (process.env.STUDENT_BELONGING_ENABLED !== "true")
+  const approval = await session.supabase.rpc("student_feature_enabled", { p_feature: "belonging" });
+  if (approval.error || approval.data !== true)
     return reply(
       {
         error:
@@ -51,6 +53,8 @@ export async function POST(request: Request) {
     p_trusted_adult: validated.scores.trusted_adult,
     p_connection: validated.scores.connection,
     p_language: validated.language,
+    p_acknowledged: true,
+    p_notice: body.noticeVersion,
   });
   return error
     ? reply(

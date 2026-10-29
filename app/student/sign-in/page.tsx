@@ -21,7 +21,7 @@ export default function StudentSignIn() {
 }
 function SignInForm() {
   const nextPath = useSearchParams().get("next");
-  const staffEntry = nextPath === "/student/admin" || nextPath === "/student/admin/notifications";
+  const staffEntry = ["/student/admin", "/student/admin/notifications", "/student/staff", "/student/teacher", "/student/operator"].includes(nextPath ?? "");
   const { language, t } = useStudentLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,7 +47,7 @@ function SignInForm() {
       }
       const next = new URLSearchParams(window.location.search).get("next");
       window.location.assign(
-        next === "/student/admin/notifications" || next === "/student/admin" ? next : "/student",
+        next && ["/student/admin/notifications", "/student/admin", "/student/staff", "/student/teacher", "/student/operator"].includes(next) ? next : "/student",
       );
     } catch {
       setError(
@@ -120,6 +120,7 @@ function SignInForm() {
             </p>
           </form>
         </div>
+        {staffEntry && <p><Link href="/student/staff">New staff member? Create an account and request your role.</Link></p>}
         <div className="student-privacy-links">
           <a
             href="https://amazegen.com/privacy.html"

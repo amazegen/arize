@@ -5,6 +5,7 @@ import { STUDENT_TOPICS } from "@/lib/student/learning";
 import { safeCounselorUrl } from "@/lib/student/policy";
 import { useStudentLanguage } from "./StudentLanguage";
 import StudentBelonging from "./StudentBelonging";
+import StudentTopicSharing from "./StudentTopicSharing";
 
 export function StudentTopicStarters({
   onChoose,
@@ -71,6 +72,7 @@ export default function StudentLearningHub({
         </p>
       </div>
       <div className="student-stack">
+        <StudentTopicSharing preview={preview} />
         <section className="student-card student-tool-card">
           <BookOpen aria-hidden size={28} />
           <h2>{t("Class Reset", "Pausa de clase")}</h2>

@@ -1,4 +1,4 @@
-export const BELONGING_NOTICE = "belonging-pilot-2026-10-28";
+export const BELONGING_NOTICE = "belonging-pilot-2026-10-29-v2";
 export function validateBelonging(value: Record<string, unknown>) {
   if (value.acknowledged !== true || value.noticeVersion !== BELONGING_NOTICE)
     return {

@@ -518,8 +518,8 @@ function StudentWorkspaceContent({
           </p>
           <p>
             {t(
-              "This pilot does not give teachers a live view of your activity. Nobody monitors this chat for emergencies. School or guardian permission is handled separately by your pilot coordinator.",
-              "Este piloto no permite que tus docentes vean tu actividad en vivo. Nadie vigila este chat para responder a emergencias. Quien coordina el piloto gestiona por separado el permiso de la escuela o de tu tutor.",
+              "Teachers cannot read your chats, goals or emotional scores. Approved school reports may show protected group participation counts. Optional topic choices and belonging answers have separate notices and may contribute to protected group reports. Teachers may record class attendance totals, but those are not linked to your private app activity. Nobody monitors this chat for emergencies. School or guardian permission is handled separately by your pilot coordinator.",
+              "Tus docentes no pueden leer tus chats, metas ni puntuaciones emocionales. Los informes escolares autorizados pueden mostrar conteos grupales protegidos de participación. Los temas y la encuesta opcionales tienen avisos separados y pueden contribuir a informes grupales protegidos. Los docentes pueden registrar totales de asistencia de clase, sin vincularlos con tu actividad privada. Nadie vigila este chat para responder a emergencias. La coordinación del piloto gestiona los permisos escolares o familiares por separado.",
             )}{" "}
           </p>
           <p>

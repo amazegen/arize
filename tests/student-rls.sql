@@ -5,7 +5,7 @@ create role anon nologin;
 create role authenticated nologin;
 create role service_role nologin bypassrls;
 create schema auth;
-create table auth.users(id uuid primary key);
+create table auth.users(id uuid primary key,email text);
 create function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
 $$;
@@ -21,6 +21,7 @@ insert into public.student_goals(id,user_id,day,title,is_complete)
 \ir ../supabase/migrations/20261028171209_student_belonging_pulse.sql
 \ir ../supabase/migrations/20261029154406_student_server_table_permissions.sql
 \ir ../supabase/migrations/20261029163341_student_role_dashboards.sql
+\ir ../supabase/migrations/20261029174311_student_live_pilot_operations.sql
 do $$ begin
   if not has_table_privilege('service_role','public.student_schools','INSERT')
     or not has_table_privilege('service_role','public.student_schools','DELETE')
@@ -53,6 +54,8 @@ insert into auth.users(id) values
 ('10000000-0000-4000-8000-000000000005');
 insert into public.student_schools(id,name) values('20000000-0000-4000-8000-000000000001','Synthetic school');
 insert into public.student_schools(id,name) values('20000000-0000-4000-8000-000000000002','Other school');
+insert into public.student_school_features(school_id,attendance,topics,belonging,ambassadors,review_reference)
+ values('20000000-0000-4000-8000-000000000001',true,true,true,true,'Synthetic rollback fixture');
 insert into public.student_notification_admins(user_id,school_id) values
 ('10000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000001'),
 ('10000000-0000-4000-8000-000000000005','20000000-0000-4000-8000-000000000002');
@@ -62,9 +65,9 @@ insert into public.student_pilot_memberships(user_id,school_id,status,consent_ve
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
-insert into public.student_profiles(user_id,display_name,grade,notice_version) values(auth.uid(),'Student A','10','test');
-select public.student_save_belonging(1::smallint,null::smallint,5::smallint,'es');
-select public.student_save_belonging(2::smallint,3::smallint,4::smallint,'en');
+insert into public.student_profiles(user_id,display_name,grade,notice_version) values(auth.uid(),'Student A','10','student-pilot-2026-10-29-v4');
+select public.student_save_belonging(1::smallint,null::smallint,5::smallint,'es',true,'belonging-pilot-2026-10-29-v2');
+select public.student_save_belonging(2::smallint,3::smallint,4::smallint,'en',true,'belonging-pilot-2026-10-29-v2');
 do $$ begin
   if (select count(*) from public.student_belonging_pulses) != 1 then raise exception 'Weekly belonging response duplicated'; end if;
   if (select welcome from public.student_belonging_pulses) != 2 then raise exception 'Belonging response not updated'; end if;
@@ -73,7 +76,7 @@ do $$ begin
     raise exception 'Student bypasses controlled survey write';
   exception when insufficient_privilege then null; end;
   begin
-    perform public.student_save_belonging(6::smallint,null::smallint,null::smallint,'en');
+    perform public.student_save_belonging(6::smallint,null::smallint,null::smallint,'en',true,'belonging-pilot-2026-10-29-v2');
     raise exception 'Out-of-range survey accepted';
   exception when check_violation then null; end;
 end $$;
@@ -226,7 +229,7 @@ do $$ begin
   if exists(select 1 from public.student_goals) then raise exception 'Revoked student can read old data'; end if;
   if exists(select 1 from public.student_belonging_pulses) then raise exception 'Revoked student can read survey data'; end if;
   begin
-    perform public.student_save_belonging(1::smallint,null::smallint,null::smallint,'en');
+    perform public.student_save_belonging(1::smallint,null::smallint,null::smallint,'en',true,'belonging-pilot-2026-10-29-v2');
     raise exception 'Revoked student can write survey';
   exception when insufficient_privilege then null; end;
   if exists(select 1 from public.student_messages) then raise exception 'Revoked student can read chats'; end if;
@@ -242,5 +245,6 @@ do $$ begin
 end $$;
 reset role;
 \ir student-staff-rls.sql
+\ir student-operations-rls.sql
 rollback;
 \echo 'Student RLS integration assertions passed (transaction rolled back).'
