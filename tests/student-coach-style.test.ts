@@ -1,15 +1,27 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { studentCoachPrompt, STUDENT_COACH_PROMPT_VERSION } from "../lib/student/coach.ts";
+import { studentCoachPrompt, studentWritingExamples, STUDENT_COACH_PROMPT_VERSION } from "../lib/student/coach.ts";
 import { studentSafetyReply } from "../lib/student/safety.ts";
 
 test("coaching style is versioned, brief and does not impersonate Shelby", () => {
-  assert.equal(STUDENT_COACH_PROMPT_VERSION, "student-clarity-2026-10-29-v3");
+  assert.equal(STUDENT_COACH_PROMPT_VERSION, "student-clarity-2026-10-29-v4");
   for (const language of ["en", "es"] as const) {
     const prompt = studentCoachPrompt(language);
     for (const instruction of ["40–100 words", "one manageable next step", "Never claim to be Shelby", "respect that choice", "Safety guidance takes priority", "Never diagnose", "Do not claim confidentiality"])
       assert.ok(prompt.includes(instruction), instruction);
   }
+});
+
+test("writing reference controls phrasing and cadence without presenting notes as exact speech", () => {
+  for (const language of ["en", "es"] as const) {
+    const prompt = studentCoachPrompt(language);
+    for (const instruction of ["measured, direct, reflective writing", "two to four connected sentences", "Do not repeat the same opening", "not verified quotations from Shelby", "not about \"the client\""])
+      assert.ok(prompt.includes(instruction), instruction);
+    assert.ok(prompt.includes(studentWritingExamples(language)));
+  }
+  assert.match(studentWritingExamples("en"), /Original fictional examples/);
+  assert.match(studentWritingExamples("es"), /Una nota muestra/);
+  assert.doesNotMatch(studentWritingExamples("es"), /One quiz shows/);
 });
 
 test("summary-derived approach preserves student agency and excludes adult clinical advice", () => {

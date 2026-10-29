@@ -171,6 +171,11 @@ async function run() {
     assert.ok(english.conversationId && english.message?.content?.length > 20);
     assert.notEqual(english.moderated, true);
     report("live English coaching returns a saved answer");
+    // Optional human-review example: this response can only follow the fixed
+    // fictional algebra-test prompt above, inside a synthetic fixture account.
+    // The real application never logs conversations or provider text.
+    if (process.env.ARIZE_STUDENT_STYLE_SAMPLE === "fictional")
+      console.log(`[student-style-sample] ${JSON.stringify({ fictional: true, language: "en", reply: english.message.content })}`);
     stage = "spanish-coaching";
     const spanish = await request(student, "/api/student/coach", { content: "Me preocupa mi examen de matemáticas de mañana. Ayúdame con un paso pequeño, por favor.", language: "es", conversationId: english.conversationId });
     assert.ok(spanish.message?.content?.length > 20);
@@ -207,6 +212,7 @@ async function run() {
       const words = text.trim().split(/\s+/).length;
       assert.ok(words >= 8 && words <= 150, "Ordinary coaching reply exceeded its readable length budget");
       assert.ok((text.match(/\?/g) ?? []).length <= 1, "More than one coaching question");
+      assert.doesNotMatch(text, /^\s*(?:#+\s|Assessment\b|Intervention\b|Treatment plan\b|Clinical impression\b|The client\b|The therapist\b)/im, "Ordinary reply used clinical report formatting");
       scenario.check(text);
       report(`style ${scenario.name}; ${words} words; no more than one question`);
     }
