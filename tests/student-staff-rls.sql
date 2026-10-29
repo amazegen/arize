@@ -5,6 +5,8 @@ insert into auth.users(id) values
 insert into public.student_staff_memberships(user_id,school_id,role) values
 ('10000000-0000-4000-8000-000000000006','20000000-0000-4000-8000-000000000001','therapist'),
 ('10000000-0000-4000-8000-000000000007','20000000-0000-4000-8000-000000000001','school_staff');
+insert into public.student_counselor_requests(id,user_id,school_id,display_name)
+values('50000000-0000-4000-8000-000000000099','10000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000002','Other school synthetic request');
 do $$ begin
   if student_admin_private.count_band(9,40) is not null
     or student_admin_private.count_band(31,40) is not null
@@ -56,7 +58,10 @@ do $$ begin
 end $$;
 reset role;
 insert into public.student_reporting_approvals values('20000000-0000-4000-8000-000000000001',now(),'Synthetic test only');
+insert into public.student_school_reports(school_id,month,report)
+values('20000000-0000-4000-8000-000000000002','2026-09-01','{"status":"other-school"}');
 set local role service_role;
+select public.student_publish_school_report('20000000-0000-4000-8000-000000000001','2026-09-01');
 select public.student_publish_school_report('20000000-0000-4000-8000-000000000001','2026-09-01');
 reset role;
 set local role authenticated;

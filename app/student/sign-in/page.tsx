@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { StudentSafety } from "@/components/student/StudentShell";
@@ -14,11 +15,13 @@ import {
 export default function StudentSignIn() {
   return (
     <StudentLanguageProvider>
-      <SignInForm />
+      <Suspense fallback={<main className="student-main">Loading sign-in…</main>}><SignInForm /></Suspense>
     </StudentLanguageProvider>
   );
 }
 function SignInForm() {
+  const nextPath = useSearchParams().get("next");
+  const staffEntry = nextPath === "/student/admin" || nextPath === "/student/admin/notifications";
   const { language, t } = useStudentLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,9 +70,9 @@ function SignInForm() {
       </header>
       <main className="student-main student-narrow">
         <div className="student-intro">
-          <h1>{t("A little space for you.", "Un pequeño espacio para ti.")}</h1>
+          <h1>{staffEntry ? t("Your staff workspace.", "Tu espacio de trabajo.") : t("A little space for you.", "Un pequeño espacio para ti.")}</h1>
           <p>
-            {t(
+            {staffEntry ? t("Sign in with your approved staff account. Your assigned role determines what you can see.", "Inicia sesión con tu cuenta de personal autorizada. Tu rol determina lo que puedes ver.") : t(
               "Sign in with the account from your student pilot invitation.",
               "Inicia sesión con la cuenta de tu invitación al piloto estudiantil.",
             )}
@@ -110,7 +113,7 @@ function SignInForm() {
                 : t("Sign in", "Iniciar sesión")}
             </button>
             <p>
-              {t(
+              {staffEntry ? t("Staff access is assigned by the pilot operator. Signing in does not grant access to private student activity.", "El operador del piloto asigna el acceso al personal. Iniciar sesión no permite ver la actividad privada del alumnado.") : t(
                 "This pilot is invitation-only. Need help with your account? Ask your school or pilot coordinator.",
                 "Solo puedes entrar con una invitación. ¿Necesitas ayuda con tu cuenta? Consulta con tu escuela o con quien coordina el piloto.",
               )}

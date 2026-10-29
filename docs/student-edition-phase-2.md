@@ -173,3 +173,9 @@ Official references: [Supabase row-level security](https://supabase.com/docs/gui
 - Production-mode localhost checks: `/student-design`, `/api/coach`, and `/api/billing/checkout` return 404; an unauthenticated `/api/student` call returns 401. Development with absent backend settings returns the explicit setup error rather than granting access.
 
 The October 26 implementation did not change More Life OS completion statuses, client notifications, production settings, or real student records. October 28 additionally provisioned and deployed only the approved isolated student infrastructure described above; the adult application remains unchanged.
+# October 29 — separate staff workspaces
+
+Supersedes earlier statements that administration is notification settings only: the student app now includes distinct therapist/counselor and school-partner dashboards, server-checked school roles, student-initiated request follow-up with immutable audit, classroom resources and approval-gated protected monthly adoption reports. No private chats, goals, emotional scores, clinical notes or attendance linkage is released to staff. See `docs/student-staff-privacy-design.md` for exact boundaries, research sources and remaining real-school activation requirements.
+
+Approved migration `20261029163341_student_role_dashboards.sql` is applied only to `kqwlqdsyocawljofrsvt` via SQL editor, not CLI migration history. No real account role or school reporting approval was inserted. Local SQL access tests and 49 unit tests pass. Hosted HTTP acceptance passed persistence, role separation, denied student access and fresh-session revocation, then cleaned all synthetic data. Normal deployment `dpl_BdPA7X8fSz692KjPD3mJVGvUTRY2` is READY at the existing protected student URL; adult main/app unchanged. User is still obtaining the school and Shelby login details; do not repeatedly request these or provision a guessed account.
+

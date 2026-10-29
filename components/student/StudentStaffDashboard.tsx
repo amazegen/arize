@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LayoutDashboard, Inbox, BookOpen, ShieldCheck, BarChart3, Settings, ArrowUpRight, CheckCircle2, Clock3 } from "lucide-react";
 import StudentBrand from "./StudentBrand";
+import { createClient } from "@/lib/supabase/client";
 import { RESET_LESSONS } from "@/lib/student/learning";
 import { FOLLOWUP_STAGES, type StaffDashboardData, type FollowupStage, type SupportRequest } from "@/lib/student/staff";
 
 const stageLabels = { new: "New request", acknowledged: "Acknowledged", contacted: "Contact made", closed: "Closed" };
 export default function StudentStaffDashboard({ initial, preview = false }: { initial: StaffDashboardData; preview?: boolean }) {
+  const router = useRouter();
   const [tab, setTab] = useState("overview");
   const [data, setData] = useState(initial);
   const [filter, setFilter] = useState("all");
@@ -47,6 +50,15 @@ export default function StudentStaffDashboard({ initial, preview = false }: { in
   }
   const shown = data.requests.filter((r) => filter === "all" || r.stage === filter);
   const reports = smallExample ? data.reports.map((r) => ({ ...r, report: { ...r.report, cohort: null, checkins: null, goals: null, clarity: null, status: "suppressed" } })) : data.reports;
+  async function signOut() {
+    setBusy("signout"); setError("");
+    try {
+      const result = await createClient().auth.signOut();
+      if (result.error) throw new Error("Sign-out could not be completed. Please try again.");
+      router.replace("/student/sign-in?next=%2Fstudent%2Fadmin");
+      router.refresh();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not sign out."); setBusy(null); }
+  }
   return (
     <div className="staff-console">
       <aside className="staff-sidebar">
@@ -54,6 +66,7 @@ export default function StudentStaffDashboard({ initial, preview = false }: { in
         <div className="staff-role"><span className="staff-eyebrow">YOUR WORKSPACE</span><strong>{therapist ? "Therapist / counselor" : "School partner"}</strong><span>{data.schoolName}</span></div>
         <nav aria-label="Staff dashboard sections">{menu.map(([key, label, Icon]) => <button key={key} aria-current={tab === key ? "page" : undefined} onClick={() => { setTab(key); setMessage(""); setError(""); }}><Icon size={20} aria-hidden />{label}</button>)}</nav>
         {therapist && <Link className="staff-settings-link" href={preview ? "/student-design?screen=admin-notifications" : "/student/admin/notifications"}><Settings size={19} aria-hidden />Notification settings<ArrowUpRight size={16} aria-hidden /></Link>}
+        {!preview && <button className="staff-settings-link staff-signout" disabled={busy !== null} onClick={signOut}>{busy === "signout" ? "Signing out…" : "Sign out"}</button>}
         <div className="staff-sidebar-note"><ShieldCheck size={22} aria-hidden /><p>{therapist ? "Requests are shared by the student. This is not a live monitoring system." : "Program-level information only. No access to individual student wellness activity."}</p></div>
       </aside>
       <main className="staff-content">

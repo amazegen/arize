@@ -1054,6 +1054,7 @@
 .staff-sidebar { background:#183d30; color:#f8f8e9; padding:30px 20px; display:flex; flex-direction:column; gap:26px; }
 .staff-sidebar .student-brand { color:#fff8e7; }
 .staff-sidebar .student-brand .student-edition-label { color:#caddce; }
+.staff-signout { background:transparent; border:0; cursor:pointer; text-align:left; font:inherit; }
 .staff-role { display:grid; gap:8px; padding:20px 12px; border-top:1px solid #ffffff25; border-bottom:1px solid #ffffff25; }
 .staff-eyebrow { font-size:12px; font-weight:750; letter-spacing:.12em; text-transform:uppercase; }
 .staff-role span:last-child { font-size:14px; color:#c9dacb; }
