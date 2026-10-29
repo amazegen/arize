@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node --experimental-strip-types scripts/student-live-check.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
+    "student:live-check": "node --experimental-strip-types scripts/student-live-check.mjs",
     "billing:check": "node scripts/check-billing-env.mjs",
     "check": "npm run lint && npm run typecheck && npm test && npm run build"
   },

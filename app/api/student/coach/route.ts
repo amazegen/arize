@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { createHash } from "node:crypto";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import {
   getStudentSession,
@@ -8,6 +9,7 @@ import {
 import { STUDENT_NOTICE_VERSION } from "@/lib/student/policy";
 import { studentCoachPrompt } from "@/lib/student/coach";
 import { studentSafetyReply } from "@/lib/student/safety";
+import { studentProviderFailure } from "@/lib/student/provider-errors";
 
 export const dynamic = "force-dynamic";
 const reply = (body: unknown, status = 200) =>
@@ -102,7 +104,8 @@ export async function POST(request: Request) {
         message: { role: "assistant", content: safetyReply },
         moderated: true,
       });
-  } catch {
+  } catch (error) {
+    console.error(studentProviderFailure("input-moderation", error));
     return reply(
       {
         error:
@@ -145,6 +148,11 @@ export async function POST(request: Request) {
     const result = await openai.chat.completions.create({
       model: process.env.STUDENT_COACH_MODEL,
       store: false,
+      // A pseudonymous identifier: never send the student's email or name.
+      safety_identifier: createHash("sha256")
+        .update(`arize-student/${user.id}`)
+        .digest("hex"),
+      reasoning_effort: "low",
       messages: [
         { role: "system", content: studentCoachPrompt(language) },
         ...(history ?? []).reverse().map((message) => ({
@@ -152,7 +160,8 @@ export async function POST(request: Request) {
           content: message.content,
         })),
       ],
-      max_completion_tokens: 450,
+      // Includes reasoning tokens. Keep enough room for a short visible answer.
+      max_completion_tokens: 1200,
     });
     const response = result.choices[0]?.message.content?.trim();
     if (!response) throw new Error("Empty reply");
@@ -194,8 +203,9 @@ export async function POST(request: Request) {
       conversationId: id,
       message: { role: "assistant", content: safeResponse },
     });
-  } catch {
+  } catch (error) {
     // Never log student text, provider request bodies, or credentials.
+    console.error(studentProviderFailure("generation-or-output-moderation", error));
     return reply(
       {
         error:
