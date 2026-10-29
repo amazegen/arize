@@ -28,12 +28,24 @@ export async function getNotificationAdminSession() {
       status: 401,
       error: "Please sign in with your staff account.",
     };
-  const { data: scope, error } = await supabase
+  const { data: staff, error: staffError } = await supabase
+    .from("student_staff_memberships")
+    .select("school_id,role")
+    .eq("user_id", user.id)
+    .eq("active", true)
+    .maybeSingle();
+  // School partners cannot inherit a legacy notification permission. Fail
+  // closed if the new role table is unavailable or an incompatible role exists.
+  if (staffError || (staff && staff.role !== "therapist"))
+    return { ok: false as const, status: staffError ? 503 : 403,
+      error: "Counselor notification access is unavailable for this account." };
+  const { data: legacy, error } = await supabase
     .from("student_notification_admins")
     .select("school_id")
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
+  const scope = staff ?? legacy;
   if (error)
     return {
       ok: false as const,

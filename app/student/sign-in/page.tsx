@@ -44,7 +44,7 @@ function SignInForm() {
       }
       const next = new URLSearchParams(window.location.search).get("next");
       window.location.assign(
-        next === "/student/admin/notifications" ? next : "/student",
+        next === "/student/admin/notifications" || next === "/student/admin" ? next : "/student",
       );
     } catch {
       setError(

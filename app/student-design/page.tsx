@@ -3,6 +3,8 @@ import StudentWorkspace from "@/components/student/StudentWorkspace";
 import type { StudentScreen } from "@/components/student/StudentShell";
 import StudentPreviewControls from "@/components/student/StudentPreviewControls";
 import StudentNotificationSettings from "@/components/student/StudentNotificationSettings";
+import StudentStaffDashboard from "@/components/student/StudentStaffDashboard";
+import { staffPreview } from "@/lib/student/staff-preview";
 import { STUDENT_NOTICE_VERSION } from "@/lib/student/policy";
 import "../student/student.css";
 
@@ -15,6 +17,10 @@ export default async function StudentDesign({
 }) {
   if (process.env.NODE_ENV !== "development") notFound();
   const params = await searchParams;
+  if (params.screen === "staff-therapist" || params.screen === "staff-school") {
+    const role = params.screen === "staff-school" ? "school_staff" : "therapist";
+    return <div className="student-app"><StudentPreviewControls screen={String(params.screen)} state="default" device="desktop" /><StudentStaffDashboard preview initial={staffPreview(role)} /></div>;
+  }
   if (params.screen === "admin-notifications")
     return (
       <div className="student-app">

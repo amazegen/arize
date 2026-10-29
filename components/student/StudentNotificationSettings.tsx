@@ -107,8 +107,8 @@ export default function StudentNotificationSettings({
           className="student-brand"
           href={
             preview
-              ? "/student-design?screen=admin-notifications"
-              : "/student/admin/notifications"
+              ? "/student-design?screen=staff-therapist"
+              : "/student/admin"
           }
         >
           <StudentBrand />

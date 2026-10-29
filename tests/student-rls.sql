@@ -20,6 +20,7 @@ insert into public.student_goals(id,user_id,day,title,is_complete)
 \ir ../supabase/migrations/20261026192934_student_feature_carryover.sql
 \ir ../supabase/migrations/20261028171209_student_belonging_pulse.sql
 \ir ../supabase/migrations/20261029154406_student_server_table_permissions.sql
+\ir ../supabase/migrations/20261029163341_student_role_dashboards.sql
 do $$ begin
   if not has_table_privilege('service_role','public.student_schools','INSERT')
     or not has_table_privilege('service_role','public.student_schools','DELETE')
@@ -240,5 +241,6 @@ do $$ begin
   exception when insufficient_privilege then null; end;
 end $$;
 reset role;
+\ir student-staff-rls.sql
 rollback;
 \echo 'Student RLS integration assertions passed (transaction rolled back).'

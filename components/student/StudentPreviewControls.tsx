@@ -75,6 +75,8 @@ export default function StudentPreviewControls({
         ))}
       </nav>
       <nav aria-label="Staff preview">
+        <a href="/student-design?screen=staff-therapist" aria-current={screen === "staff-therapist" ? "page" : undefined}>Therapist dashboard</a>
+        <a href="/student-design?screen=staff-school" aria-current={screen === "staff-school" ? "page" : undefined}>School dashboard</a>
         <a
           href="/student-design?screen=admin-notifications"
           aria-current={screen === "admin-notifications" ? "page" : undefined}
