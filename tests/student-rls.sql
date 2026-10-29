@@ -19,6 +19,24 @@ insert into public.student_goals(id,user_id,day,title,is_complete)
   values('30000000-0000-4000-8000-000000000009','10000000-0000-4000-8000-000000000009','2026-10-26','Legacy completed goal',true);
 \ir ../supabase/migrations/20261026192934_student_feature_carryover.sql
 \ir ../supabase/migrations/20261028171209_student_belonging_pulse.sql
+\ir ../supabase/migrations/20261029154406_student_server_table_permissions.sql
+do $$ begin
+  if not has_table_privilege('service_role','public.student_schools','INSERT')
+    or not has_table_privilege('service_role','public.student_schools','DELETE')
+    or not has_table_privilege('service_role','public.student_pilot_memberships','UPDATE')
+    or not has_table_privilege('service_role','public.student_coach_usage','DELETE') then
+    raise exception 'Student operational permissions are missing';
+  end if;
+  if has_table_privilege('authenticated','public.student_schools','INSERT')
+    or has_table_privilege('authenticated','public.student_pilot_memberships','UPDATE')
+    or has_table_privilege('authenticated','public.student_coach_usage','DELETE')
+    or has_table_privilege('anon','public.student_schools','SELECT') then
+    raise exception 'Operational grants accidentally widened client access';
+  end if;
+  if exists(select 1 from pg_tables where schemaname='public' and tablename like 'student_%' and not rowsecurity) then
+    raise exception 'Student table is missing RLS';
+  end if;
+end $$;
 do $$ begin
   if not exists(select 1 from public.student_goals where id='30000000-0000-4000-8000-000000000009'
     and deadline='2026-10-26' and week_of='2026-10-25' and is_complete and progress=100)
