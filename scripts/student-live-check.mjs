@@ -8,12 +8,34 @@ import { createServerClient } from "@supabase/ssr";
 import OpenAI from "openai";
 import { STUDENT_NOTICE_VERSION } from "../lib/student/policy.ts";
 import { BELONGING_NOTICE } from "../lib/student/belonging.ts";
+import { deliverCounselorRequest } from "../lib/student/counselor-notification.ts";
 
 const enabled = process.env.ARIZE_STUDENT_LIVE_CHECK === "synthetic-only";
+const emailEnabled = process.env.ARIZE_STUDENT_EMAIL_CHECK === "synthetic-only";
 const expectedProject = "prj_xFxdpxs5BR6RRcFLdZiok6h0Lqvi";
 const expectedBackend = "https://kqwlqdsyocawljofrsvt.supabase.co";
 const report = (check) => console.log(`[student-release-check] PASS ${check}`);
 let stage = "environment";
+
+async function checkEmail() {
+  if (!emailEnabled) return;
+  stage = "synthetic-email-provider";
+  assert.equal(process.env.VERCEL_PROJECT_ID, expectedProject);
+  assert.equal(process.env.ARIZE_EDITION, "student");
+  assert.equal(process.env.NEXT_PUBLIC_SUPABASE_URL, expectedBackend);
+  assert.ok(process.env.RESEND_API_KEY);
+  const from = process.env.STUDENT_COUNSELOR_FROM?.trim();
+  assert.match(from ?? "", /<notifications@notify\.arizeapp\.com>$/);
+  // Resend's official simulation sink, NOT a counselor/student destination.
+  // Do not accept a configurable recipient here.
+  const config = { apiKey: process.env.RESEND_API_KEY, from, to: "delivered@resend.dev" };
+  const summary = { id: randomUUID(), displayName: "SYNTHETIC RELEASE TEST - not a real student" };
+  const first = await deliverCounselorRequest(config, summary);
+  await new Promise((resolve) => setTimeout(resolve, 1100));
+  const retry = await deliverCounselorRequest(config, summary);
+  assert.equal(retry, first, "Provider did not deduplicate the simulated retry");
+  report("verified sender accepted a simulation email; retry reused the same provider receipt");
+}
 
 async function run() {
   if (!enabled) return;
@@ -65,9 +87,9 @@ async function run() {
     a.token = signed.data.session.access_token;
     return a;
   }
-  async function request(a, path, body, expected = 200, origin) {
+  async function request(a, path, body, expected = 200, origin, method) {
     const response = await fetch(`${base}${path}`, {
-      method: body === undefined ? "GET" : "POST",
+      method: method ?? (body === undefined ? "GET" : "POST"),
       headers: {
         ...(a ? { Cookie: [...a.cookies].map(([n, v]) => `${n}=${v}`).join("; ") } : {}),
         ...(body === undefined ? {} : { "Content-Type": "application/json" }),
@@ -173,6 +195,21 @@ async function run() {
     await request(student, "/api/student/counselor", { requestId: randomUUID() }, 503);
     await request(student, "/api/student/admin/notifications", undefined, 403);
     report("disabled counselor sending fails truthfully; student cannot open staff settings");
+    stage = "staff-settings-access";
+    // Temporary synthetic staff scope only; no real admin account is provisioned.
+    await db(admin.from("student_notification_admins").insert({ user_id: outsider.id, school_id: schoolId, active: true }), stage);
+    const settings = await request(outsider, "/api/student/admin/notifications");
+    assert.equal(settings.email, null);
+    assert.deepEqual(settings.history, []);
+    await request(outsider, "/api/student?day=2026-10-29", undefined, 403);
+    for (const body of [
+      { email: "not-an-email", confirmEmail: "not-an-email", confirmed: true },
+      { email: "counselor@example.org", confirmEmail: "different@example.org", confirmed: true },
+      { email: "counselor@example.org", confirmEmail: "counselor@example.org", confirmed: false },
+    ]) await request(outsider, "/api/student/admin/notifications", body, 400, undefined, "PUT");
+    await db(admin.from("student_notification_admins").update({ active: false }).eq("user_id", outsider.id), stage);
+    await request(outsider, "/api/student/admin/notifications", undefined, 403);
+    report("staff-only settings load, reject invalid changes and honor revocation; staff cannot access student activity");
     stage = "belonging";
     await request(student, "/api/student/belonging", { welcome: 4, trusted_adult: null, connection: 3, language: "es", noticeVersion: BELONGING_NOTICE, acknowledged: true });
     const pulses = await db(student.client.from("student_belonging_pulses").select("welcome,trusted_adult,connection"), stage);
@@ -210,7 +247,7 @@ async function run() {
   report("all live checks complete; no real notification or student invitation sent");
 }
 
-run().catch((error) => {
+checkEmail().then(run).catch((error) => {
   // Never serialize provider/Supabase error objects: they may contain secrets.
   const status = typeof error?.status === "number" ? error.status : "unknown";
   const code = typeof error?.code === "string" && /^[A-Z0-9_]{1,32}$/.test(error.code) ? error.code : "unknown";

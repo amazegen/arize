@@ -42,6 +42,9 @@ export async function deliverCounselorRequest(
     typeof data.id !== "string" ||
     !data.id
   )
-    throw new Error("Counselor notification was not accepted");
+    throw Object.assign(new Error("Counselor notification was not accepted"), {
+      // Status-only diagnostics; never attach the provider body or recipient.
+      status: response.status,
+    });
   return data.id;
 }

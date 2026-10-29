@@ -59,3 +59,17 @@ test("notification rejection or missing receipt never becomes sent", async () =>
   const noReceipt: typeof fetch = async () => Response.json({});
   await assert.rejects(deliverCounselorRequest(config, summary, noReceipt));
 });
+
+test("notification diagnostics expose status only, not provider detail or credentials", async () => {
+  const rejected: typeof fetch = async () => Response.json(
+    { message: "PRIVATE_PROVIDER_DETAIL", recipient: "PRIVATE_RECIPIENT" },
+    { status: 403 },
+  );
+  try {
+    await deliverCounselorRequest(config, summary, rejected);
+    assert.fail("Rejection was reported as success");
+  } catch (error) {
+    assert.equal((error as { status?: number }).status, 403);
+    assert.doesNotMatch(JSON.stringify(error), /PRIVATE|test-only-not-a-key/);
+  }
+});
