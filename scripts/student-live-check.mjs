@@ -41,7 +41,7 @@ async function run() {
   const base = "http://127.0.0.1:3197";
   async function db(result, label) {
     const r = await result;
-    if (r.error) throw new Error(`${label}: database ${r.error.code ?? "failed"}`);
+    if (r.error) throw Object.assign(new Error("Database check failed"), { code: r.error.code, status: r.status });
     return r.data;
   }
   async function account() {
@@ -82,11 +82,13 @@ async function run() {
     return response.headers.get("content-type")?.includes("application/json") ? response.json() : null;
   }
   try {
-    stage = "synthetic-fixtures";
+    stage = "synthetic-school-create";
     await db(admin.from("student_schools").insert({ id: schoolId, name: schoolName }), stage);
     schoolCreated = true;
+    stage = "synthetic-account-create";
     const student = await account();
     const outsider = await account();
+    stage = "synthetic-enrollment";
     await db(admin.from("student_pilot_memberships").insert({
       user_id: student.id, school_id: schoolId, status: "active", role: "student",
       // This is an automated synthetic fixture, never a real consent assertion.
@@ -205,7 +207,8 @@ async function run() {
 run().catch((error) => {
   // Never serialize provider/Supabase error objects: they may contain secrets.
   const status = typeof error?.status === "number" ? error.status : "unknown";
-  console.error(`[student-release-check] FAIL stage=${stage} status=${status}`);
+  const code = typeof error?.code === "string" && /^[A-Z0-9_]{1,32}$/.test(error.code) ? error.code : "unknown";
+  console.error(`[student-release-check] FAIL stage=${stage} status=${status} code=${code}`);
   if (error instanceof assert.AssertionError)
     console.error(`[student-release-check] assertion failed at ${stage}`);
   process.exitCode = 1;
