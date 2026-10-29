@@ -20,7 +20,8 @@ export default function StudentSignIn() {
   );
 }
 function SignInForm() {
-  const nextPath = useSearchParams().get("next");
+  const params = useSearchParams();
+  const nextPath = params.get("next");
   const staffEntry = ["/student/admin", "/student/admin/notifications", "/student/staff", "/student/teacher", "/student/operator"].includes(nextPath ?? "");
   const { language, t } = useStudentLanguage();
   const [email, setEmail] = useState("");
@@ -79,6 +80,7 @@ function SignInForm() {
           </p>
         </div>
         <div className="student-card">
+          {params.get("setup") === "complete" && <p role="status" className="student-success">Your password is ready. Sign in below to open your workspace.</p>}
           <form className="student-form" onSubmit={signIn}>
             <label>
               {t("Email", "Correo electrónico")}
@@ -119,6 +121,7 @@ function SignInForm() {
               )}
             </p>
           </form>
+          <p><Link href="/student/account-setup">{t("Invited or forgot your password? Set up your password.", "¿Tienes invitación u olvidaste tu contraseña? Configura tu contraseña.")}</Link></p>
         </div>
         {staffEntry && <p><Link href="/student/staff">New staff member? Create an account and request your role.</Link></p>}
         <div className="student-privacy-links">
