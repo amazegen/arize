@@ -1,5 +1,9 @@
 # Student staff workspaces — October 29, 2026
 
+## Operational expansion — current status
+
+The older two-role/reporting description below records the initial dashboard slice. Migration `20261029174311_student_live_pilot_operations.sql` now adds verified teacher access and a separately assigned internal operator, pending staff applications, school-authorized class-level attendance, voluntary topic choices, renewed belonging responses and school-entered ambassador counts. School admins can publish protected completed-month reports through a guarded control; there is no scheduler. No named student attendance or wellbeing/attendance linkage is collected. Only current-notice, post-acknowledgement activity contributes to the new participation reports. Internal operators receive approved aggregate reports and operational staff/school setup data, never private chats or individual wellbeing answers. See the operational section of `student-edition-phase-2.md` for implementation, verification and launch blockers; no real staff or operator has been assigned.
+
 ## Implemented boundary
 
 The student edition has two distinct operator-assigned roles, scoped to one school per account. No existing student or legacy notification administrator is automatically upgraded. Auth identity, active role and school scope are checked server-side on each request and again inside database functions. Profile metadata and URL parameters cannot grant a role. Real staff assignment remains on hold pending verified school and login details.
