@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node --experimental-strip-types scripts/student-live-check.mjs && node --experimental-strip-types scripts/student-operations-check.mjs",
+    "build": "next build && node --experimental-strip-types scripts/student-live-check.mjs && node --experimental-strip-types scripts/student-operations-check.mjs && node scripts/student-signup-check.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
