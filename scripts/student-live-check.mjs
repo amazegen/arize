@@ -60,7 +60,10 @@ async function run() {
   let schoolCreated = false;
   let server;
   let cleanupFailed = false;
-  const base = "http://127.0.0.1:3197";
+  const liveOrigin = process.env.ARIZE_STUDENT_LIVE_CHECK_ORIGIN;
+  // Never send synthetic sessions or student-backend credentials to arbitrary URLs.
+  if (liveOrigin) assert.equal(liveOrigin, "https://students.arizeapp.com");
+  const base = liveOrigin ?? "http://127.0.0.1:3197";
   async function db(result, label) {
     const r = await result;
     if (r.error) throw Object.assign(new Error("Database check failed"), { code: r.error.code, status: r.status, check: label });
@@ -119,22 +122,24 @@ async function run() {
       // This is an automated synthetic fixture, never a real consent assertion.
       consent_verified_at: new Date().toISOString(),
     }), stage);
-    server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", "3197"], {
+    if (!liveOrigin) {
+      server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", "3197"], {
       env: { ...process.env, STUDENT_AI_ENABLED: "true", STUDENT_BELONGING_ENABLED: "true", STUDENT_COUNSELOR_NOTIFICATIONS_ENABLED: "false" },
       stdio: ["ignore", "ignore", "pipe"],
-    });
+      });
     // Forward ONLY our allowlisted provider diagnostic, never arbitrary server output.
-    server.stderr.on("data", (buffer) => {
+      server.stderr.on("data", (buffer) => {
       const text = buffer.toString();
       const status = text.match(/status:\s*(4\d\d|5\d\d)/)?.[1];
       if (text.includes("student_coach_provider_failure"))
         console.log(`[student-release-check] provider failure status=${status ?? "unknown"}`);
-    });
+      });
+    }
     let started = false;
     for (let i = 0; i < 80; i++) {
       try { started = (await fetch(`${base}/student/sign-in`, { signal: AbortSignal.timeout(1000) })).ok; } catch { /* bounded startup polling */ }
       if (started) break;
-      if (server.exitCode !== null) throw new Error("Student test server exited");
+      if (server && server.exitCode !== null) throw new Error("Student test server exited");
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
     assert.ok(started, "Student test server did not start");
