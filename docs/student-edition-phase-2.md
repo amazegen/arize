@@ -1,5 +1,32 @@
 # Arize Student Edition implementation and launch checklist
 
+## October 29 local chart review and More Life OS reconciliation
+
+Source inspected directly: More Life OS Arize workspace (`e381bf1b-6952-4a8b-95ba-5ff49da29f68`), all five phase checklists, plus Mission Control's mirrored Arize project tasks (`project_97482ea3-8812-4ee5-b15c-55c555d92dce`). The OS Student Edition phase has six acceptance items, not a ranked five-metric dashboard specification. Its privacy research task mentions topic trends, no raw questions/chats, and calls the school dashboard additional scope. That internal note is not a legal determination or statutory threshold guarantee.
+
+| Student phase acceptance item | Verified state | OS update this review |
+| --- | --- | --- |
+| Student onboarding implemented and testable | Implemented; UI and synthetic authenticated save/reload previously verified | Checked Done |
+| Clarity school-topic guidance, grades 9–12 | Eight bilingual topic areas, school prompt and hosted English/Spanish acceptance | Checked Done |
+| Counselor button routes to school contact method | Request flow and provider simulation verified; actual school destination/login, human delivery acceptance and activation still pending | Marked In progress, not Done |
+| Safety language visible | AI/not-monitored disclosure, trusted-adult guidance and emergency resources implemented; safety-path acceptance previously verified | Checked Done |
+| Chromebook usability testing documented | Responsive/local Chromebook layout exists; no real managed-device acceptance documented | Left incomplete |
+| Pilot configured/verified for 20 students and 10 teachers | Isolated infrastructure and synthetic role checks verified; real school setup and 30-person/device/concurrency acceptance incomplete | Left incomplete; status-only In progress update awaits owner approval after tool review rejected the broader status mutation |
+
+The other phases are not silently checked off. Scope and Design was already complete. Core fixes/billing still require full lifecycle/live configuration verification and account deletion (no account-deletion implementation found in this checkout). The later AI-console/founder/marketing phase includes configuration controls with preview/history/restore/audit, founder registrations/trials/subscription/engagement analytics, marketing/lead capture/mobile review, remaining student work, browser/iOS push, iOS packaging and App Store privacy links. None is established complete by this student dashboard. Final all-scope regression, agreed deferrals, adult production release/handoff/defect window and Apple submission remain unverified/incomplete. This review did not inspect or mutate adult production settings or Stripe.
+
+### Local-only chart implementation
+
+No deployment, migration, new tracking, provider call or paid dependency is part of this update. The live staff dashboard remains unchanged. The chart component renders only when the existing development-only preview passes `preview=true`; the preview route still returns 404 outside development.
+
+- School view: program participation ranges and monthly comparison; voluntary-topic concept with eight categories and month comparison; proposed aggregate belonging results; proposed school-level attendance context; proposed Class Reset session totals; proposed ambassador pathway.
+- Therapist view: current-page contact-request workflow and dated request counts, derived from the same synthetic request rows. Follow-up changes update the workflow chart. No clinical/risk chart or private chat analysis is added.
+- Every chart uses explicit fictional-design data. Existing report fields are distinguished from proposed collections/integrations. Topic tagging, staff belonging aggregation, attendance import, Class Reset logging and ambassador administration are NOT claimed implemented.
+- Controls: month selector/month buttons, topic compare/show-all, click/keyboard row inspection, value-definition tables, small-pilot withholding and no-approved-data state. Missing values are not zero; interval endpoints are not converted to exact midpoints. Cohort and respondent bands remain visible or withheld.
+- Tests: 52 unit tests pass, including range parsing, null preservation, period bounds and fixture consistency; TypeScript passes and lint reports no new warnings. Rendered normal, month-change, row inspection, topic comparison, withheld and no-data checks passed in the existing local browser tab. A synthetic follow-up change updated Shelby's chart from New=1/Acknowledged=1 to New=0/Acknowledged=2. All six school chart cards were visually inspected. No real managed-Chromebook or narrow-device acceptance is claimed for these new charts.
+
+Files: `lib/student/chart-preview.ts`, `components/student/StudentStaffCharts.tsx`, and the existing dashboard/CSS. Charts introduce no charting SDK, analytics cookie or additional subscription.
+
 The first Student Edition is a separate browser-based pilot for grades 9–12, based on the existing Arize product. Work is isolated on `codex/student-edition-phase-2`; the adult app, billing launch, production database, and main branch are not changed by this implementation.
 
 ## October 28 expanded scope and Friday handoff

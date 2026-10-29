@@ -1055,6 +1055,33 @@
 .staff-sidebar .student-brand { color:#fff8e7; }
 .staff-sidebar .student-brand .student-edition-label { color:#caddce; }
 .staff-signout { background:transparent; border:0; cursor:pointer; text-align:left; font:inherit; }
+.staff-insights { margin-top:26px; }
+.staff-design-review .staff-page-heading { margin:24px 0 20px; }.staff-design-review .staff-page-heading h1 { font-size:clamp(28px,3vw,36px); }.staff-design-review .staff-preview-note { padding:10px 14px; font-size:12px; }.staff-design-review .staff-page-heading>p:last-child { font-size:15px; }
+.staff-chart-more { border:0; background:transparent; color:#345c3a; text-decoration:underline; padding:8px 0; cursor:pointer; font:inherit; font-size:12px; }
+.staff-insights-toolbar { display:flex; flex-wrap:wrap; justify-content:space-between; gap:20px; align-items:end; margin-bottom:24px; }
+.staff-insights-toolbar>div>strong { font-size:24px; }.staff-insights-toolbar p { margin-top:7px; font-size:14px; color:#5f705f; }
+.staff-insights-selects { display:flex; flex-wrap:wrap; gap:12px; }.staff-insights-selects label { display:grid; gap:8px; font-size:12px; font-weight:700; }
+.staff-insights-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin:20px 0; }
+.staff-insights-summary>div { background:#eaf0db; border:1px solid #d5dfc4; border-radius:18px; padding:22px; display:grid; gap:10px; }
+.staff-insights-summary span { font-size:13px; font-weight:650; }.staff-insights-summary strong { font-size:24px; }.staff-insights-summary small { font-size:12px; line-height:1.6; color:#53694f; }
+.staff-chart-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; align-items:start; }
+.staff-chart-card { background:#fffefa; border:1px solid #dce3d4; border-radius:22px; padding:26px; min-width:0; box-shadow:0 8px 28px #29462c05; }
+.staff-chart-card>header { display:flex; align-items:start; gap:12px; flex-wrap:wrap; margin-bottom:24px; }.staff-chart-card>header>div { flex:1; min-width:140px; }
+.staff-chart-card h2 { font-size:21px; line-height:1.35; font-weight:700; margin:0; }.staff-chart-card header p { margin:7px 0 0; font-size:13px; color:#63745d; line-height:1.6; }
+.staff-chart-icon { color:#335e40; background:#edf2df; width:42px; height:42px; display:grid; place-items:center; border-radius:12px; flex-shrink:0; }
+.staff-chart-badge { font-size:10px; font-weight:700; padding:7px 9px; background:#fff0d7; color:#79551e; border:1px solid #edd9b5; border-radius:8px; }
+.staff-chart-axis { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) 65px; margin:0 0 14px; color:#6a7864; font-size:11px; gap:12px; }.staff-chart-axis>div { display:flex; justify-content:space-between; }
+.staff-range-rows { display:grid; gap:17px; }.staff-range-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) 65px; align-items:center; gap:12px; width:100%; border:0; padding:7px 0; background:transparent; text-align:left; color:inherit; font:inherit; cursor:pointer; border-radius:5px; }
+.staff-range-label { font-size:13px; line-height:1.5; }.staff-range-row>strong { font-size:13px; text-align:right; font-variant-numeric:tabular-nums; }
+.staff-range-track { position:relative; display:block; height:27px; background:#eef1e7; border-radius:3px; overflow:hidden; }
+.staff-range-stem { position:absolute; top:13px; left:0; height:0; border-top:2px dashed #8a9d7a; }.staff-range-interval { position:absolute; top:3px; height:21px; background:#456c4b; border-radius:3px; }.staff-count-bar { height:100%; position:absolute; left:0; top:0; background:#456c4b; border-radius:3px; min-width:0; }
+.staff-range-withheld { background:repeating-linear-gradient(135deg,#f1f1ea,#f1f1ea 4px,#e7eade 4px,#e7eade 5px); }.staff-range-withheld>span { display:block; text-align:center; line-height:27px; font-size:10px; color:#5d6a56; }
+.staff-chart-inspect { min-height:55px; color:#5f715a; font-size:12px; line-height:1.6; padding-top:18px; margin:0; }.staff-chart-note { border-top:1px solid #e4e8dd; padding-top:16px; margin-top:20px; font-size:12px; line-height:1.7; color:#67765e; }
+.staff-chart-source { margin:18px 0; font-size:13px; color:#52694d; line-height:1.7; }.staff-chart-source summary { cursor:pointer; font-weight:650; padding:10px 0; }.staff-chart-source table { width:100%; border-collapse:collapse; font-size:12px; }.staff-chart-source th,.staff-chart-source td { padding:8px 5px; border-bottom:1px solid #dce3d4; text-align:left; }.staff-chart-source caption { text-align:left; padding:12px 0; }
+.staff-chart-history { margin:18px 0 0; padding:18px 0 0; border-top:1px solid #e4e8dd; }.staff-chart-history>strong { font-size:12px; }.staff-chart-history>div { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-top:12px; }.staff-chart-history button { padding:12px 5px; display:grid; gap:8px; border:1px solid #d5dec9; border-radius:10px; background:#f7f8f0; color:#405a3c; cursor:pointer; font:inherit; font-size:12px; }.staff-chart-history button[aria-pressed=true] { background:#dfebcb; border-color:#527848; }.staff-chart-history b { font-size:16px; }
+.staff-chart-toggle { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }.staff-chart-toggle button { background:#f3f5e9; color:#425c3d; border:1px solid #d2dcc4; border-radius:9px; padding:9px 12px; cursor:pointer; font:inherit; font-size:12px; }.staff-chart-toggle button[aria-pressed=true] { background:#dfeaca; border-color:#5a7b4c; }
+@media(max-width:1180px) { .staff-chart-grid { grid-template-columns:1fr; } }
+@media(max-width:600px) { .staff-insights-summary { grid-template-columns:1fr; }.staff-insights-summary>div { padding:18px; }.staff-chart-card { padding:20px 16px; }.staff-range-row,.staff-chart-axis { gap:8px; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 58px; }.staff-range-label { font-size:12px; }.staff-insights-selects,.staff-insights-selects label,.staff-insights-selects select { width:100%; } }
 .staff-role { display:grid; gap:8px; padding:20px 12px; border-top:1px solid #ffffff25; border-bottom:1px solid #ffffff25; }
 .staff-eyebrow { font-size:12px; font-weight:750; letter-spacing:.12em; text-transform:uppercase; }
 .staff-role span:last-child { font-size:14px; color:#c9dacb; }

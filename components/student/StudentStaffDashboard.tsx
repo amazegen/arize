@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LayoutDashboard, Inbox, BookOpen, ShieldCheck, BarChart3, Settings, ArrowUpRight, CheckCircle2, Clock3 } from "lucide-react";
 import StudentBrand from "./StudentBrand";
+import StudentStaffCharts from "./StudentStaffCharts";
 import { createClient } from "@/lib/supabase/client";
 import { RESET_LESSONS } from "@/lib/student/learning";
 import { FOLLOWUP_STAGES, type StaffDashboardData, type FollowupStage, type SupportRequest } from "@/lib/student/staff";
@@ -60,7 +61,7 @@ export default function StudentStaffDashboard({ initial, preview = false }: { in
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not sign out."); setBusy(null); }
   }
   return (
-    <div className="staff-console">
+    <div className={`staff-console${preview ? " staff-design-review" : ""}`}>
       <aside className="staff-sidebar">
         <Link className="student-brand" href={preview ? "/student-design?screen=home" : "/student/admin"}><StudentBrand /></Link>
         <div className="staff-role"><span className="staff-eyebrow">YOUR WORKSPACE</span><strong>{therapist ? "Therapist / counselor" : "School partner"}</strong><span>{data.schoolName}</span></div>
@@ -74,8 +75,9 @@ export default function StudentStaffDashboard({ initial, preview = false }: { in
         {preview && <div className="staff-preview-note"><strong>Review mode · Synthetic data only.</strong> Role selection is available only in this local mockup. Live permissions are assigned on the server, never by a browser dropdown.</div>}
         <div className="staff-page-heading"><p className="staff-eyebrow">{data.schoolName}</p><h1>{tab === "overview" ? (therapist ? "Support starts with a request." : "A clearer view of your pilot.") : tab === "requests" ? "Student-initiated support" : tab === "reports" ? "Privacy-protected school reports" : tab === "resources" ? "Tools for the school day" : "Clear boundaries. Safer access."}</h1><p>{therapist ? "Help students connect with a person—without turning their private activity into a caseload." : "Understand program reach without identifying how an individual student feels or what they share."}</p></div>
         {error && <p role="alert" className="student-error">{error}</p>}{message && <p role="status" className="student-success">{message}</p>}
+        {preview && (tab === "overview" || (!therapist && tab === "reports")) && <StudentStaffCharts role={data.role} requests={data.requests} />}
         {tab === "overview" && therapist && <>
-          <div className="staff-metric-grid">{[["New requests", data.requests.filter((r) => r.stage === "new").length], ["Awaiting contact", data.requests.filter((r) => r.stage === "acknowledged").length], ["Contact made", data.requests.filter((r) => r.stage === "contacted").length]].map(([label, count]) => <section className="staff-metric" key={label}><span>{label}</span><strong>{count}</strong><small>In the current request page—not a school-wide risk measure</small></section>)}</div>
+          {!preview && <div className="staff-metric-grid">{[["New requests", data.requests.filter((r) => r.stage === "new").length], ["Awaiting contact", data.requests.filter((r) => r.stage === "acknowledged").length], ["Contact made", data.requests.filter((r) => r.stage === "contacted").length]].map(([label, count]) => <section className="staff-metric" key={label}><span>{label}</span><strong>{count}</strong><small>In the current request page—not a school-wide risk measure</small></section>)}</div>}
           <section className="staff-feature-card"><div><span className="staff-eyebrow">YOUR NEXT ACTION</span><h2>Meet the students who chose to reach out.</h2><p>Review the request, use your school’s established contact process, then record a simple follow-up status. No clinical notes are entered here.</p><button className="student-action" onClick={() => setTab("requests")}>Open support requests <ArrowUpRight size={18} aria-hidden /></button></div><Inbox size={70} aria-hidden /></section>
           <section className="student-card"><h2>What this workspace does not tell you</h2><p>It does not score risk, diagnose, show private AI conversations, or report which students use check-ins and goals. No request does not mean a student is safe or does not need support.</p></section>
         </>}
@@ -89,7 +91,7 @@ export default function StudentStaffDashboard({ initial, preview = false }: { in
           </article>) : <section className="student-card"><h2>No requests match this view.</h2><p>Only requests a student chooses to submit appear here. Private activity is never scanned to create a request.</p></section>}</div>
           {!preview && <div className="student-inline"><button className="student-secondary" disabled={offset === 0 || busy !== null} onClick={() => page(Math.max(0, offset - 50))}>Previous page</button><button className="student-secondary" disabled={!data.hasMore || busy !== null} onClick={() => page(offset + 50)}>Next page</button></div>}
         </>}
-        {(tab === "overview" || tab === "reports") && !therapist && <>
+        {(tab === "overview" || tab === "reports") && !therapist && !preview && <>
           <section className="staff-feature-card"><div><span className="staff-eyebrow">PROGRAM REPORTING</span><h2>Useful summaries. No student-level drill-down.</h2><p>Reports use completed calendar months, frozen snapshots and count ranges. Small groups and small complementary groups are withheld. No live heat map, student ranking or individual risk flags.</p></div><BarChart3 size={70} aria-hidden /></section>
           {preview && <button className="student-secondary" onClick={() => setSmallExample((v) => !v)}>{smallExample ? "Show larger sample cohort" : "See small-pilot privacy protection"}</button>}
           {!data.reportingApproved ? <section className="student-card"><h2>Reporting is awaiting school approval.</h2><p>No school metrics are being released. Approval, the reporting purpose and the permitted audience must be recorded before publication.</p></section> : !reports.length ? <section className="student-card"><h2>No published report yet.</h2><p>Reports appear after an approved, completed reporting period. This does not mean zero participation.</p></section> : reports.map((r) => <section className="student-card staff-report" key={r.month}><div className="staff-request-title"><div><span className="staff-eyebrow">COMPLETED REPORTING PERIOD</span><h2>{new Date(`${r.month}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })}</h2></div><span className="staff-role-chip">{r.report.status === "suppressed" ? "Small cohort · protected" : "Published snapshot"}</span></div>
