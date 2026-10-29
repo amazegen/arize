@@ -10,6 +10,7 @@ export default function VoiceDictationButton({ value, onChange, language, disabl
   const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState("");
   const [supported, setSupported] = useState(true);
+  const [portalTarget, setPortalTarget] = useState<Element | null>(null);
   const session = useRef<ReturnType<typeof startDictation> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const noticeId = useId();
@@ -33,13 +34,14 @@ export default function VoiceDictationButton({ value, onChange, language, disabl
   }
   function toggle() {
     if (listening) { session.current?.stop(); return; }
+    setPortalTarget(containerRef.current?.closest(".student-app") ?? document.body);
     setSupported(Boolean(getSpeechConstructor(window))); setError("");
     if (acknowledged && getSpeechConstructor(window)) start(); else setNotice(true);
   }
   return <div className="voice-control" ref={containerRef}>
     <button type="button" className={`voice-mic ${listening ? "listening" : ""}`} onClick={toggle} disabled={disabled && !listening} aria-label={listening ? t("Stop voice typing", "Detener dictado") : t("Voice to text", "Voz a texto")} title={listening ? t("Stop voice typing", "Detener dictado") : t("Voice to text", "Voz a texto")} aria-pressed={listening} aria-expanded={notice} aria-controls={noticeId}>{listening ? <Square size={17} aria-hidden /> : <Mic size={19} aria-hidden />}{listening && <span>{t("Stop", "Parar")}</span>}</button>
     <span className="sr-only" role="status">{listening ? t("Listening. Press Stop before editing or sending.", "Escuchando. Pulsa Parar antes de editar o enviar.") : ""}</span>
-    {notice && createPortal(<div className="voice-notice" id={noticeId} role="group" aria-label={t("Voice-to-text notice", "Aviso de dictado")}>
+    {notice && portalTarget && createPortal(<div className="voice-notice" id={noticeId} role="group" aria-label={t("Voice-to-text notice", "Aviso de dictado")}>
       <div><strong>{t("Voice to text", "Voz a texto")}</strong><button type="button" aria-label={t("Close voice notice", "Cerrar aviso")} onClick={() => setNotice(false)}><X size={18} /></button></div>
       {error && <p role="alert">{error}</p>}
       {!supported ? <p>{t("Voice typing is not available in this browser or may be blocked by your school. You can keep typing or use your device’s keyboard dictation.", "El dictado no está disponible en este navegador o tu escuela puede bloquearlo. Puedes escribir o usar el dictado del teclado de tu dispositivo.")}</p> : <>
@@ -48,6 +50,6 @@ export default function VoiceDictationButton({ value, onChange, language, disabl
         <button className="student-action" type="button" onClick={start} disabled={disabled}>{t("Continue to microphone", "Continuar al micrófono")}</button>
       </>}
       <button type="button" className="op-text-button" onClick={() => setNotice(false)}>{t("Keep typing instead", "Prefiero escribir")}</button>
-    </div>, containerRef.current?.closest(".student-app") ?? document.body)}
+    </div>, portalTarget)}
   </div>;
 }

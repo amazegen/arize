@@ -4,6 +4,7 @@ import { Send, MessageCircle, RotateCcw, ShieldCheck } from "lucide-react";
 import type { OperatorConfig, TestMessage } from "@/lib/student/operator";
 import { operatorTestBlock, requestOperatorTest } from "@/lib/student/operator-test-client";
 import VoiceDictationButton from "./VoiceDictationButton";
+import useChatScroll from "./useChatScroll";
 
 export default function OperatorClarityLab({ config }: { config: OperatorConfig }) {
   const [messages, setMessages] = useState<TestMessage[]>([]);
@@ -13,6 +14,7 @@ export default function OperatorClarityLab({ config }: { config: OperatorConfig 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [dictating, setDictating] = useState(false);
+  const { threadRef, followNextMessage, jumpToLatest, hasNewMessage } = useChatScroll(`${messages.length}:${busy}`, "panel");
   const enabled = config.aiEnabled && config.aiConfigured;
   const exhausted = messages.length >= 16;
   const blocked = operatorTestBlock({ busy, enabled, exhausted, fictional, content, dictating });
@@ -21,6 +23,7 @@ export default function OperatorClarityLab({ config }: { config: OperatorConfig 
     const next: TestMessage[] = [...messages, { role: "user", content: content.trim() }];
     const previous = messages;
     const sentDraft = content;
+    followNextMessage();
     setMessages(next); setContent("");
     setBusy(true); setError("");
     try {
@@ -29,7 +32,8 @@ export default function OperatorClarityLab({ config }: { config: OperatorConfig 
     } catch (reason) { setMessages(previous); setContent(sentDraft); setError(reason instanceof Error ? reason.message : "Test unavailable."); } finally { setBusy(false); }
   }
   return <div className="op-lab-layout"><section className="op-panel op-lab-chat"><div className="op-panel-heading"><div><h2><MessageCircle size={22} /> Clarity</h2><p>Live test · not a student conversation</p></div><button className="op-text-button" disabled={busy || dictating} onClick={() => { setMessages([]); setContent(""); setError(""); }}><RotateCcw size={16} /> New test</button></div>
-    <div className="op-test-messages" role="log" aria-label="Fictional Clarity test conversation" aria-live="polite">{messages.length ? messages.map((m, i) => <div key={i} className={`op-test-message ${m.role}`}><span>{m.role === "user" ? "Your fictional scenario" : "Clarity"}</span><p>{m.content}</p></div>) : <div className="op-chat-welcome"><span className="op-empty-icon"><MessageCircle size={28} /></span><h3>Try a student’s perspective.</h3><p>Use a made-up situation to review Clarity’s tone, writing and safety boundaries.</p><div className="op-sample-prompts">{(language === "es" ? ["Me preocupa mi examen de matemáticas de mañana.", "Mi amigo quiere que responda mensajes toda la noche."] : ["I’m worried about my math test tomorrow.", "My friend expects me to text all night, but I need sleep."]).map(text => <button key={text} onClick={() => setContent(text)}>{text}</button>)}</div></div>}{busy && <p role="status">Clarity is responding…</p>}</div>
+    <div ref={threadRef} className="op-test-messages" role="log" aria-label="Fictional Clarity test conversation" aria-live="polite">{messages.length ? messages.map((m, i) => <div key={i} className={`op-test-message ${m.role}`}><span>{m.role === "user" ? "Your fictional scenario" : "Clarity"}</span><p>{m.content}</p></div>) : <div className="op-chat-welcome"><span className="op-empty-icon"><MessageCircle size={28} /></span><h3>Try a student’s perspective.</h3><p>Use a made-up situation to review Clarity’s tone, writing and safety boundaries.</p><div className="op-sample-prompts">{(language === "es" ? ["Me preocupa mi examen de matemáticas de mañana.", "Mi amigo quiere que responda mensajes toda la noche."] : ["I’m worried about my math test tomorrow.", "My friend expects me to text all night, but I need sleep."]).map(text => <button key={text} onClick={() => setContent(text)}>{text}</button>)}</div></div>}{busy && <p role="status">Clarity is responding…</p>}</div>
+    {hasNewMessage && <button type="button" className="chat-latest-button" onClick={jumpToLatest}>New message · Back to latest ↓</button>}
     {error && <p role="alert" className="student-error">{error}</p>}
     <form className="op-composer" onSubmit={send} aria-busy={busy}>
       <label className="student-check op-test-notice"><input type="checkbox" checked={fictional} onChange={e => setFictional(e.target.checked)} disabled={busy} />I’ll use fictional scenarios only—no student, client or session details.</label>

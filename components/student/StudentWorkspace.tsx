@@ -18,6 +18,7 @@ import {
 import StudentGoals from "./StudentGoals";
 import StudentHistory, { SAMPLE_CONVERSATIONS } from "./StudentHistory";
 import StudentChatComposer from "./StudentChatComposer";
+import useChatScroll from "./useChatScroll";
 import { getUsernameError, normalizeUsername } from "@/lib/profile/username";
 import { StudentLanguageProvider, useStudentLanguage } from "./StudentLanguage";
 import StudentLearningHub, { StudentTopicStarters } from "./StudentLearningHub";
@@ -97,6 +98,7 @@ function StudentWorkspaceContent({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [busy, setBusy] = useState(false);
+  const { threadRef, composerRef, followNextMessage, jumpToLatest, hasNewMessage } = useChatScroll(`${conversationId}:${messages.length}:${pendingMessage !== null}:${busy}`, "page", screen === "clarity" && !showHistory);
   const [reload, setReload] = useState(0);
   const [counselorStatus, setCounselorStatus] = useState<
     "idle" | "sending" | "sent" | "pending" | "preview"
@@ -382,6 +384,7 @@ function StudentWorkspaceContent({
     }
     const content = draft.trim();
     sendingMessage.current = true;
+    followNextMessage();
     let saved = false;
     setPendingMessage(content);
     setDraft("");
@@ -1029,6 +1032,7 @@ function StudentWorkspaceContent({
             <>
               <div
                 className="student-chat"
+                ref={threadRef}
                 role="log"
                 aria-label={t(
                   "Clarity conversation",
@@ -1073,12 +1077,14 @@ function StudentWorkspaceContent({
                   )}{" "}
                 </button>
               ) : null}
+              {hasNewMessage && <button type="button" className="chat-latest-button" onClick={jumpToLatest}>{t("New message · Back to latest ↓", "Nuevo mensaje · Ir al último ↓")}</button>}
               <StudentChatComposer
                 value={draft}
                 onChange={setDraft}
                 onSubmit={sendMessage}
                 disabled={busy || conversationHasMore}
                 busy={busy}
+                composerRef={composerRef}
               />
             </>
           )}

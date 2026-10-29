@@ -12,12 +12,14 @@ export default function StudentChatComposer({
   onSubmit,
   disabled,
   busy,
+  composerRef,
 }: {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   disabled: boolean;
   busy: boolean;
+  composerRef?: React.Ref<HTMLFormElement>;
 }) {
   const { t, language } = useStudentLanguage();
   const [dictating, setDictating] = useState(false);
@@ -33,7 +35,7 @@ export default function StudentChatComposer({
   }, [value]);
 
   return (
-    <form className="student-chat-composer" onSubmit={onSubmit}>
+    <form className="student-chat-composer" onSubmit={onSubmit} ref={composerRef}>
       <div className="student-composer-box">
         <textarea
           ref={textareaRef}
