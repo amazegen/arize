@@ -2,6 +2,7 @@ export const REPORT_TOPICS = ["tests","future","social","relationships","identit
 export const REPORT_LESSONS = ["fresh-start","before-a-test","connection"] as const;
 export type ReportInsights = {
   version?: number;
+  timeZone?: string;
   topics?: Record<string, string | null> | null;
   belonging?: Record<string, { positive: string | null; respondents: string | null }> | null;
   attendance?: { rate: string | null } | null;
@@ -18,6 +19,7 @@ export function reportInsights(value: ReportInsights): ReportInsights {
   if (value.version !== 2) return {};
   return {
     version: 2,
+    ...(typeof value.timeZone === "string" && value.timeZone.length <= 100 && /^[A-Za-z0-9_+\-/]+$/.test(value.timeZone) ? { timeZone: value.timeZone } : {}),
     topics: value.topics ? Object.fromEntries(REPORT_TOPICS.map((k) => [k, safeBand(value.topics?.[k])])) : null,
     belonging: value.belonging ? Object.fromEntries(["welcome","trusted_adult","connection"].map((k) => [k, { positive: safeBand(value.belonging?.[k]?.positive), respondents: safeBand(value.belonging?.[k]?.respondents) }])) : null,
     attendance: value.attendance ? { rate: safeBand(value.attendance.rate) } : null,

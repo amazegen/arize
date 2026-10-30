@@ -5,7 +5,6 @@ import {
 } from "@/lib/student/server";
 import { STUDENT_NOTICE_VERSION, validDay } from "@/lib/student/policy";
 import {
-  dateKey,
   GOAL_FIELDS,
   pageOffset,
   shiftDay,
@@ -23,6 +22,9 @@ export async function GET(request: Request) {
   const { supabase, user } = session;
   const params = new URL(request.url).searchParams;
   if (params.get("view") === "patterns") {
+    const calendar = await supabase.rpc("student_calendar_state");
+    if (calendar.error) return reply({ error: "The school calendar could not be loaded." }, 503);
+    const today = calendar.data.today as string;
     const days = params.get("days") ?? "30";
     const offset = pageOffset(params.get("offset"));
     if (!["7", "30", "90", "all"].includes(days) || offset === null)
@@ -31,10 +33,10 @@ export async function GET(request: Request) {
       .from("student_check_ins")
       .select("day,score")
       .eq("user_id", user.id)
-      .lte("day", dateKey())
+      .lte("day", today)
       .order("day", { ascending: false });
     if (days !== "all")
-      query = query.gte("day", shiftDay(dateKey(), 1 - Number(days)));
+      query = query.gte("day", shiftDay(today, 1 - Number(days)));
     const { data, error } = await query.range(offset, offset + 100);
     if (error)
       return reply({ error: "Your Pattern Map could not be loaded." }, 503);

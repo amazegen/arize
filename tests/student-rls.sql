@@ -284,5 +284,9 @@ do $$ begin
  begin perform public.student_manage_enrollment(auth.uid(),'20000000-0000-4000-8000-000000000001','active','self activation',true); raise exception 'Self enrollment allowed'; exception when insufficient_privilege then null; end;
 end $$;
 reset role;
+\ir ../supabase/migrations/20261030051501_student_privacy_operations.sql
+\ir ../supabase/migrations/20261030051936_student_operator_directory.sql
+\ir ../supabase/migrations/20261030052029_student_school_calendar.sql
+\ir student-privacy-operations.sql
 rollback;
 \echo 'Student RLS integration assertions passed (transaction rolled back).'

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { dateKey } from "@/lib/student/features";
 import { ChevronRight, History, Sparkles, Sun, Target } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -33,6 +35,7 @@ type Profile = {
 };
 type School = {
   name: string;
+  time_zone?: string;
   counselor_url: string | null;
   counselor_instructions: string;
 };
@@ -43,11 +46,6 @@ type Activity = {
   goals: Goal[];
   conversations: { id: string; title: string; created_at: string }[];
 };
-
-function localDay() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
 
 export default function StudentWorkspace(
   props: Parameters<typeof StudentWorkspaceContent>[0],
@@ -88,7 +86,8 @@ function StudentWorkspaceContent({
   const [acknowledged, setAcknowledged] = useState(
     initialProfile?.notice_version === STUDENT_NOTICE_VERSION,
   );
-  const [day, setDay] = useState(localDay);
+  const schoolDay = () => dateKey(new Date(), school.time_zone ?? "UTC");
+  const [day, setDay] = useState(schoolDay);
   const [score, setScore] = useState(6);
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -113,7 +112,7 @@ function StudentWorkspaceContent({
   const [activity, setActivity] = useState<Activity | null>(
     preview && !loadingPreview
       ? {
-          checkIn: firstUse ? null : { score: 7, day: localDay() },
+          checkIn: firstUse ? null : { score: 7, day: schoolDay() },
           goals: firstUse
             ? []
             : [
@@ -121,7 +120,7 @@ function StudentWorkspaceContent({
                   id: "sample-goal",
                   title: "Take a short break after class",
                   is_complete: false,
-                  day: localDay(),
+                  day: schoolDay(),
                 },
               ],
           conversations: [],
@@ -174,7 +173,7 @@ function StudentWorkspaceContent({
     setError("");
     setSuccess("");
     if (next === "check-in") setScore(activity?.checkIn?.score ?? 6);
-    if (next === "home" || next === "check-in") chooseDay(localDay());
+    if (next === "home" || next === "check-in") chooseDay(schoolDay());
     const query = preview
       ? new URLSearchParams(window.location.search)
       : new URLSearchParams();
@@ -296,9 +295,9 @@ function StudentWorkspaceContent({
     setSuccess("");
     try {
       if (!preview)
-        await mutate({ action: "check-in", day: localDay(), score });
+        await mutate({ action: "check-in", day: schoolDay(), score });
       setActivity((old) => ({
-        checkIn: { score, day: localDay() },
+        checkIn: { score, day: schoolDay() },
         goals: old?.goals ?? [],
         conversations: old?.conversations ?? [],
       }));
@@ -860,6 +859,7 @@ function StudentWorkspaceContent({
 
       {screen === "goals" ? (
         <StudentGoals
+          timeZone={school.time_zone ?? "UTC"}
           preview={preview}
           onCoach={() => {
             setDraft(
@@ -1126,6 +1126,7 @@ function StudentWorkspaceContent({
             style={{ marginTop: 24 }}
           >
             <h2>{t("Support & privacy", "Apoyo y privacidad")}</h2>
+            {!preview && <Link className="student-settings-link" href="/student/privacy">{t("My data & privacy requests", "Mis datos y solicitudes de privacidad")}<ChevronRight size={20}/></Link>}
             <button
               className="student-settings-link"
               onClick={() => navigate("toolkit")}

@@ -49,6 +49,12 @@ async function run(){
   const createdSchool=(await db(admin.from("student_schools").select("id").eq("name",managementSchoolName)))[0];assert.ok(createdSchool?.id);
   const createdScope=await db(admin.from("student_school_features").select("school_id").eq("school_id",createdSchool.id));assert.equal(createdScope.length,0);
   pass("operator school creation persists without enabling collection or reporting");
+  stage="calendar-and-admin-tools";
+  await call(operator,"/api/student/operator/tools",{action:"calendar",schoolId:createdSchool.id,timeZone:"America/New_York",confirmed:true});
+  for(const section of ["applications","staff","reports","audit","privacy","calendars"]){const result=await call(operator,`/api/student/operator/tools?section=${section}`);assert.ok(Array.isArray(result.items));}
+  await call(teacher,"/api/student/operator/tools?section=audit",undefined,403);
+  await call(operator,"/api/student/operator/tools",{action:"calendar",schoolId,timeZone:"America/New_York",confirmed:true},400);
+  pass("operator-only tools return live records; calendars cannot change after enrollment");
   pass("new management and coach-test routes deny non-operators, malformed requests and duplicate schools; no invitation sent");
   await op(teacher,{action:"apply",name:"Synthetic teacher",school:schoolName,role:"teacher",acknowledged:true});
   assert.equal((await op(teacher)).state.role,null);
@@ -85,6 +91,24 @@ async function run(){
   await op(student,{action:"apply",name:"Student spoof",school:schoolName,role:"teacher",acknowledged:true},403);
   await call(teacher,"/api/student/belonging",undefined,403);
   pass("updated opt-in notices, topic persistence/withdrawal and private belonging persistence work; students cannot become staff");
+  stage="student-privacy-tools";
+  await call(null,"/api/student/privacy",undefined,401);
+  await call(teacher,"/api/student/privacy",undefined,403);
+  await call(student,"/api/student/privacy",{action:"request",kind:"access",confirmed:false},400);
+  const request=await call(student,"/api/student/privacy",{action:"request",kind:"access",confirmed:true});
+  const repeated=await call(student,"/api/student/privacy",{action:"request",kind:"access",confirmed:true});assert.equal(request.requestId,repeated.requestId);
+  await call(operator,"/api/student/operator/tools",{action:"privacy-review",requestId:request.requestId,status:"in_review",reference:"SYNTHETIC-PRIVACY-CASE",confirmed:true});
+  assert.equal((await call(student,"/api/student/privacy")).requests[0].status,"in_review");
+  const exportSession=await call(student,"/api/student/privacy",{action:"start-export",confirmed:true});assert.equal(exportSession.account.id,student.id);
+  for(const section of ["profile","enrollment","checkIns","goals","conversations","messages","counselorRequests","belonging","topics","coachUsage","aiRequests","privacyRequests","enrollmentHistory"]){
+    const page=await call(student,"/api/student/privacy",{action:"export-page",exportId:exportSession.exportId,section,confirmed:true});assert.ok(Array.isArray(page.items));
+    assert.ok(!JSON.stringify(page.items).includes("recipient_email"));
+  }
+  await call(teacher,"/api/student/privacy",{action:"export-page",exportId:exportSession.exportId,section:"profile",confirmed:true},403);
+  await call(student,"/api/student/privacy",{action:"export-page",exportId:exportSession.exportId,section:"auth.users",confirmed:true},400);
+  const teacherRows=await call(teacher,"/api/student/teacher/records");assert.equal(teacherRows.items[0].present,24);
+  await call(student,"/api/student/teacher/records",undefined,403);
+  pass("privacy requests deduplicate, reviewed status is visible, self-export sections load and staff/cross-role access is denied");
   stage="revocation";await op(operator,{action:"revoke",userId:teacher.id,confirmed:true});
   await op(teacher,{action:"class",label:"Revoked write"},403);assert.equal((await db(teacher.client.from("student_classrooms").select("id"))).length,0);
   pass("revocation blocks the teacher's already-issued session");

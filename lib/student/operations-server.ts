@@ -14,5 +14,6 @@ export async function getOperationsSession() {
   if (!assurance.ok) return { ok: false as const, status: assurance.status, error: assurance.error };
   const result = await supabase.rpc("student_operations_state");
   if (result.error) return { ok: false as const, status: 503, error: "Staff onboarding is not available yet." };
-  return { ok: true as const, supabase, user, state: result.data as OperationsState };
+  const calendar = await supabase.rpc("student_calendar_state");
+  return { ok: true as const, supabase, user, state: { ...result.data, ...(calendar.error ? {} : { calendar: calendar.data }) } as OperationsState };
 }

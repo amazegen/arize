@@ -68,6 +68,9 @@ export function StudentAccessMessage({ message }: { message: string }) {
           )}{" "}
         </p>
         <div className="student-inline" style={{ margin: "24px 0" }}>
+          <Link className="student-secondary" href="/student/privacy">
+            {t("My data & privacy help", "Mis datos y ayuda de privacidad")}
+          </Link>
           <Link className="student-action" href="/student/sign-in">
             {t("Student sign-in", "Acceso estudiantil")}{" "}
           </Link>

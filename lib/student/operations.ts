@@ -2,6 +2,7 @@ export const REQUESTABLE_STAFF_ROLES = ["therapist", "teacher", "school_staff"] 
 export type RequestedStaffRole = typeof REQUESTABLE_STAFF_ROLES[number];
 export type OperationsState = {
   operator: boolean; role: RequestedStaffRole | null; schoolId: string | null; schoolName: string | null;
+  calendar?: { timeZone: string; today: string };
   application: { display_name: string; school_name: string; requested_role: RequestedStaffRole; status: string } | null;
   features: { attendance: boolean; topics: boolean; ambassadors: boolean };
   classes: { id: string; label: string }[];

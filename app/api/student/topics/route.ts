@@ -1,13 +1,15 @@
 import { getStudentSession, readStudentBody, studentNoStore } from "@/lib/student/server";
 import { STUDENT_TOPICS } from "@/lib/student/learning";
+import { shiftDay } from "@/lib/student/features";
 export const dynamic = "force-dynamic";
 const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:studentNoStore});
 export async function GET() {
  const session=await getStudentSession();if(!session.ok)return reply({error:session.error},session.status);
  const approval=await session.supabase.rpc("student_feature_enabled",{p_feature:"topics"});
  if(approval.error)return reply({error:"Topic settings could not be loaded."},503);
- const week=new Date();const weekday=week.getUTCDay()||7;week.setUTCDate(week.getUTCDate()-weekday+1);
- const result=await session.supabase.from("student_topic_choices").select("topic").eq("user_id",session.user.id).eq("week_of",week.toISOString().slice(0,10));
+ const calendar=await session.supabase.rpc("student_calendar_state");if(calendar.error)return reply({error:"School calendar could not be loaded."},503);
+ const today=calendar.data.today as string;const weekday=new Date(`${today}T12:00:00Z`).getUTCDay()||7;const week=shiftDay(today,1-weekday);
+ const result=await session.supabase.from("student_topic_choices").select("topic").eq("user_id",session.user.id).eq("week_of",week);
  if(result.error)return reply({error:"Topic choices could not be loaded."},503);
  return reply({enabled:approval.data===true,topics:result.data.map(r=>r.topic)});
 }

@@ -28,7 +28,7 @@ export default async function StudentPage({
     );
   const { data: school } = await session.supabase
     .from("student_schools")
-    .select("name, counselor_url, counselor_instructions")
+    .select("name, counselor_url, counselor_instructions, time_zone")
     .eq("id", session.membership.school_id)
     .single();
   if (!school)

@@ -20,7 +20,12 @@ export type StudentGoal = {
 };
 export const GOAL_FIELDS =
   "id,title,day,week_of,category,deadline,notes,progress,is_complete,archived_at";
-export function dateKey(date = new Date()) {
+export function dateKey(date = new Date(), timeZone?: string) {
+  if (timeZone) {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+    const part = (key: string) => parts.find(value => value.type === key)!.value;
+    return `${part("year")}-${part("month")}-${part("day")}`;
+  }
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 export function shiftDay(day: string, offset: number) {

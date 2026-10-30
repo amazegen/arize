@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isStudentEdition } from "./policy";
 import { staffAssurance } from "./staff-assurance";
+import { dateKey } from "./features";
 import { STAFF_ROLES, staffDashboardDTO, type StaffRole, type SupportRequest, type SchoolReport } from "./staff";
 
 export async function getStaffSession() {
@@ -18,9 +19,9 @@ export async function getStaffSession() {
   if (memberError) return { ok: false as const, status: 503, error: "Staff administration is not available yet." };
   if (!membership || !STAFF_ROLES.includes(membership.role as StaffRole))
     return { ok: false as const, status: 403, error: "An approved staff role is required." };
-  const { data: school } = await supabase.from("student_schools").select("name").eq("id", membership.school_id).maybeSingle();
+  const { data: school } = await supabase.from("student_schools").select("name,time_zone").eq("id", membership.school_id).maybeSingle();
   if (!school) return { ok: false as const, status: 503, error: "Your school settings are unavailable." };
-  return { ok: true as const, supabase, user, role: membership.role as StaffRole, schoolName: school.name as string };
+  return { ok: true as const, supabase, user, role: membership.role as StaffRole, schoolName: school.name as string, calendar: { timeZone: school.time_zone as string, today: dateKey(new Date(),school.time_zone) } };
 }
 export async function loadStaffDashboard(session: Extract<Awaited<ReturnType<typeof getStaffSession>>, { ok: true }>, offset = 0) {
   let requests: SupportRequest[] = [];
@@ -42,5 +43,5 @@ export async function loadStaffDashboard(session: Extract<Awaited<ReturnType<typ
       reports = (result.data ?? []) as SchoolReport[];
     }
   }
-  return staffDashboardDTO({ role: session.role, schoolName: session.schoolName, requests, hasMore, reports, reportingApproved });
+  return staffDashboardDTO({ role: session.role, schoolName: session.schoolName, calendar: session.calendar, requests, hasMore, reports, reportingApproved });
 }

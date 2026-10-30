@@ -18,6 +18,7 @@ export type SchoolReport = {
 export type StaffDashboardData = {
   role: StaffRole;
   schoolName: string;
+  calendar?: { timeZone: string; today: string };
   requests: SupportRequest[];
   hasMore: boolean;
   reportingApproved: boolean;
@@ -31,6 +32,7 @@ export function staffDashboardDTO(value: StaffDashboardData): StaffDashboardData
   return {
     role: value.role,
     schoolName: value.schoolName,
+    ...(value.calendar ? { calendar: { timeZone: value.calendar.timeZone, today: value.calendar.today } } : {}),
     requests: value.role === "therapist" ? value.requests.map((r) => ({
       id: r.id, display_name: r.display_name, delivery_status: r.delivery_status,
       created_at: r.created_at, stage: r.stage, updated_at: r.updated_at,

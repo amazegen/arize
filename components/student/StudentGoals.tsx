@@ -61,13 +61,15 @@ const emptyDraft = () => ({
 export default function StudentGoals({
   preview,
   onCoach,
+  timeZone = "UTC",
 }: {
+  timeZone?: string;
   preview: boolean;
   onCoach: () => void;
 }) {
   const { language, t } = useStudentLanguage();
-  const [week, setWeek] = useState(weekStart);
-  const [selectedDay, setSelectedDay] = useState(dateKey);
+  const [week, setWeek] = useState(() => weekStart(dateKey(new Date(), timeZone)));
+  const [selectedDay, setSelectedDay] = useState(() => dateKey(new Date(), timeZone));
   const [goals, setGoals] = useState<StudentGoal[]>(() =>
     preview ? sampleGoals() : [],
   );

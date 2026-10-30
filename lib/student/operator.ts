@@ -1,4 +1,4 @@
-export const OPERATOR_VIEWS = ["overview", "schools", "staff", "reports", "clarity", "settings"] as const;
+export const OPERATOR_VIEWS = ["overview", "schools", "staff", "reports", "clarity", "privacy", "audit", "settings"] as const;
 export type OperatorView = typeof OPERATOR_VIEWS[number];
 export function operatorView(value: unknown): OperatorView {
   return OPERATOR_VIEWS.includes(value as OperatorView) ? value as OperatorView : "overview";
