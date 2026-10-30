@@ -5,6 +5,7 @@ import type { NextRequest } from "next/server";
 import { getSafeRedirectPath } from "@/lib/auth/safe-redirect";
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal/consent";
 import { isStudentEdition } from "@/lib/student/policy";
+import { verifiedAccountDestination } from "@/lib/student/account-server";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -32,7 +33,11 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      if (isStudentEdition()) return NextResponse.redirect(`${origin}${["/student/staff","/student/admin","/student/teacher","/student/operator"].includes(next) ? next : "/student"}`);
+      if (isStudentEdition()) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const destination = user ? await verifiedAccountDestination(supabase, user.id) : null;
+        return NextResponse.redirect(`${origin}${destination ?? "/student/sign-in?error=access-check"}`);
+      }
       // Check if user has completed onboarding
       const {
         data: { user },

@@ -10,7 +10,7 @@ export function operatorTestBlock({ busy, enabled, exhausted, fictional, content
   return null;
 }
 
-export async function requestOperatorTest(payload: { messages: TestMessage[]; language: string; fictional: boolean }, options: { fetcher?: typeof fetch; timeoutMs?: number } = {}): Promise<string> {
+export async function requestOperatorTest(payload: { messages: TestMessage[]; language: string; fictional: boolean; requestId?: string }, options: { fetcher?: typeof fetch; timeoutMs?: number } = {}): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 45000);
   try {

@@ -57,6 +57,7 @@ export default async function StudentPage({
       }
       school={school}
       initialScreen={screen}
+      initialHistory={params.history === "1"}
     />
   );
 }

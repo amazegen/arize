@@ -51,6 +51,10 @@ export default function StudentStaffEntry({ initial, error: setupError, preview 
         const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Could not submit the request.");
         setMessage("Your profile was saved. Access stays pending until your identity and school authority are verified.");
       }
+      const accountResponse = await fetch("/api/student/account", { cache: "no-store", signal: AbortSignal.timeout(15000) });
+      const account = await accountResponse.json();
+      if (!accountResponse.ok) throw new Error("Your account access could not be checked. Please try again.");
+      if (account.destination === "/student") { window.location.replace("/student"); return; }
       const response = await fetch("/api/student/operations", { cache: "no-store" });
       if (!response.ok) throw new Error("Please reload to check your account status.");
       const body = await response.json();

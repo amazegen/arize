@@ -13,11 +13,21 @@ export default function VoiceDictationButton({ value, onChange, language, disabl
   const [portalTarget, setPortalTarget] = useState<Element | null>(null);
   const session = useRef<ReturnType<typeof startDictation> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const microphoneRef = useRef<HTMLButtonElement>(null);
+  const noticeRef = useRef<HTMLDivElement>(null);
   const noticeId = useId();
   const t = (en: string, es: string) => language === "es" ? es : en;
   useEffect(() => () => { session.current?.cancel(); }, []);
   useEffect(() => { if (disabled) session.current?.stop(); }, [disabled]);
   useEffect(() => { session.current?.stop(); }, [language]);
+  useEffect(() => {
+    if (!notice || !portalTarget) return;
+    const microphone = microphoneRef.current;
+    noticeRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") { event.preventDefault(); setNotice(false); } };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.removeEventListener("keydown", closeOnEscape); microphone?.focus(); };
+  }, [notice, portalTarget]);
   function start() {
     const Engine = getSpeechConstructor(window);
     if (!Engine) { setSupported(false); setNotice(true); return; }
@@ -39,9 +49,9 @@ export default function VoiceDictationButton({ value, onChange, language, disabl
     if (acknowledged && getSpeechConstructor(window)) start(); else setNotice(true);
   }
   return <div className="voice-control" ref={containerRef}>
-    <button type="button" className={`voice-mic ${listening ? "listening" : ""}`} onClick={toggle} disabled={disabled && !listening} aria-label={listening ? t("Stop voice typing", "Detener dictado") : t("Voice to text", "Voz a texto")} title={listening ? t("Stop voice typing", "Detener dictado") : t("Voice to text", "Voz a texto")} aria-pressed={listening} aria-expanded={notice} aria-controls={noticeId}>{listening ? <Square size={17} aria-hidden /> : <Mic size={19} aria-hidden />}{listening && <span>{t("Stop", "Parar")}</span>}</button>
+    <button ref={microphoneRef} type="button" className={`voice-mic ${listening ? "listening" : ""}`} onClick={toggle} disabled={disabled && !listening} aria-label={listening ? t("Stop voice typing", "Detener dictado") : t("Voice to text", "Voz a texto")} title={listening ? t("Stop voice typing", "Detener dictado") : t("Voice to text", "Voz a texto")} aria-pressed={listening} aria-expanded={notice} aria-controls={noticeId}>{listening ? <Square size={17} aria-hidden /> : <Mic size={19} aria-hidden />}{listening && <span>{t("Stop", "Parar")}</span>}</button>
     <span className="sr-only" role="status">{listening ? t("Listening. Press Stop before editing or sending.", "Escuchando. Pulsa Parar antes de editar o enviar.") : ""}</span>
-    {notice && portalTarget && createPortal(<div className="voice-notice" id={noticeId} role="group" aria-label={t("Voice-to-text notice", "Aviso de dictado")}>
+    {notice && portalTarget && createPortal(<div ref={noticeRef} tabIndex={-1} className="voice-notice" id={noticeId} role="dialog" aria-label={t("Voice-to-text notice", "Aviso de dictado")}>
       <div><strong>{t("Voice to text", "Voz a texto")}</strong><button type="button" aria-label={t("Close voice notice", "Cerrar aviso")} onClick={() => setNotice(false)}><X size={18} /></button></div>
       {error && <p role="alert">{error}</p>}
       {!supported ? <p>{t("Voice typing is not available in this browser or may be blocked by your school. You can keep typing or use your device’s keyboard dictation.", "El dictado no está disponible en este navegador o tu escuela puede bloquearlo. Puedes escribir o usar el dictado del teclado de tu dispositivo.")}</p> : <>

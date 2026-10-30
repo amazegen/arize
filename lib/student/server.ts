@@ -46,15 +46,29 @@ export async function getStudentSession() {
 
 export async function readStudentBody(
   request: Request,
+  maxBytes = 8_192,
 ): Promise<Record<string, unknown> | null> {
   if (!request.headers.get("content-type")?.includes("application/json"))
     return null;
   // Reject cross-origin browser writes; enrollment is still checked on every request.
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) return null;
-  const raw = await request.text();
-  if (new TextEncoder().encode(raw).byteLength > 8_192) return null;
   try {
+    const reader = request.body?.getReader();
+    if (!reader) return null;
+    const chunks: Uint8Array[] = [];
+    let length = 0;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      length += value.byteLength;
+      if (length > maxBytes) { await reader.cancel(); return null; }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(length);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    const raw = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
     const body = JSON.parse(raw);
     return body && typeof body === "object" && !Array.isArray(body)
       ? body

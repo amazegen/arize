@@ -46,10 +46,10 @@ function SignInForm() {
         );
         return;
       }
-      const next = new URLSearchParams(window.location.search).get("next");
-      window.location.assign(
-        next && ["/student/admin/notifications", "/student/admin", "/student/staff", "/student/teacher", "/student/operator"].includes(next) ? next : "/student",
-      );
+      const response = await fetch("/api/student/account", { cache: "no-store", signal: AbortSignal.timeout(15000) });
+      const account = await response.json();
+      if (!response.ok || !["/student", "/student/staff", "/student/admin", "/student/teacher", "/student/operator"].includes(account.destination)) throw new Error("access");
+      window.location.assign(account.destination);
     } catch {
       setError(
         t(
@@ -80,7 +80,7 @@ function SignInForm() {
           </p>
         </div>
         <div className="student-card">
-          {params.get("setup") === "complete" && <p role="status" className="student-success">Your password is ready. Sign in below to open your workspace.</p>}
+          {params.get("setup") === "complete" && <p role="status" className="student-success">{t("Your password is ready. Sign in below to open your workspace.", "Tu contraseña está lista. Inicia sesión abajo para abrir tu espacio.")}</p>}
           <form className="student-form" onSubmit={signIn}>
             <label>
               {t("Email", "Correo electrónico")}

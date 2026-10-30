@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { createHash } from "node:crypto";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { trustedAIRequest, requestFailure, validRequestId } from "@/lib/student/ai-request-server";
 import {
   getStudentSession,
   readStudentBody,
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
   const conversationId = body?.conversationId ?? null;
   if (
     !body ||
+    (body.requestId !== undefined && !validRequestId(body.requestId)) ||
     !content ||
     content.length > 2000 ||
     (conversationId !== null &&
@@ -79,16 +80,29 @@ export async function POST(request: Request) {
       503,
     );
   }
+  // Older clients receive a fresh ID; current clients keep a stable ID on retry.
+  const requestId = validRequestId(body.requestId) ? body.requestId : crypto.randomUUID();
+  const turn = trustedAIRequest(user.id, requestId, "student", { content, conversationId, language });
+  const begun = await turn.begin();
+  if (begun.error) {
+    const failure = requestFailure(begun.error.code);
+    return reply({ error: failure.error, requestId }, failure.status);
+  }
+  if (["completed", "blocked"].includes(begun.data?.state))
+    return reply({ requestId, conversationId: begun.data.conversationId, moderated: begun.data.state === "blocked", message: { role: "assistant", content: begun.data.content } });
+  if (begun.data?.state !== "new")
+    return reply({ requestId, conversationId: begun.data?.conversationId, error: "This request is already processing or could not finish. Reload your saved chat before starting a new message." }, 409);
+  const signal = AbortSignal.timeout(40_000);
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
     timeout: 30_000,
-    maxRetries: 1,
+    maxRetries: 0,
   });
   try {
     const moderation = await openai.moderations.create({
       model: "omni-moderation-latest",
       input: content,
-    });
+    }, { signal });
     const classification = moderation.results[0];
     if (!classification) throw new Error("Missing safety classification");
     const safetyReply = studentSafetyReply(
@@ -99,13 +113,18 @@ export async function POST(request: Request) {
       language,
     );
     // No blocked raw text is stored in student history or sent to the coach.
-    if (safetyReply)
+    if (safetyReply) {
+      const finished = await turn.finish("blocked", safetyReply);
+      if (finished.error) throw new Error("Unable to record safe result");
       return reply({
+        requestId,
         message: { role: "assistant", content: safetyReply },
         moderated: true,
       });
+    }
   } catch (error) {
     console.error(studentProviderFailure("input-moderation", error));
+    await turn.finish("failed");
     return reply(
       {
         error:
@@ -114,11 +133,9 @@ export async function POST(request: Request) {
       503,
     );
   }
-  const { data: id, error: turnError } = await supabase.rpc(
-    "student_reserve_coach_turn",
-    { p_conversation_id: conversationId, p_content: content },
-  );
-  if (turnError || typeof id !== "string")
+  const { data: id, error: turnError } = await turn.store(conversationId, content);
+  if (turnError || typeof id !== "string") {
+    await turn.finish("failed");
     return reply(
       {
         error:
@@ -128,6 +145,7 @@ export async function POST(request: Request) {
       },
       turnError?.code === "P0002" ? 429 : 503,
     );
+  }
   const { data: history, error: historyError } = await supabase
     .from("student_messages")
     .select("role, content")
@@ -135,7 +153,8 @@ export async function POST(request: Request) {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(12);
-  if (historyError)
+  if (historyError) {
+    await turn.finish("failed");
     return reply(
       {
         error:
@@ -144,6 +163,7 @@ export async function POST(request: Request) {
       },
       503,
     );
+  }
   try {
     const result = await openai.chat.completions.create({
       model: process.env.STUDENT_COACH_MODEL,
@@ -162,13 +182,13 @@ export async function POST(request: Request) {
       ],
       // Includes reasoning tokens. Keep enough room for a short visible answer.
       max_completion_tokens: 1200,
-    });
+    }, { signal });
     const response = result.choices[0]?.message.content?.trim();
     if (!response) throw new Error("Empty reply");
     const moderatedOutput = await openai.moderations.create({
       model: "omni-moderation-latest",
       input: response,
-    });
+    }, { signal });
     const classification = moderatedOutput.results[0];
     if (!classification)
       throw new Error("Missing output safety classification");
@@ -180,16 +200,7 @@ export async function POST(request: Request) {
         },
         language,
       ) ?? response;
-    const admin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false, autoRefreshToken: false } },
-    );
-    const { error: saveError } = await admin.rpc("student_save_coach_reply", {
-      p_user_id: user.id,
-      p_conversation_id: id,
-      p_content: safeResponse,
-    });
+    const { error: saveError } = await turn.finish("completed", safeResponse);
     if (saveError)
       return reply(
         {
@@ -200,12 +211,14 @@ export async function POST(request: Request) {
         503,
       );
     return reply({
+      requestId,
       conversationId: id,
       message: { role: "assistant", content: safeResponse },
     });
   } catch (error) {
     // Never log student text, provider request bodies, or credentials.
     console.error(studentProviderFailure("generation-or-output-moderation", error));
+    await turn.finish("failed");
     return reply(
       {
         error:

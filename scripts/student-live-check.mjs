@@ -167,10 +167,19 @@ async function run() {
     report("profile, check-in and goal completion survive reload and new goal");
 
     stage = "english-coaching";
-    const english = await request(student, "/api/student/coach", { content: "I am nervous about my algebra test tomorrow. What is one small step I could take?", language: "en" });
+    const englishPayload = { content: "I am nervous about my algebra test tomorrow. What is one small step I could take?", language: "en", requestId: randomUUID() };
+    const english = await request(student, "/api/student/coach", englishPayload);
     assert.ok(english.conversationId && english.message?.content?.length > 20);
     assert.notEqual(english.moderated, true);
     report("live English coaching returns a saved answer");
+    const replay = await request(student, "/api/student/coach", englishPayload);
+    assert.equal(replay.conversationId, english.conversationId);
+    assert.equal(replay.message.content, english.message.content);
+    const direct = await student.client.rpc("student_reserve_coach_turn", { p_conversation_id: english.conversationId, p_content: "Synthetic direct browser write" });
+    assert.equal(direct.error?.code, "42501");
+    const destination = await request(student, "/api/student/account");
+    assert.equal(destination.destination, "/student");
+    report("duplicate retry returns the same saved turn; browser write shortcut denied; student role routing verified");
     // Optional human-review example: this response can only follow the fixed
     // fictional algebra-test prompt above, inside a synthetic fixture account.
     // The real application never logs conversations or provider text.
@@ -179,6 +188,7 @@ async function run() {
     stage = "spanish-coaching";
     const spanish = await request(student, "/api/student/coach", { content: "Me preocupa mi examen de matemáticas de mañana. Ayúdame con un paso pequeño, por favor.", language: "es", conversationId: english.conversationId });
     assert.ok(spanish.message?.content?.length > 20);
+    assert.equal(spanish.conversationId, english.conversationId);
     assert.match(spanish.message.content, /\b(puedes|paso|examen|para|una|que|respira|estudiar)\b/i);
     report("live Spanish coaching responds in Spanish");
     stage = "history-isolation";

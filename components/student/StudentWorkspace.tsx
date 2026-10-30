@@ -65,6 +65,7 @@ function StudentWorkspaceContent({
   initialScreen = "home",
   firstUse = false,
   loadingPreview = false,
+  initialHistory = false,
 }: {
   initialProfile: Profile | null;
   school: School;
@@ -72,6 +73,7 @@ function StudentWorkspaceContent({
   initialScreen?: StudentScreen;
   firstUse?: boolean;
   loadingPreview?: boolean;
+  initialHistory?: boolean;
 }) {
   const { language, t } = useStudentLanguage();
   const router = useRouter();
@@ -92,7 +94,8 @@ function StudentWorkspaceContent({
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const sendingMessage = useRef(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const messageRequest = useRef<{ payload: string; id: string } | null>(null);
+  const [showHistory, setShowHistory] = useState(initialHistory);
   const [conversationHasMore, setConversationHasMore] = useState(false);
   const [conversationOffset, setConversationOffset] = useState(0);
   const [error, setError] = useState("");
@@ -383,6 +386,9 @@ function StudentWorkspaceContent({
       return;
     }
     const content = draft.trim();
+    const payload = JSON.stringify({ content, conversationId, language });
+    if (messageRequest.current?.payload !== payload) messageRequest.current = { payload, id: crypto.randomUUID() };
+    const requestId = messageRequest.current.id;
     sendingMessage.current = true;
     followNextMessage();
     let saved = false;
@@ -394,7 +400,7 @@ function StudentWorkspaceContent({
       const response = await fetch("/api/student/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, conversationId, language }),
+        body: JSON.stringify({ content, conversationId, language, requestId }),
         signal: AbortSignal.timeout(60000),
       });
       const result = await response.json();
@@ -404,6 +410,7 @@ function StudentWorkspaceContent({
         setReload((n) => n + 1);
       }
       if (!response.ok) {
+        if (response.status !== 409) messageRequest.current = null;
         // A stored turn is not sent again silently after a provider failure.
         if (result.conversationId) {
           setMessages((old) => [...old, { role: "user", content }]);
@@ -414,6 +421,7 @@ function StudentWorkspaceContent({
         );
       }
       setMessages((old) => [...old, { role: "user", content }, result.message]);
+      messageRequest.current = null;
       setDraft("");
     } catch (reason) {
       if (!saved) setDraft(content);
@@ -763,6 +771,11 @@ function StudentWorkspaceContent({
               </button>
             </div>
             <aside className="student-stack">
+              <section className="student-card">
+                <h2>{t("Your saved chats", "Tus chats guardados")}</h2>
+                <p>{t("Pick up where you left off with Clarity. Your conversations are private to your account.", "Retoma tu conversación con Clarity. Tus chats son privados para tu cuenta.")}</p>
+                <button className="student-action secondary wide" style={{ marginTop: 16 }} onClick={() => { setShowHistory(true); navigate("clarity"); }}><History size={18} />{t("View saved chats", "Ver chats guardados")}</button>
+              </section>
               <StudentSafety />
               <section className="student-note">
                 <h3>{t("Your space. Your pace.", "Tu espacio. Tu ritmo.")}</h3>
@@ -989,9 +1002,10 @@ function StudentWorkspaceContent({
               <button
                 className="student-action plain"
                 disabled={busy}
+                aria-expanded={showHistory}
                 onClick={() => setShowHistory(!showHistory)}
               >
-                <History size={18} /> {t("History", "Historial")}{" "}
+                <History size={18} /> {showHistory ? t("Back to chat", "Volver al chat") : t("Saved chats", "Chats guardados")}{" "}
               </button>
               <button
                 className="student-action secondary"
@@ -1019,6 +1033,7 @@ function StudentWorkspaceContent({
             </p>
           </div>
           {notices}
+          {!showHistory && conversationId && <p className="student-chat-context" role="status">{t("Continuing your saved conversation. New messages will stay in this chat.", "Continúas tu conversación guardada. Los mensajes nuevos se guardarán en este chat.")}</p>}
           {!showHistory && !messages.length ? (
             <StudentTopicStarters disabled={busy} onChoose={setDraft} />
           ) : null}

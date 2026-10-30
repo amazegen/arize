@@ -1237,3 +1237,6 @@
 .student-facilitator { max-width: 1120px; margin: auto; }
 .student-facilitator .student-main { margin: 0; width: auto; padding-bottom: 40px; }
 @media(max-width: 480px) { .student-header-actions { gap: 8px; } .student-language-switch span { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); } .student-language-switch select { max-width: 86px; padding: 6px; font-size: 12px; } .student-topic-grid { grid-template-columns: 1fr; } }
+.op-test-message>span { color:#44563a; font-size:12px; }
+.op-composer>div>span { color:#4d5c42; font-size:12px; }
+.student-chat-context { color:#405b48; font-size:.9rem; margin:12px 0; }

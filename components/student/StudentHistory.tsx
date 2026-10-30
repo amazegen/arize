@@ -86,7 +86,7 @@ export default function StudentHistory({
         "Tu historial de conversaciones",
       )}
     >
-      <h2>{t("Your conversations", "Tus conversaciones")}</h2>
+      <h2>{t("Your saved chats", "Tus chats guardados")}</h2>
       <p>
         {t(
           "Reopen a saved chat to review it or continue. Only your student conversations appear here.",
@@ -136,6 +136,7 @@ export default function StudentHistory({
         >
           <strong>{item.title}</strong>
           <br />
+          <span>{t("Open & continue", "Abrir y continuar")} · </span>
           <time dateTime={item.created_at}>
             {new Date(item.created_at).toLocaleDateString(language, {
               month: "short",
