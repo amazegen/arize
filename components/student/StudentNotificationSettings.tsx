@@ -4,6 +4,7 @@ import { useState } from "react";
 import StaffRoleFrame from "./StaffRoleFrame";
 import { validateNotificationSettings } from "@/lib/student/notification-settings";
 import { studentFetch } from "@/lib/student/fetch-client";
+import useUnsavedForm from "./useUnsavedForm";
 
 type AuditEntry = {
   id: string;
@@ -33,6 +34,7 @@ export default function StudentNotificationSettings({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const { setDirty } = useUnsavedForm();
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
@@ -81,6 +83,7 @@ export default function StudentNotificationSettings({
         next = result;
       }
       setSaved(next);
+      setDirty(false);
       setEmail(next.email ?? "");
       setConfirmEmail("");
       setConfirmed(false);
@@ -126,7 +129,7 @@ export default function StudentNotificationSettings({
             Current destination:{" "}
             <strong>{saved.email || "Not configured"}</strong>
           </p>
-          <form className="student-form" onSubmit={save}>
+          <form className="student-form" onSubmit={save} onChange={() => setDirty(true)}>
             <label>
               New notification email
               <input

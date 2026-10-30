@@ -171,8 +171,8 @@ export function StudentShell({
                             "Confirmación de solicitud al consejero pendiente",
                           )
                         : t(
-                            "Talk to your counselor — send a request to Shelby",
-                            "Habla con tu consejero: envía una solicitud a Shelby",
+                            "Talk to your counselor — send a request",
+                            "Habla con tu consejero: envía una solicitud",
                           )
                 }
                 title={t(
