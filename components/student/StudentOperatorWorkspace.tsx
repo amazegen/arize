@@ -94,7 +94,7 @@ export default function StudentOperatorWorkspace({ initial, initialView = "overv
     { label: "Approved school staff", count: data.kpis.approved_staff, icon: ShieldCheck, target: "staff" as const, detail: "Project admins are counted separately" },
     { label: "Published reports", count: data.kpis.published_reports, icon: BarChart3, target: "reports" as const, detail: "Saved completed-month snapshots" },
   ];
-  return <div className="staff-console operator-console" onChange={event => { if (event.target instanceof Element && event.target.closest("form")) setDirty(true); }}>
+  return <div className="staff-console operator-console" onChange={event => { if (event.target instanceof Element && event.target.closest("form") && !event.target.closest(".op-composer")) setDirty(true); }}>
     <aside className="staff-sidebar op-sidebar">
       <Link href="/student/operator" className="student-brand"><StudentBrand /></Link>
       <div className="op-workspace-label">PROJECT WORKSPACE<span>Student Edition</span></div>
