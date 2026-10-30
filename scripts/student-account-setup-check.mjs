@@ -16,7 +16,7 @@ async function run() {
   const marker = randomUUID();
   const email = `arize-account-check-${marker}@example.org`;
   const base = "http://localhost:3196";
-  let id; let server;
+  let id; let server; let pendingId; let pendingSchool;
   try {
     stage = "invite-generation";
     const invite = await admin.auth.admin.generateLink({ type: "invite", email });
@@ -118,6 +118,35 @@ async function run() {
     const challengePage = await fetch(base + "/student/operator", { headers: { Cookie: [...cookieJar].map(([name, value]) => `${name}=${value}`).join("; ") }, redirect: "manual" });
     assert.equal(new URL(challengePage.headers.get("location"), base).pathname, "/student/security");
     console.log("[student-account-check] PASS synthetic authenticator enrollment/verification; subsequent single-factor sign-in denied at API and database and routed to challenge");
+    stage = "invited-student-routing";
+    const studentEmail = `arize-invited-check-${marker}@example.org`;
+    const studentInvite = await admin.auth.admin.generateLink({ type: "invite", email: studentEmail });
+    assert.equal(studentInvite.error, null); pendingId = studentInvite.data.user.id;
+    pendingSchool = randomUUID();
+    assert.equal((await admin.from("student_schools").insert({ id: pendingSchool, name: `Synthetic account routing ${marker}` })).error, null);
+    assert.equal((await admin.from("student_pilot_memberships").insert({ user_id: pendingId, school_id: pendingSchool, status: "invited" })).error, null);
+    const invitedSession = await confirm({ token_hash: studentInvite.data.properties.hashed_token, type: "invite" });
+    assert.equal(invitedSession.status, 200);
+    const studentJar = new Map();
+    for (const line of invitedSession.headers.getSetCookie()) { const pair = line.split(";")[0]; const at = pair.indexOf("="); studentJar.set(pair.slice(0,at), pair.slice(at+1)); }
+    const studentClient = createServerClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { cookies: { getAll: () => [...studentJar].map(([name,value]) => ({ name,value })), setAll: rows => rows.forEach(({name,value}) => studentJar.set(name,value)) } });
+    const studentPassword = randomBytes(32).toString("base64url");
+    assert.equal((await studentClient.auth.updateUser({ password: studentPassword })).error, null);
+    await studentClient.auth.signOut({ scope: "local" });
+    assert.equal((await studentClient.auth.signInWithPassword({ email: studentEmail, password: studentPassword })).error, null);
+    const studentCookie = () => ({ Cookie: [...studentJar].map(([name,value]) => `${name}=${value}`).join("; ") });
+    const destination = await fetch(base + "/api/student/account", { headers: studentCookie() });
+    assert.equal((await destination.json()).destination, "/student");
+    const accidentalStaff = await fetch(base + "/student/staff", { headers: studentCookie(), redirect: "manual" });
+    assert.equal(accidentalStaff.status, 307); assert.equal(new URL(accidentalStaff.headers.get("location"), base).pathname, "/student");
+    const privateAccess = await fetch(base + "/api/student", { headers: studentCookie() });
+    assert.equal(privateAccess.status, 403);
+    const studentRecovery = await admin.auth.admin.generateLink({ type: "recovery", email: studentEmail });
+    const recoveredStudent = await confirm({ token_hash: studentRecovery.data.properties.hashed_token, type: "recovery" });
+    assert.equal(recoveredStudent.status, 200);
+    for (const line of recoveredStudent.headers.getSetCookie()) { const pair = line.split(";")[0]; const at = pair.indexOf("="); studentJar.set(pair.slice(0,at),pair.slice(at+1)); }
+    assert.equal((await (await fetch(base + "/api/student/account", { headers: studentCookie() })).json()).destination, "/student");
+    console.log("[student-account-check] PASS invited student password setup/sign-in and recovery route to student status, not staff application; pending consent still blocks private features");
   } finally {
     if (server) server.kill("SIGTERM");
     if (id) {
@@ -127,6 +156,12 @@ async function run() {
       assert.equal(removed.error, null);
       console.log("[student-account-check] PASS synthetic auth fixture cleaned up; no real email sent");
     }
+    if (pendingId) {
+      const pending = await admin.auth.admin.getUserById(pendingId);
+      assert.equal(pending.data.user?.email, `arize-invited-check-${marker}@example.org`);
+      assert.equal((await admin.auth.admin.deleteUser(pendingId)).error, null);
+    }
+    if (pendingSchool) assert.equal((await admin.from("student_schools").delete().eq("id",pendingSchool).eq("name",`Synthetic account routing ${marker}`)).error,null);
   }
 }
 run().catch(error => { console.error(`[student-account-check] FAILED ${stage} expected=${typeof error.expected === "number" ? error.expected : "unknown"} actual=${typeof error.actual === "number" ? error.actual : "unknown"} (credentials and tokens omitted)`); process.exitCode = 1; });
