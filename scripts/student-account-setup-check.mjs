@@ -31,6 +31,20 @@ async function run() {
       await new Promise(resolve => setTimeout(resolve, 250));
     }
     assert.ok(ready);
+    stage = "document-security-headers";
+    const page = await fetch(base + "/student/sign-in");
+    const policy = page.headers.get("content-security-policy");
+    const nonce = policy?.match(/'nonce-([^']+)'/)?.[1];
+    assert.ok(nonce);
+    assert.equal(page.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(page.headers.get("x-frame-options"), "DENY");
+    const html = await page.text();
+    const scripts = [...html.matchAll(/<script\b([^>]*)>/gi)];
+    assert.ok(scripts.length > 1);
+    for (const script of scripts) assert.ok(script[1].includes(`nonce="${nonce}"`), "Executable script missing document nonce");
+    const second = await fetch(base + "/student/sign-in");
+    assert.notEqual(second.headers.get("content-security-policy"), policy);
+    console.log("[student-account-check] PASS unique per-document CSP nonce reaches framework scripts; anti-framing and content-type protections present");
     const token = invite.data.properties.hashed_token;
     const confirm = (body, origin = base) => fetch(base + "/api/student/auth/confirm", { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify(body), redirect: "manual" });
     stage = "cross-origin";
