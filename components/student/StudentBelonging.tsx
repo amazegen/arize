@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { BELONGING_QUESTIONS } from "@/lib/student/learning";
 import { BELONGING_NOTICE } from "@/lib/student/belonging";
 import { useStudentLanguage } from "./StudentLanguage";
+import { studentErrorText } from "@/lib/student/error-language";
 type Pulse = {
   week_of: string;
   welcome: number | null;
@@ -193,7 +194,7 @@ export default function StudentBelonging({ preview }: { preview: boolean }) {
       )}
       {error ? (
         <p className="student-error" role="alert">
-          {error}
+          {studentErrorText(error, language)}
         </p>
       ) : null}
       {message ? (

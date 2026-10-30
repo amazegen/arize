@@ -1,6 +1,6 @@
 // Explicit synthetic-only auth acceptance. No real passwords, emails or roles are changed.
 import assert from "node:assert/strict";
-import { randomUUID, randomBytes } from "node:crypto";
+import { randomUUID, randomBytes, createHmac } from "node:crypto";
 import { spawn } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
@@ -81,6 +81,29 @@ async function run() {
     assert.ok(!recovery.error && recovery.data.properties?.hashed_token);
     assert.equal((await confirm({ token_hash: recovery.data.properties.hashed_token, type: "recovery" })).status, 200);
     console.log("[student-account-check] PASS recovery verification; missing/malformed links and cross-origin requests rejected");
+    stage = "synthetic-mfa";
+    const enrolled = await client.auth.mfa.enroll({ factorType: "totp", friendlyName: "Synthetic release-check authenticator" });
+    assert.equal(enrolled.error, null);
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let bits = "";
+    for (const character of enrolled.data.totp.secret.toUpperCase().replace(/=+$/, "")) bits += alphabet.indexOf(character).toString(2).padStart(5, "0");
+    const secret = Buffer.from(bits.match(/.{8}/g).map(byte => parseInt(byte, 2)));
+    const counter = Buffer.alloc(8); counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30000)));
+    const digest = createHmac("sha1", secret).update(counter).digest(); const offset = digest[19] & 15;
+    const code = String((digest.readUInt32BE(offset) & 0x7fffffff) % 1000000).padStart(6, "0");
+    const checked = await client.auth.mfa.challengeAndVerify({ factorId: enrolled.data.id, code });
+    assert.equal(checked.error, null);
+    assert.equal((await client.auth.mfa.getAuthenticatorAssuranceLevel()).data.currentLevel, "aal2");
+    assert.equal((await client.rpc("student_operator_overview")).error, null);
+    await client.auth.signOut({ scope: "local" });
+    await client.auth.signInWithPassword({ email, password });
+    const lower = await client.rpc("student_operator_overview");
+    assert.equal(lower.error?.code, "42501");
+    const guarded = await fetch(base + "/api/student/operations", { headers: { Cookie: [...cookieJar].map(([name, value]) => `${name}=${value}`).join("; ") } });
+    assert.equal(guarded.status, 403);
+    const challengePage = await fetch(base + "/student/operator", { headers: { Cookie: [...cookieJar].map(([name, value]) => `${name}=${value}`).join("; ") }, redirect: "manual" });
+    assert.equal(new URL(challengePage.headers.get("location"), base).pathname, "/student/security");
+    console.log("[student-account-check] PASS synthetic authenticator enrollment/verification; subsequent single-factor sign-in denied at API and database and routed to challenge");
   } finally {
     if (server) server.kill("SIGTERM");
     if (id) {

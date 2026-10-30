@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isStudentEdition } from "./policy";
 import { resolveCounselorRecipient } from "./notification-settings";
+import { staffAssurance } from "./staff-assurance";
 
 // A staff role is separate from student enrollment and checked fresh on each
 // request. A user's editable name, email, or auth metadata never grants it.
@@ -28,6 +29,8 @@ export async function getNotificationAdminSession() {
       status: 401,
       error: "Please sign in with your staff account.",
     };
+  const assurance = await staffAssurance(supabase);
+  if (!assurance.ok) return { ok: false as const, status: assurance.status, error: assurance.error };
   const { data: staff, error: staffError } = await supabase
     .from("student_staff_memberships")
     .select("school_id,role")

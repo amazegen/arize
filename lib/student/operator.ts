@@ -18,4 +18,5 @@ export function validOperatorTest(value: unknown): value is TestMessage[] {
 export type OperatorConfig = {
   aiEnabled: boolean; aiConfigured: boolean; model: string | null; promptVersion: string;
   staffSignupEnabled: boolean; counselorSendingEnabled: boolean;
+  enrollmentManagementReady?: boolean;
 };

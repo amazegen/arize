@@ -254,5 +254,35 @@ do $$ declare c uuid; begin
  if c is null then raise exception 'Missing frozen attendance fixture'; end if;
  begin insert into public.student_class_records(classroom_id,day,enrolled,present,absent) values(c,'2026-08-02',20,20,0); raise exception 'Published source changed'; exception when object_not_in_prerequisite_state then null; end;
 end $$;
+create table auth.mfa_factors(id uuid primary key,user_id uuid,status text);
+create function auth.jwt() returns jsonb language sql stable as $$ select jsonb_build_object('aal',current_setting('request.jwt.claim.aal',true)); $$;
+grant execute on function auth.jwt() to authenticated;
+\ir ../supabase/migrations/20261030004718_student_staff_mfa.sql
+insert into public.student_operators(user_id,active) values('a0000000-0000-4000-8000-000000000001',true);
+insert into auth.mfa_factors values(gen_random_uuid(),'a0000000-0000-4000-8000-000000000001','verified');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000001',true);
+select set_config('request.jwt.claim.aal','aal1',true);
+do $$ begin if student_admin_private.is_operator() then raise exception 'Enrolled operator accepted without second factor'; end if; end $$;
+select set_config('request.jwt.claim.aal','aal2',true);
+do $$ begin if not student_admin_private.is_operator() then raise exception 'Verified operator denied'; end if; end $$;
+reset role;
+\ir ../supabase/migrations/20261030005100_student_enrollment_management.sql
+insert into auth.users(id,email) values('a0000000-0000-4000-8000-000000000002','synthetic-enrollment@example.test');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000001',true);
+do $$ begin
+ perform public.student_manage_enrollment('a0000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000001','invited','synthetic invitation',true);
+ begin perform public.student_manage_enrollment('a0000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000001','active','synthetic consent',false); raise exception 'Unconfirmed activation accepted'; exception when invalid_parameter_value then null; end;
+ perform public.student_manage_enrollment('a0000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000001','active','synthetic consent',true);
+ if public.student_find_enrollment('synthetic-enrollment@example.test')->>'status'<>'active' then raise exception 'Enrollment did not activate'; end if;
+ perform public.student_manage_enrollment('a0000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000001','revoked','synthetic revoke',true);
+end $$;
+select set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000002',true);
+do $$ begin
+ begin perform public.student_find_enrollment('synthetic-enrollment@example.test'); raise exception 'Student lookup allowed'; exception when insufficient_privilege then null; end;
+ begin perform public.student_manage_enrollment(auth.uid(),'20000000-0000-4000-8000-000000000001','active','self activation',true); raise exception 'Self enrollment allowed'; exception when insufficient_privilege then null; end;
+end $$;
+reset role;
 rollback;
 \echo 'Student RLS integration assertions passed (transaction rolled back).'

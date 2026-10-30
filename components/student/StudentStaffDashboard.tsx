@@ -9,12 +9,16 @@ import StudentStaffCharts from "./StudentStaffCharts";
 import StaffReportCharts from "./StaffReportCharts";
 import StudentSchoolTools from "./StudentSchoolTools";
 import { createClient } from "@/lib/supabase/client";
+import { studentFetch } from "@/lib/student/fetch-client";
+import useUnsavedForm from "./useUnsavedForm";
 import { RESET_LESSONS } from "@/lib/student/learning";
 import { FOLLOWUP_STAGES, type StaffDashboardData, type FollowupStage, type SupportRequest } from "@/lib/student/staff";
 
 const stageLabels = { new: "New request", acknowledged: "Acknowledged", contacted: "Contact made", closed: "Closed" };
 export default function StudentStaffDashboard({ initial, preview = false }: { initial: StaffDashboardData; preview?: boolean }) {
   const router = useRouter();
+  const { dirty, setDirty } = useUnsavedForm();
+  const [refreshed, setRefreshed] = useState("");
   const [tab, setTab] = useState("overview");
   const [data, setData] = useState(initial);
   const [filter, setFilter] = useState("all");
@@ -33,20 +37,23 @@ export default function StudentStaffDashboard({ initial, preview = false }: { in
     setBusy(request.id); setError(""); setMessage("");
     try {
       if (!preview) {
-        const response = await fetch("/api/student/admin/dashboard", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestId: request.id, stage }) });
+        const response = await studentFetch("/api/student/admin/dashboard", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestId: request.id, stage }) });
         if (!response.ok) throw new Error("The change could not be saved. Reload and check your staff access.");
       }
       setData((current) => ({ ...current, requests: current.requests.map((r) => r.id === request.id ? { ...r, stage, updated_at: new Date().toISOString() } : r) }));
+      setDrafts(current => { const next = { ...current }; delete next[request.id]; return next; });
+      setDirty(Object.keys(drafts).some(id => id !== request.id));
       setMessage(preview ? "Sample follow-up updated. No real request was changed." : "Follow-up status saved. No email or message was sent.");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the change."); }
     finally { setBusy(null); }
   }
   async function page(next: number) {
+    if (dirty && !window.confirm("You have unsaved follow-up changes. Discard them and refresh?")) return;
     setBusy("page"); setError("");
     try {
-      const response = await fetch(`/api/student/admin/dashboard?offset=${next}`, { cache: "no-store" });
+      const response = await studentFetch(`/api/student/admin/dashboard?offset=${next}`);
       if (!response.ok) throw new Error("Could not load this page. Please check your staff access.");
-      setData(await response.json()); setOffset(next); setDrafts({});
+      setData(await response.json()); setOffset(next); setDrafts({}); setDirty(false); setRefreshed(new Date().toLocaleTimeString());
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load requests."); }
     finally { setBusy(null); }
   }
@@ -61,17 +68,19 @@ export default function StudentStaffDashboard({ initial, preview = false }: { in
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not sign out."); setBusy(null); }
   }
   return (
-    <div className={`staff-console${preview ? " staff-design-review" : ""}`}>
+    <div className={`staff-console${preview ? " staff-design-review" : ""}`} onChange={event => { if (event.target instanceof Element && event.target.getAttribute("aria-label")?.startsWith("Follow-up status for ")) setDirty(true); }} onClickCapture={event => { if (dirty && event.target instanceof Element && event.target.closest("nav button") && !window.confirm("You have unsaved follow-up changes. Leave this section?")) { event.preventDefault(); event.stopPropagation(); } }}>
       <aside className="staff-sidebar">
         <Link className="student-brand" href={preview ? "/student-design?screen=home" : "/student/admin"}><StudentBrand /></Link>
         <div className="staff-role"><span className="staff-eyebrow">YOUR WORKSPACE</span><strong>{therapist ? "Therapist / counselor" : "School partner"}</strong><span>{data.schoolName}</span></div>
         <nav aria-label="Staff dashboard sections">{menu.map(([key, label, Icon]) => <button key={key} aria-current={tab === key ? "page" : undefined} onClick={() => { setTab(key); setMessage(""); setError(""); }}><Icon size={20} aria-hidden />{label}</button>)}</nav>
         {therapist && <Link className="staff-settings-link" href={preview ? "/student-design?screen=admin-notifications" : "/student/admin/notifications"}><Settings size={19} aria-hidden />Notification settings<ArrowUpRight size={16} aria-hidden /></Link>}
         {!preview && <button className="staff-settings-link staff-signout" disabled={busy !== null} onClick={signOut}>{busy === "signout" ? "Signing out…" : "Sign out"}</button>}
+        {!preview && <Link className="staff-settings-link" href="/student/security"><ShieldCheck size={19} />Account security</Link>}
         <div className="staff-sidebar-note"><ShieldCheck size={22} aria-hidden /><p>{therapist ? "Requests are shared by the student. This is not a live monitoring system." : "Program-level information only. No access to individual student wellness activity."}</p></div>
       </aside>
       <main className="staff-content">
         <header className="staff-topline"><span>{therapist ? "STUDENT SUPPORT" : "SCHOOL PARTNERSHIPS"}</span><span className="staff-role-chip">{preview ? "Sample-data preview" : "School-scoped access"}</span></header>
+        {!preview && <div className="student-inline staff-refresh"><button className="student-secondary" disabled={busy !== null} onClick={() => page(0)}>{busy === "page" ? "Refreshing…" : "Refresh latest"}</button><span className="staff-caption">{refreshed ? `Last checked ${refreshed}` : "Loaded when you opened this page"}</span></div>}
         {preview && <div className="staff-preview-note"><strong>Design preview · Synthetic figures.</strong> Live workspaces read approved backend records, not these examples. <Link href="/student/staff">Open staff signup / live workspace</Link>. Roles are verified on the server.</div>}
         <div className="staff-page-heading"><p className="staff-eyebrow">{data.schoolName}</p><h1>{tab === "overview" ? (therapist ? "Support starts with a request." : "A clearer view of your pilot.") : tab === "requests" ? "Student-initiated support" : tab === "reports" ? "Privacy-protected school reports" : tab === "resources" ? "Tools for the school day" : "Clear boundaries. Safer access."}</h1><p>{therapist ? "Help students connect with a person—without turning their private activity into a caseload." : "Understand program reach without identifying how an individual student feels or what they share."}</p></div>
         {error && <p role="alert" className="student-error">{error}</p>}{message && <p role="status" className="student-success">{message}</p>}

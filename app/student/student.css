@@ -1240,3 +1240,4 @@
 .op-test-message>span { color:#44563a; font-size:12px; }
 .op-composer>div>span { color:#4d5c42; font-size:12px; }
 .student-chat-context { color:#405b48; font-size:.9rem; margin:12px 0; }
+.account-security-qr { display:block; max-width:100%; height:auto; margin:16px auto; background:#fff; border-radius:12px; }

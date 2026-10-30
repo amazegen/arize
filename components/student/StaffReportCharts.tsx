@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { REPORT_TOPICS } from "@/lib/student/reporting";
 import { STUDENT_TOPICS, RESET_LESSONS } from "@/lib/student/learning";
 import type { StaffDashboardData } from "@/lib/student/staff";
+const PreviewSource = createContext(false);
 function Plot({ rows, max, unit }: { rows: { label: string; low: number | null; high: number | null; text: string }[]; max: number; unit: string }) {
   const [selected, setSelected] = useState("");
   const inspected = rows.find((r) => r.label === selected);
@@ -12,9 +13,13 @@ function bands(rows: { label: string; value: string | null | undefined }[], suff
   return rows.map((r) => { const v = r.value?.split("–").map(Number); return { label: r.label, low: v?.[0] ?? null, high: v?.[1] ?? null, text: r.value ? `${r.value}${suffix}` : "Not shown" }; });
 }
 function Section({ title, source, children }: { title: string; source: string; children: React.ReactNode }) {
-  return <section className="staff-chart-card"><header><div><h2>{title}</h2><p>{source}</p></div><span className="staff-chart-badge">Backend data</span></header>{children}</section>;
+  const preview = useContext(PreviewSource);
+  return <section className="staff-chart-card"><header><div><h2>{title}</h2><p>{source}</p></div><span className="staff-chart-badge">{preview ? "Fictional preview" : "Backend data"}</span></header>{children}</section>;
 }
-export default function StaffReportCharts({ data }: { data: StaffDashboardData }) {
+export default function StaffReportCharts({ data, preview = false }: { data: StaffDashboardData; preview?: boolean }) {
+  return <PreviewSource.Provider value={preview}><ReportChartsBody data={data} /></PreviewSource.Provider>;
+}
+function ReportChartsBody({ data }: { data: StaffDashboardData }) {
   const [month, setMonth] = useState(data.reports[0]?.month ?? "");
   if (data.role === "therapist") {
     const rows = ["new","acknowledged","contacted","closed"].map((s) => { const n = data.requests.filter((r) => r.stage === s).length; return { label: s.replace("_"," "), low: 0, high: n, text: String(n) }; });

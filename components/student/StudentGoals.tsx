@@ -20,6 +20,7 @@ import {
 } from "@/lib/student/features";
 import StudentPatternMap from "./StudentPatternMap";
 import { useStudentLanguage } from "./StudentLanguage";
+import { studentErrorText } from "@/lib/student/error-language";
 
 function sampleGoals(): StudentGoal[] {
   const week = weekStart();
@@ -298,7 +299,7 @@ export default function StudentGoals({
         <button
           className="student-action plain"
           aria-label={t("View next week", "Ver la semana siguiente")}
-          disabled={busy || week >= weekStart()}
+          disabled={busy}
           onClick={() => moveWeek(1)}
         >
           <ChevronRight size={20} />
@@ -355,7 +356,7 @@ export default function StudentGoals({
       </div>
       {error ? (
         <div className="student-error" role="alert">
-          {error}{" "}
+          {studentErrorText(error, language)}{" "}
           <button
             className="student-action plain"
             onClick={() => {

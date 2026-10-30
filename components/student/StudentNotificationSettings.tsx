@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import StudentBrand from "./StudentBrand";
+import StaffRoleFrame from "./StaffRoleFrame";
 import { validateNotificationSettings } from "@/lib/student/notification-settings";
+import { studentFetch } from "@/lib/student/fetch-client";
 
 type AuditEntry = {
   id: string;
@@ -66,7 +66,7 @@ export default function StudentNotificationSettings({
           ],
         };
       } else {
-        const response = await fetch("/api/student/admin/notifications", {
+        const response = await studentFetch("/api/student/admin/notifications", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -101,21 +101,8 @@ export default function StudentNotificationSettings({
   }
 
   return (
-    <div className="student-admin-settings">
-      <header className="student-header">
-        <Link
-          className="student-brand"
-          href={
-            preview
-              ? "/student-design?screen=staff-therapist"
-              : "/student/admin"
-          }
-        >
-          <StudentBrand />
-        </Link>
-        <span className="student-edition-label">Staff administration</span>
-      </header>
-      <main className="student-main">
+    <StaffRoleFrame role="Counselor / therapist" schoolName={schoolName} home={preview ? "/student-design?screen=staff-therapist" : "/student/admin"} notifications preview={preview}>
+      <main className="staff-content">
         <div className="student-intro">
           <h1>Counselor Notifications</h1>
           <p>{schoolName} · Authorized staff only</p>
@@ -222,6 +209,6 @@ export default function StudentNotificationSettings({
           )}
         </section>
       </main>
-    </div>
+    </StaffRoleFrame>
   );
 }

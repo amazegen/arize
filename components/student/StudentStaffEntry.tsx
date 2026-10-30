@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { studentFetch } from "@/lib/student/fetch-client";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import StudentBrand from "./StudentBrand";
@@ -47,7 +48,7 @@ export default function StudentStaffEntry({ initial, error: setupError, preview 
           }
         }
       } else {
-        const response = await fetch("/api/student/operations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "apply", name: form.get("name"), school: form.get("school"), role: form.get("role"), acknowledged: form.get("acknowledged") === "on" }) });
+        const response = await studentFetch("/api/student/operations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "apply", name: form.get("name"), school: form.get("school"), role: form.get("role"), acknowledged: form.get("acknowledged") === "on" }) });
         const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Could not submit the request.");
         setMessage("Your profile was saved. Access stays pending until your identity and school authority are verified.");
       }
@@ -55,7 +56,7 @@ export default function StudentStaffEntry({ initial, error: setupError, preview 
       const account = await accountResponse.json();
       if (!accountResponse.ok) throw new Error("Your account access could not be checked. Please try again.");
       if (account.destination === "/student") { window.location.replace("/student"); return; }
-      const response = await fetch("/api/student/operations", { cache: "no-store" });
+      const response = await studentFetch("/api/student/operations");
       if (!response.ok) throw new Error("Please reload to check your account status.");
       const body = await response.json();
       if (body.state?.operator || body.state?.role) {

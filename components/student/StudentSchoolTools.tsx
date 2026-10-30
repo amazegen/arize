@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { studentFetch } from "@/lib/student/fetch-client";
 export default function StudentSchoolTools() {
   const router = useRouter(); const [busy,setBusy]=useState(false); const [message,setMessage]=useState(""); const [error,setError]=useState("");
   const now=new Date(); const currentMonth=`${now.getUTCFullYear()}-${String(now.getUTCMonth()+1).padStart(2,"0")}-01`;
@@ -9,7 +10,7 @@ export default function StudentSchoolTools() {
     event.preventDefault(); const f=new FormData(event.currentTarget); setBusy(true);setError("");setMessage("");
     try {
       const payload=action==="publish"?{action,month:`${f.get("month")}-01`}:{action,month:`${f.get("month")}-01`,interested:Number(f.get("interested")),oriented:Number(f.get("oriented")),active:Number(f.get("active"))};
-      const response=await fetch("/api/student/operations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      const response=await studentFetch("/api/student/operations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
       const body=await response.json();if(!response.ok)throw new Error(body.error??"Could not save.");
       setMessage(action==="publish"?"Completed-month snapshot published or already present. Existing snapshots are not recalculated.":"School-reported ambassador totals saved.");router.refresh();
     }catch(reason){setError(reason instanceof Error?reason.message:"Could not save.");}finally{setBusy(false);}

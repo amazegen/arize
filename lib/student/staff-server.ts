@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isStudentEdition } from "./policy";
+import { staffAssurance } from "./staff-assurance";
 import { STAFF_ROLES, staffDashboardDTO, type StaffRole, type SupportRequest, type SchoolReport } from "./staff";
 
 export async function getStaffSession() {
@@ -10,6 +11,8 @@ export async function getStaffSession() {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return { ok: false as const, status: 401, error: "Please sign in with your staff account." };
+  const assurance = await staffAssurance(supabase);
+  if (!assurance.ok) return { ok: false as const, status: assurance.status, error: assurance.error };
   const { data: membership, error: memberError } = await supabase.from("student_staff_memberships")
     .select("school_id,role").eq("user_id", user.id).eq("active", true).maybeSingle();
   if (memberError) return { ok: false as const, status: 503, error: "Staff administration is not available yet." };

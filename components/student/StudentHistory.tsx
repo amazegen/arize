@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useStudentLanguage } from "./StudentLanguage";
+import { studentErrorText } from "@/lib/student/error-language";
 type Conversation = { id: string; title: string; created_at: string };
 export const SAMPLE_CONVERSATIONS: Conversation[] = [
   {
@@ -110,7 +111,7 @@ export default function StudentHistory({
       </label>
       {error ? (
         <div role="alert" className="student-error">
-          {error}
+          {studentErrorText(error, language)}
           <button
             className="student-action plain"
             onClick={() => {

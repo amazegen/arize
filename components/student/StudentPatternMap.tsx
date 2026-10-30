@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { dateKey, shiftDay } from "@/lib/student/features";
 import { feelingLabel } from "@/lib/student/policy";
 import { useStudentLanguage } from "./StudentLanguage";
+import { patternDayPosition } from "@/lib/student/pattern-chart";
+import { studentErrorText } from "@/lib/student/error-language";
 type CheckIn = { day: string; score: number };
 export default function StudentPatternMap({
   preview,
@@ -67,8 +69,8 @@ export default function StudentPatternMap({
     : 0;
   const points = rows
     .map(
-      (c, i) =>
-        `${24 + (i / Math.max(1, rows.length - 1)) * 552},${160 - ((c.score - 1) / 9) * 132}`,
+      (c) =>
+        `${patternDayPosition(c.day, rows[0].day, rows[rows.length - 1].day)},${160 - ((c.score - 1) / 9) * 132}`,
     )
     .join(" ");
   return (
@@ -117,7 +119,7 @@ export default function StudentPatternMap({
       </div>
       {error ? (
         <p role="alert" className="student-error">
-          {error}
+          {studentErrorText(error, language)}
           <button
             className="student-action plain"
             onClick={() => {
@@ -164,16 +166,18 @@ export default function StudentPatternMap({
                 strokeWidth="3"
                 points={points}
               />
-              {rows.map((c, i) => (
+              {rows.map((c) => (
                 <circle
                   key={c.day}
-                  cx={24 + (i / Math.max(1, rows.length - 1)) * 552}
+                  cx={patternDayPosition(c.day, rows[0].day, rows[rows.length - 1].day)}
                   cy={160 - ((c.score - 1) / 9) * 132}
                   r="4"
                   fill="#2f7e50"
                 />
               ))}
+              <text x="24" y="185" fontSize="12">{rows[0].day}</text><text x="576" y="185" textAnchor="end" fontSize="12">{rows[rows.length - 1].day}</text>
             </svg>
+            <p className="staff-caption">{t("Dates are spaced by calendar day. Days without a check-in are not zero scores.", "Las fechas se separan por día del calendario. Los días sin registro no son puntuaciones de cero.")}</p>
             <p>
               {t(
                 "Higher and lower days both belong here. This chart does not explain why you felt a certain way.",

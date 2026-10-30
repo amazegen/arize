@@ -21,6 +21,7 @@ import StudentChatComposer from "./StudentChatComposer";
 import useChatScroll from "./useChatScroll";
 import { getUsernameError, normalizeUsername } from "@/lib/profile/username";
 import { StudentLanguageProvider, useStudentLanguage } from "./StudentLanguage";
+import { studentErrorText } from "@/lib/student/error-language";
 import StudentLearningHub, { StudentTopicStarters } from "./StudentLearningHub";
 import StudentClassReset from "./StudentClassReset";
 
@@ -464,7 +465,7 @@ function StudentWorkspaceContent({
     <>
       {error ? (
         <p role="alert" className="student-error">
-          {error}
+          {studentErrorText(error, language)}
         </p>
       ) : null}
       {success ? (

@@ -6,7 +6,10 @@ import StudentBrand from "./StudentBrand";
 import StaffSignOut from "./StaffSignOut";
 import StaffReportCharts from "./StaffReportCharts";
 import OperatorClarityLab from "./OperatorClarityLab";
+import StudentEnrollmentTools from "./StudentEnrollmentTools";
 import type { OperatorOverview } from "@/lib/student/operations";
+import { studentFetch } from "@/lib/student/fetch-client";
+import useUnsavedForm from "./useUnsavedForm";
 import { OPERATOR_VIEWS, type OperatorView, type OperatorConfig } from "@/lib/student/operator";
 
 const sections = {
@@ -24,6 +27,7 @@ function Empty({ icon: Icon = ClipboardList, title, children }: { icon?: typeof 
 
 export default function StudentOperatorWorkspace({ initial, initialView = "overview", email, config }: { initial: OperatorOverview; initialView?: OperatorView; email: string; config: OperatorConfig }) {
   const [data, setData] = useState(initial);
+  const { dirty, setDirty } = useUnsavedForm();
   const [view, setView] = useState(initialView);
   const [schoolId, setSchoolId] = useState(initial.schools[0]?.id ?? "");
   const [search, setSearch] = useState("");
@@ -42,12 +46,14 @@ export default function StudentOperatorWorkspace({ initial, initialView = "overv
     { label: "Publish the first report", done: data.kpis.published_reports > 0, view: "reports" as const, detail: "Publish a completed month after authorized data is recorded." },
   ];
   function navigate(next: OperatorView) {
+    if (dirty && !window.confirm("You have unsaved changes. Leave without saving?")) return;
+    setDirty(false);
     setView(next); setError(""); setMessage("");
     window.history.replaceState(null, "", `/student/operator?view=${next}`);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
   async function refresh() {
-    const response = await fetch("/api/student/operations", { cache: "no-store" });
+    const response = await studentFetch("/api/student/operations");
     if (!response.ok) throw new Error("Could not refresh the dashboard. Check your connection or sign in again.");
     const body = await response.json();
     if (!body.overview) throw new Error("Your project-admin access is no longer active.");
@@ -69,10 +75,11 @@ export default function StudentOperatorWorkspace({ initial, initialView = "overv
     else payload = { action, schoolId: f.get("schoolId"), reference: f.get("reference"), attendance: f.get("attendance") === "on", topics: f.get("topics") === "on", belonging: f.get("belonging") === "on", ambassadors: f.get("ambassadors") === "on", reporting: f.get("reporting") === "on", confirmed: f.get("confirmed") === "on" };
     setBusy(true); setError(""); setMessage("");
     try {
-      const response = await fetch(["school", "invite"].includes(action) ? "/api/student/operator" : "/api/student/operations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const response = await studentFetch(["school", "invite"].includes(action) ? "/api/student/operator" : "/api/student/operations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? "Could not save your change.");
-      await refresh();
+      setDirty(false);
+      try { await refresh(); } catch { setMessage("Your change was saved, but the dashboard could not refresh. Refresh before submitting again."); return; }
       setMessage(body.message ?? (action === "publish" ? "Completed-month report published. The saved snapshot is now available below." : "Saved. Your change is active."));
       if (["school", "invite"].includes(action)) form.reset();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save."); } finally { setBusy(false); }
@@ -87,7 +94,7 @@ export default function StudentOperatorWorkspace({ initial, initialView = "overv
     { label: "Approved school staff", count: data.kpis.approved_staff, icon: ShieldCheck, target: "staff" as const, detail: "Project admins are counted separately" },
     { label: "Published reports", count: data.kpis.published_reports, icon: BarChart3, target: "reports" as const, detail: "Saved completed-month snapshots" },
   ];
-  return <div className="staff-console operator-console">
+  return <div className="staff-console operator-console" onChange={event => { if (event.target instanceof Element && event.target.closest("form")) setDirty(true); }}>
     <aside className="staff-sidebar op-sidebar">
       <Link href="/student/operator" className="student-brand"><StudentBrand /></Link>
       <div className="op-workspace-label">PROJECT WORKSPACE<span>Student Edition</span></div>
@@ -118,6 +125,7 @@ export default function StudentOperatorWorkspace({ initial, initialView = "overv
         <details className="op-panel op-details"><summary>How to read these reports</summary><p>Figures describe recorded program activity, not proof that Arize caused an outcome. Counts may be displayed as privacy-protective ranges. Public case studies require a separate approved disclosure and evaluation process. No student-level drill-down is available.</p></details>
       </>}
       {view === "clarity" && <OperatorClarityLab config={config} />}
+      {view === "staff" && (config.enrollmentManagementReady ? <StudentEnrollmentTools schools={data.schools} onSaved={() => { setDirty(false); void reload(); }} /> : <section className="op-panel"><h2>Student enrollment management</h2><p>The new controls are built, but their backend permissions are awaiting approval. No student invitation or enrollment change is enabled here yet.</p></section>)}
       {view === "settings" && <div className="op-management-grid"><section className="op-panel"><h2>Your account</h2><dl className="op-settings-list"><div><dt>Email</dt><dd>{email}</dd></div><div><dt>Role</dt><dd>Project administrator</dd></div><div><dt>Workspace</dt><dd>Arize Student Edition</dd></div></dl><Link className="student-action" href="/student/account-setup">Change your password <ArrowUpRight size={16} /></Link><p className="staff-caption">Supabase, Vercel and adult-app billing accounts are not managed through this dashboard.</p></section><section className="op-panel"><h2>Release configuration</h2><dl className="op-settings-list"><div><dt>Student Clarity</dt><dd>{config.aiEnabled && config.aiConfigured ? "Enabled · configured" : "Not enabled"}</dd></div><div><dt>Staff self-registration</dt><dd>{config.staffSignupEnabled ? "Enabled · approval required" : "Disabled"}</dd></div><div><dt>Counselor email sending</dt><dd>{config.counselorSendingEnabled ? "Enabled" : "Off · delivery activation pending"}</dd></div><div><dt>Coaching model</dt><dd>{config.model ?? "Not configured"}</dd></div><div><dt>Writing configuration</dt><dd>{config.promptVersion}</dd></div></dl><p className="staff-caption">Configuration reflects this release, not an ongoing service-health guarantee. Secrets are never displayed here.</p></section><section className="op-panel op-wide"><h2>Privacy & operating boundaries</h2><div className="op-safeguard-grid"><div><ShieldCheck size={23} /><h3>Private student activity</h3><p>Project administration does not expose private chats, individual emotional scores or named attendance.</p></div><div><Users size={23} /><h3>Verified adult roles</h3><p>School staff, teachers and counselors have separate permissions. Registration alone grants none of them.</p></div><div><BarChart3 size={23} /><h3>Approved reporting</h3><p>School authorization, consent, completed periods and small-group privacy protections control report availability.</p></div></div><div className="student-privacy-links"><a href="https://amazegen.com/privacy.html" target="_blank" rel="noopener noreferrer">Privacy policy</a><a href="https://amazegen.com/terms.html" target="_blank" rel="noopener noreferrer">Terms of use</a></div></section></div>}
       {view === "settings" && <div className="op-panel"><h2>End this session</h2><p>Sign out when you’re finished on a shared device.</p><StaffSignOut /></div>}
       <footer className="op-footer"><span>Arize · Student Edition · Project administration</span><span>{refreshed ? `Last refreshed ${refreshed}` : "Live backend records"}</span></footer>
