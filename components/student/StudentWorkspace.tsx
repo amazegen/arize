@@ -26,6 +26,7 @@ import { StudentLanguageProvider, useStudentLanguage } from "./StudentLanguage";
 import { studentErrorText } from "@/lib/student/error-language";
 import StudentLearningHub, { StudentTopicStarters } from "./StudentLearningHub";
 import StudentClassReset from "./StudentClassReset";
+import { studentWorkspacePath } from "@/lib/student/student-preview";
 
 type Profile = {
   display_name: string;
@@ -61,6 +62,7 @@ function StudentWorkspaceContent({
   initialProfile,
   school,
   preview = false,
+  adminPreview = false,
   initialScreen = "home",
   firstUse = false,
   loadingPreview = false,
@@ -69,6 +71,7 @@ function StudentWorkspaceContent({
   initialProfile: Profile | null;
   school: School;
   preview?: boolean;
+  adminPreview?: boolean;
   initialScreen?: StudentScreen;
   firstUse?: boolean;
   loadingPreview?: boolean;
@@ -178,7 +181,7 @@ function StudentWorkspaceContent({
       ? new URLSearchParams(window.location.search)
       : new URLSearchParams();
     query.set("screen", next);
-    router.push(`${preview ? "/student-design" : "/student"}?${query}`, {
+    router.push(`${studentWorkspacePath(preview, adminPreview)}?${query}`, {
       scroll: true,
     });
   }
@@ -379,8 +382,8 @@ function StudentWorkspaceContent({
     if (preview) {
       setError(
         t(
-          "This is a design preview. No messages are sent to AI or saved.",
-          "Esta es una vista de diseño. No se envían mensajes a la IA ni se guardan.",
+          adminPreview ? "To chat with the live AI, open Live Clarity test lab above. This student preview does not send or save messages." : "This is a design preview. No messages are sent to AI or saved.",
+          adminPreview ? "Para conversar con la IA, abre Live Clarity test lab arriba. Esta vista no envía ni guarda mensajes." : "Esta es una vista de diseño. No se envían mensajes a la IA ni se guardan.",
         ),
       );
       return;

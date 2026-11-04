@@ -13,6 +13,7 @@ import type { OperatorOverview } from "@/lib/student/operations";
 import { studentFetch } from "@/lib/student/fetch-client";
 import useUnsavedForm from "./useUnsavedForm";
 import { OPERATOR_VIEWS, type OperatorView, type OperatorConfig } from "@/lib/student/operator";
+import { ADMIN_STUDENT_VIEW } from "@/lib/student/student-preview";
 
 const sections = {
   overview: { title: "Overview", icon: LayoutDashboard, description: "Your starting point for running the student pilot." },
@@ -107,10 +108,10 @@ export default function StudentOperatorWorkspace({ initial, initialView = "overv
       <Link href="/student/operator" className="student-brand"><StudentBrand /></Link>
       <div className="op-workspace-label">PROJECT WORKSPACE<span>Student Edition</span></div>
       <nav aria-label="Project administration">{OPERATOR_VIEWS.map(key => { const Icon = sections[key].icon; return <button key={key} aria-current={view === key ? "page" : undefined} onClick={() => navigate(key)}><Icon size={19} /><span>{sections[key].title}</span>{key === "staff" && data.applications.length > 0 && <b className="op-nav-count">{data.applications.length}</b>}</button>; })}</nav>
-      <div className="op-sidebar-bottom"><div className="op-account"><span className="op-avatar">ML</span><div><strong>Project administrator</strong><span>{email}</span></div></div><StaffSignOut /></div>
+      <div className="op-sidebar-bottom"><div className="op-account"><span className="op-avatar">AR</span><div><strong>Project administrator</strong><span>{email}</span></div></div><StaffSignOut /></div>
     </aside>
     <main className="staff-content op-main">
-      <div className="op-topline"><span><span className="op-live-dot" /> Live student workspace</span><div><span className="staff-role-chip">Project admin</span><button className="op-icon-button" onClick={reload} disabled={busy} aria-label="Refresh live dashboard"><RefreshCw size={17} /></button></div></div>
+      <div className="op-topline"><span><span className="op-live-dot" /> Live student workspace</span><div><Link className="student-secondary op-student-view" href={ADMIN_STUDENT_VIEW}><ArrowUpRight size={18} />View as student</Link><span className="staff-role-chip">Project admin</span><button className="op-icon-button" onClick={reload} disabled={busy} aria-label="Refresh live dashboard"><RefreshCw size={17} /></button></div></div>
       <header className="op-page-heading"><div><p className="staff-eyebrow">ARIZE ADMINISTRATION</p><h1>{view === "overview" ? "Your pilot, at a glance." : sections[view].title}</h1><p>{sections[view].description}</p></div>{view === "overview" && <button className="student-action" onClick={() => navigate("staff")}><Plus size={18} /> Invite staff</button>}</header>
       {error && <p role="alert" className="student-error op-feedback">{error}</p>}{message && <p role="status" className="student-success op-feedback">{message}</p>}
       {view === "overview" && <>

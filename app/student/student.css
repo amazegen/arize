@@ -862,6 +862,13 @@
   font-size: 0.8rem;
   color: #715519;
 }
+.student-admin-preview { background:#e8eedb; border-bottom:1px solid #c5d4b5; padding:18px clamp(16px,4vw,48px); display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.student-admin-preview strong { font-size:18px; color:#233b2b; }
+.student-admin-preview p { color:#526647; font-size:14px; max-width:680px; margin-top:4px; line-height:1.5; }
+.student-admin-preview nav { display:flex; gap:10px; flex-wrap:wrap; }
+.student-admin-preview .student-secondary { font-size:14px; padding:10px 14px; }
+.op-student-view { display:flex; justify-content:center; gap:8px; }
+@media (max-width:600px) { .student-admin-preview nav { width:100%; }.student-admin-preview nav a { flex:1 1 180px; } }
 .student-skip {
   position: absolute;
   left: 10px;
@@ -1100,8 +1107,8 @@
 .op-account>div { min-width:0; }.op-account strong { display:block; font-size:12px; color:#f4f5e9; }.op-account span:not(.op-avatar) { display:block; font-size:11px; color:#bed1c2; overflow-wrap:anywhere; margin-top:3px; }
 .op-sidebar-bottom .student-secondary { color:#e1eada; border-color:#ffffff30; width:100%; background:#ffffff08; font-size:13px; padding:10px; }
 .operator-console .op-main { padding:0 clamp(24px,3.5vw,58px) 24px; max-width:1600px; margin:0 auto; }
-.op-topline { min-height:78px; border-bottom:1px solid #dfe4d7; display:flex; justify-content:space-between; gap:12px; align-items:center; font-size:12px; color:#64735f; }
-.op-topline>span,.op-topline>div { display:flex; gap:12px; align-items:center; }.op-live-dot { width:7px; height:7px; background:#428357; border-radius:50%; }
+.op-topline { min-height:78px; padding:10px 0; border-bottom:1px solid #dfe4d7; display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; align-items:center; font-size:12px; color:#64735f; }
+.op-topline>span,.op-topline>div { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }.op-live-dot { width:7px; height:7px; background:#428357; border-radius:50%; }
 .op-icon-button { display:grid; place-items:center; width:36px; height:36px; border:1px solid #d9dfd0; border-radius:10px; background:#fffef8; color:#3b5b40; }
 .op-page-heading { display:flex; justify-content:space-between; align-items:center; gap:24px; padding:32px 0 28px; }.op-page-heading .staff-eyebrow { color:#6b795d; font-size:10px; letter-spacing:.14em; }
 .student-app .op-page-heading h1 { font-family:var(--font-playfair),Georgia,serif; font-size:clamp(28px,3vw,42px); letter-spacing:-.025em; margin:10px 0; line-height:1.18; }.op-page-heading>div>p:last-child { font-size:15px; color:#62705d; line-height:1.6; }
