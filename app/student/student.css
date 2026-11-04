@@ -886,6 +886,9 @@
   }
 }
 @media (min-width: 1000px) {
+  .student-admin-preview {
+    margin-left: 240px;
+  }
   .student-app .student-wrap {
     margin-left: 240px;
     max-width: calc(100% - 240px);
