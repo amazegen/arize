@@ -10,18 +10,19 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
-    "billing:check": "node scripts/check-billing-env.mjs",
+    "billing:check": "node --experimental-strip-types scripts/check-billing-env.mjs",
+    "billing:verify": "node --experimental-strip-types scripts/verify-stripe-config.mjs",
     "check": "npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "lucide-react": "^1.17.0",
-    "next": "16.2.11",
+    "next": "16.4.5",
     "openai": "^6.39.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "stripe": "22.4.0"
+    "stripe": "23.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -29,12 +30,19 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "9.39.2",
-    "eslint-config-next": "16.2.11",
+    "eslint-config-next": "16.4.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
   "overrides": {
     "postcss": "8.5.23",
-    "sharp": "0.35.3"
+    "sharp": "0.35.5",
+    "nanoid": "3.3.18",
+    "source-map-js": "1.2.2",
+    "zod": "4.6.6",
+    "js-yaml": "4.3.2",
+    "brace-expansion@<2": "1.1.21",
+    "brace-expansion@>=4": "5.0.12",
+    "@typescript-eslint/typescript-estree": { "minimatch": "11.0.1" }
   }
 }

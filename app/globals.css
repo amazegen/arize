@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+.account-deletion { margin: 36px 0 12px; padding: clamp(18px, 4vw, 28px); border: 1px solid #945647; border-radius: 18px; color: #f5f0e8; background: #16251a; }
+.account-deletion h2 { font-size: 1.35rem; margin: 0 0 12px; }
+.account-deletion p { font-size: .9rem; line-height: 1.6; margin: 12px 0; color: #d3cbbd; }
+.account-deletion label { display: block; margin: 16px 0 8px; font-size: .9rem; }
+.account-deletion input:not([type="checkbox"]) { width: 100%; box-sizing: border-box; background: #0e1c12; border: 1px solid #9b9787; border-radius: 10px; padding: 12px; color: #fff; font-size: 16px; }
+.account-deletion .deletion-ack { display: flex; gap: 10px; align-items: flex-start; }
+.deletion-ack input { width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; }
+.account-deletion button { min-height: 44px; width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #d8826d; background: #833d30; color: white; font: inherit; margin-top: 14px; cursor: pointer; }
+.account-deletion button:disabled { opacity: .55; cursor: not-allowed; }
+.account-deletion .deletion-signout { background: transparent; border-color: #817d6f; }
+.deletion-pending { padding: 20px; }
+.billing-notice { margin: 12px; padding: 14px; border-radius: 12px; border: 1px solid #a48a37; background: #292a18; color: #f2e5bc; font-size: .9rem; }
+.billing-secondary { min-height: 44px; width: 100%; margin-top: 10px; background: transparent; border: 1px solid #77765e; border-radius: 10px; color: #e4d9b1; font: inherit; cursor: pointer; }
+.billing-fineprint { font-size: .85rem; color: #c4bcaa; line-height: 1.6; margin-top: 14px; }
+.settings-page input:focus-visible, .account-deletion input:focus-visible, .account-deletion button:focus-visible, .billing-secondary:focus-visible { outline: 3px solid #e8ca63; outline-offset: 3px; }
+@media (max-width: 420px) { .settings-page { padding: 18px 14px !important; } .account-deletion { padding: 16px; } }
+
 :root {
   --background: #0a1409;
   --foreground: #f5f0e8;
