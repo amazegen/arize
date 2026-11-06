@@ -47,7 +47,7 @@ export default function GoalSessionPage() {
   const [error, setError] = useState('')
   const [expandedNotes, setExpandedNotes] = useState<number | null>(null)
 
-  const weekStart = getWeekStart()
+  const [weekStart] = useState(getWeekStart)
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekEnd.getDate() + 6)
   const weekLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
@@ -76,7 +76,7 @@ export default function GoalSessionPage() {
       }
     }
     loadExisting()
-  }, [])
+  }, [supabase, weekStart])
 
   function addGoal() {
     const activeGoalCount = goals.filter(goal => !goal.isComplete).length

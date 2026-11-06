@@ -67,7 +67,7 @@ export default function UpgradePage() {
         </div>
       )}
 
-      <div style={{ maxWidth: '620px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '14px' }}>
+      <div style={{ maxWidth: '620px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '14px' }}>
         <section style={{ background: '#1A2E1E', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '21px' }}>
           <p style={{ color: '#A8C4AF', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginBottom: '6px' }}>Core</p>
           <p style={{ color: '#F5F0E8', fontFamily: 'var(--font-playfair)', fontSize: '27px', marginBottom: '3px' }}>Free</p>
@@ -87,7 +87,7 @@ export default function UpgradePage() {
             or ${MEMBERSHIP_PRICING.annualUsd.toFixed(2)}/year · save {annualSavings}%
           </p>
           <p style={{ color: '#F2D98A', fontSize: '11px', marginBottom: '18px' }}>
-            {MEMBERSHIP_PRICING.newMemberTrialDays}-day free trial · card required · cancel anytime
+            {MEMBERSHIP_PRICING.newMemberTrialDays}-day trial for eligible new members · card required
           </p>
           <FeatureList features={PLUS_FEATURES} />
           <BillingActions />
@@ -95,7 +95,7 @@ export default function UpgradePage() {
       </div>
 
       <p style={{ maxWidth: '560px', margin: '18px auto 0', color: '#8F897A', fontSize: '11px', lineHeight: 1.5, textAlign: 'center' }}>
-        Clarity usage is capped on both plans so Arize can keep the service reliable. Membership renews unless canceled after a paid subscription begins.
+        Clarity usage is capped on both plans. Trials automatically become a paid, renewing membership unless canceled before the trial ends. Cancel anytime in Manage membership.
       </p>
       <p style={{ maxWidth: '560px', margin: '8px auto 0', color: '#8F897A', fontSize: '11px', lineHeight: 1.5, textAlign: 'center' }}>
         By starting a trial, you agree to the{' '}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -19,12 +19,13 @@ import {
 import { getUsernameError, normalizeUsername } from '@/lib/profile/username'
 import { createClient } from '@/lib/supabase/client'
 import { useAccess } from '@/components/access/AccessProvider'
+import { AccountDeletionPanel } from '@/components/billing/AccountDeletionPanel'
 
 const feedbackUrl = process.env.NEXT_PUBLIC_FEEDBACK_URL?.trim() || '/feedback'
 
 export default function SettingsPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const access = useAccess()
 
   const [name, setName] = useState('')
@@ -54,7 +55,7 @@ export default function SettingsPage() {
       }
     }
     load()
-  }, [])
+  }, [router, supabase])
 
   async function handleSave() {
     if (!userId) return
@@ -122,7 +123,7 @@ export default function SettingsPage() {
   const hasChanges = name.trim() !== originalName || username.trim().toLowerCase() !== originalUsername
 
   return (
-    <div style={{ padding: '24px', maxWidth: '430px', margin: '0 auto' }}>
+    <div className="settings-page" style={{ padding: '24px', maxWidth: '620px', margin: '0 auto' }}>
       <Link href="/home" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', color: '#BDB5A0', textDecoration: 'none', fontSize: '13px', marginBottom: '18px' }}>
         <ArrowLeft size={17} /> Back to Home
       </Link>
@@ -139,12 +140,13 @@ export default function SettingsPage() {
 
       {/* Name */}
       <div style={{ marginBottom: '20px' }}>
-        <label style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A227', display: 'block', marginBottom: '8px' }}>
+        <label htmlFor="profile-name" style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A227', display: 'block', marginBottom: '8px' }}>
           Display Name
         </label>
         <div style={{ position: 'relative' }}>
           <User size={16} color="#BDB5A0" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
+            id="profile-name"
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
@@ -161,12 +163,13 @@ export default function SettingsPage() {
 
       {/* Username */}
       <div style={{ marginBottom: '28px' }}>
-        <label style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A227', display: 'block', marginBottom: '8px' }}>
+        <label htmlFor="profile-username" style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A227', display: 'block', marginBottom: '8px' }}>
           Username
         </label>
         <div style={{ position: 'relative' }}>
           <AtSign size={16} color="#BDB5A0" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
+            id="profile-username"
             type="text"
             value={username}
             onChange={e => {
@@ -304,6 +307,7 @@ export default function SettingsPage() {
       >
         <LogOut size={16} /> Sign Out
       </button>
+      <AccountDeletionPanel />
     </div>
   )
 }

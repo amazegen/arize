@@ -23,6 +23,9 @@ export interface AccessLimits {
 }
 
 export interface AccessSnapshot {
+  continuity?: boolean
+  continuityEndsAt?: string
+  temporarilyUnavailable?: boolean
   plan: MembershipPlan
   source: AccessGrantSource
   billingEnabled: boolean
@@ -31,6 +34,7 @@ export interface AccessSnapshot {
 }
 
 export interface AccessGrantRecord {
+  metadata?: { stripe_status?: string; cancel_at_period_end?: boolean; livemode?: boolean; [key: string]: unknown }
   plan: MembershipPlan
   source: Exclude<AccessGrantSource, 'billing_disabled' | 'core'>
   status: 'scheduled' | 'active' | 'expired' | 'revoked'
@@ -100,7 +104,9 @@ export function resolveAccess(
   const nowMs = now.getTime()
   const activeGrant = grants.find(grant => {
     const startMs = Date.parse(grant.starts_at)
-    const endMs = grant.ends_at ? Date.parse(grant.ends_at) : null
+    let endMs = grant.ends_at ? Date.parse(grant.ends_at) : null
+    if (endMs !== null && grant.source === 'subscription' && grant.metadata?.stripe_status === 'active'
+      && grant.metadata.cancel_at_period_end === false) endMs += 72 * 60 * 60_000
     return grant.plan === 'plus'
       && grant.status === 'active'
       && Number.isFinite(startMs)

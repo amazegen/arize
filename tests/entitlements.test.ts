@@ -8,6 +8,13 @@ import {
 
 const now = new Date('2026-09-04T16:00:00.000Z')
 
+test('last-known-active renewal has bounded outage grace, not scheduled cancellation', () => {
+  const grant: AccessGrantRecord = { plan: 'plus', source: 'subscription', status: 'active', starts_at: '2026-09-01T00:00:00Z', ends_at: '2026-09-04T12:00:00Z', metadata: { stripe_status: 'active', cancel_at_period_end: false } }
+  assert.equal(resolveAccess([grant], true, now).plan, 'plus')
+  assert.equal(resolveAccess([{ ...grant, metadata: { stripe_status: 'active', cancel_at_period_end: true } }], true, now).plan, 'core')
+  assert.equal(resolveAccess([grant], true, new Date('2026-09-08T12:00:00Z')).plan, 'core')
+})
+
 test('disabled billing keeps every signed-in user on full Plus access', () => {
   const access = resolveAccess([], false, now)
   assert.equal(access.plan, 'plus')

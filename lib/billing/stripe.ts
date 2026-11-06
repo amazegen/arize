@@ -1,8 +1,9 @@
 import 'server-only'
 
 import Stripe from 'stripe'
+import { billingConfigErrors } from './config'
 
-export const STRIPE_API_VERSION = '2026-07-29.dahlia' as const
+export const STRIPE_API_VERSION = '2026-10-28.endive' as const
 export const STRIPE_CHECKOUT_INTEGRATION_ID = 'arize_checkout_kqmdtavn'
 
 export type BillingPeriod = 'monthly' | 'annual'
@@ -24,20 +25,13 @@ export function isStripeCheckoutEnabled() {
 }
 
 export function isStripeCheckoutConfigured() {
-  return Boolean(
-    isStripeCheckoutEnabled()
-      && process.env.ARIZE_STRIPE_SECRET_KEY?.trim()
-      && process.env.STRIPE_PRICE_MONTHLY?.trim()
-      && process.env.STRIPE_PRICE_ANNUAL?.trim()
-      && process.env.STRIPE_EXPECTED_ACCOUNT_ID?.trim()
-      && process.env.STRIPE_EXPECTED_MODE?.trim()
-      && process.env.NEXT_PUBLIC_APP_URL?.trim(),
-  )
+  return isStripeCheckoutEnabled() && billingConfigErrors(process.env).length === 0
 }
 
 export function getStripe() {
   const secretKey = stripeSecretKey()
   const expectedMode = requiredEnv('STRIPE_EXPECTED_MODE')
+  if (expectedMode !== 'live' && expectedMode !== 'test') throw new Error('Invalid Stripe mode')
   const keyIsLive = secretKey.startsWith('sk_live_') || secretKey.startsWith('rk_live_')
   const keyIsTest = secretKey.startsWith('sk_test_') || secretKey.startsWith('rk_test_')
   if ((expectedMode === 'test' && !keyIsTest) || (expectedMode === 'live' && !keyIsLive)) {
@@ -51,8 +45,8 @@ export function getStripe() {
       version: '0.1.0',
       url: 'https://arize-gamma.vercel.app',
     },
-    maxNetworkRetries: 2,
-    timeout: 15_000,
+    maxNetworkRetries: 1,
+    timeout: 8_000,
   })
 }
 

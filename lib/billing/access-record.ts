@@ -31,8 +31,16 @@ export function subscriptionAccessRecord(
     && Boolean(price?.id && configuredPrices.has(price.id))
 
   if (!isArizeSubscription || !userId || !price) return null
+  const period = subscriptionPeriod(subscription)
+  if (['active', 'trialing'].includes(subscription.status) && (!period.endsAt || (subscription.status === 'trialing' && !subscription.trial_end))) {
+    throw new Error('A verified membership must have a bounded access period')
+  }
 
-  const active = subscription.status === 'trialing' || subscription.status === 'active'
+  const invoice = typeof subscription.latest_invoice === 'object' ? subscription.latest_invoice : null
+  const paymentGraceEnd = subscription.status === 'past_due' && invoice?.billing_reason === 'subscription_cycle'
+    ? (invoice.status_transitions.finalized_at ?? invoice.created) * 1000 + 72 * 60 * 60_000 : null
+  const paymentGrace = paymentGraceEnd !== null && paymentGraceEnd > Date.now()
+  const active = subscription.status === 'trialing' || subscription.status === 'active' || paymentGrace
   const { startsAt, endsAt: periodEndsAt } = subscriptionPeriod(subscription)
   const trialEndsAt = subscription.trial_end
     ? new Date(subscription.trial_end * 1000).toISOString()
@@ -48,7 +56,7 @@ export function subscriptionAccessRecord(
       source: subscription.status === 'trialing' ? 'checkout_trial' as const : 'subscription' as const,
       status: active ? 'active' as const : 'revoked' as const,
       starts_at: startsAt,
-      ends_at: subscription.status === 'trialing' ? trialEndsAt : periodEndsAt,
+      ends_at: subscription.status === 'trialing' ? trialEndsAt : paymentGrace ? new Date(paymentGraceEnd!).toISOString() : periodEndsAt,
       external_reference: subscription.id,
       metadata: {
         provider: 'stripe',
@@ -58,6 +66,7 @@ export function subscriptionAccessRecord(
         billing_period: billingPeriod,
         cancel_at_period_end: subscription.cancel_at_period_end,
         livemode: subscription.livemode,
+        payment_grace: paymentGrace,
       } satisfies Json,
       updated_at: new Date().toISOString(),
     },

@@ -96,3 +96,17 @@ test('untrusted subscription metadata cannot attach access to an invalid user', 
 
   assert.equal(record, null)
 })
+
+test('renewal payment failure grants only a bounded 72-hour recovery window', () => {
+  const now = Math.floor(Date.now() / 1000)
+  const invoice = { billing_reason: 'subscription_cycle', status_transitions: { finalized_at: now }, created: now } as Stripe.Invoice
+  const grace = subscriptionAccessRecord(subscription({ status: 'past_due', latest_invoice: invoice }), [priceId])
+  assert.equal(grace?.grant.status, 'active')
+  assert.equal(Date.parse(grace!.grant.ends_at!) - now * 1000, 72 * 60 * 60_000)
+  const expired = subscriptionAccessRecord(subscription({ status: 'past_due', latest_invoice: { ...invoice, status_transitions: { ...invoice.status_transitions, finalized_at: now - 73 * 3600 } } }), [priceId])
+  assert.equal(expired?.grant.status, 'revoked')
+})
+test('active subscriptions with no period boundary cannot grant indefinite access', () => {
+  const value = subscription({ status: 'active' }); value.items.data[0]!.current_period_end = 0
+  assert.throws(() => subscriptionAccessRecord(value, [priceId]), /bounded access period/)
+})
