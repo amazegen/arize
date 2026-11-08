@@ -16,6 +16,8 @@ export type SchoolReport = {
   report: { cohort: string | null; checkins: string | null; goals: string | null; clarity: string | null; minimumGroup: number; status: string } & ReportInsights;
 };
 export type StaffDashboardData = {
+  schoolId?: string;
+  schools?: { id: string; name: string }[];
   role: StaffRole;
   schoolName: string;
   calendar?: { timeZone: string; today: string };
@@ -30,6 +32,8 @@ export function validFollowup(value: unknown): value is FollowupStage {
 // Defense-in-depth DTO: school viewers never receive a therapist request array.
 export function staffDashboardDTO(value: StaffDashboardData): StaffDashboardData {
   return {
+    ...(value.schoolId ? { schoolId: value.schoolId } : {}),
+    ...(value.schools ? { schools: value.schools.map(s => ({ id: s.id, name: s.name })) } : {}),
     role: value.role,
     schoolName: value.schoolName,
     ...(value.calendar ? { calendar: { timeZone: value.calendar.timeZone, today: value.calendar.today } } : {}),

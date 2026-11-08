@@ -30,3 +30,10 @@ test("follow-up stages reject arbitrary data, clinical notes and forged states",
   for (const value of ["new", "acknowledged", "contacted", "closed"]) assert.equal(validFollowup(value), true);
   for (const value of [null, undefined, {}, "high-risk", "diagnosed", "", "closed;delete"]) assert.equal(validFollowup(value), false);
 });
+test('school picker DTO keeps only assigned-school identifiers and names', () => {
+  const school = { id: 'synthetic-school', name: 'Synthetic school', private_notes: 'must not leak' };
+  const result = staffDashboardDTO({ ...fixture, schoolId: school.id, schools: [school] });
+  assert.equal(result.schoolId, school.id);
+  assert.deepEqual(result.schools, [{ id: school.id, name: school.name }]);
+  assert.equal(JSON.stringify(result).includes('must not leak'), false);
+});

@@ -2,14 +2,15 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isStudentEdition } from "./policy";
 import { staffAssurance } from "./staff-assurance";
-import { dateKey } from "./features";
+import { dateKey, validId } from "./features";
 import { STAFF_ROLES, staffDashboardDTO, type StaffRole, type SupportRequest, type SchoolReport } from "./staff";
 
-export async function getStaffSession() {
+export async function getStaffSession(schoolId?: string | null) {
+  if (schoolId && !validId(schoolId)) return { ok: false as const, status: 400, error: 'Choose a valid school.' };
   if (!isStudentEdition()) return { ok: false as const, status: 404, error: "Not found" };
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
     return { ok: false as const, status: 503, error: "Staff access is not configured." };
-  const supabase = await createClient();
+  const supabase = await createClient(schoolId);
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return { ok: false as const, status: 401, error: "Please sign in with your staff account." };
   const assurance = await staffAssurance(supabase);
@@ -19,9 +20,9 @@ export async function getStaffSession() {
   if (memberError) return { ok: false as const, status: 503, error: "Staff administration is not available yet." };
   if (!membership || !STAFF_ROLES.includes(membership.role as StaffRole))
     return { ok: false as const, status: 403, error: "An approved staff role is required." };
-  const { data: school } = await supabase.from("student_schools").select("name,time_zone").eq("id", membership.school_id).maybeSingle();
-  if (!school) return { ok: false as const, status: 503, error: "Your school settings are unavailable." };
-  return { ok: true as const, supabase, user, role: membership.role as StaffRole, schoolName: school.name as string, calendar: { timeZone: school.time_zone as string, today: dateKey(new Date(),school.time_zone) } };
+  const { data: scope, error: scopeError } = await supabase.rpc('student_staff_scope');
+  if (scopeError || !scope || (schoolId && scope.schoolId !== schoolId)) return { ok: false as const, status: 403, error: "This school is not assigned to your account, or your staff access needs verification." };
+  return { ok: true as const, supabase, user, role: membership.role as StaffRole, schoolId: scope.schoolId as string, schools: scope.schools as { id: string; name: string }[], schoolName: scope.schoolName as string, calendar: { timeZone: scope.timeZone as string, today: dateKey(new Date(),scope.timeZone) } };
 }
 export async function loadStaffDashboard(session: Extract<Awaited<ReturnType<typeof getStaffSession>>, { ok: true }>, offset = 0) {
   let requests: SupportRequest[] = [];
@@ -43,5 +44,5 @@ export async function loadStaffDashboard(session: Extract<Awaited<ReturnType<typ
       reports = (result.data ?? []) as SchoolReport[];
     }
   }
-  return staffDashboardDTO({ role: session.role, schoolName: session.schoolName, calendar: session.calendar, requests, hasMore, reports, reportingApproved });
+  return staffDashboardDTO({ role: session.role, schoolId: session.schoolId, schools: session.schools, schoolName: session.schoolName, calendar: session.calendar, requests, hasMore, reports, reportingApproved });
 }

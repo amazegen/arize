@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 const reply = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: studentNoStore });
 
-export async function GET() {
-  const session = await getNotificationAdminSession();
+export async function GET(request: Request) {
+  const session = await getNotificationAdminSession(new URL(request.url).searchParams.get('school'));
   if (!session.ok) return reply({ error: session.error }, session.status);
   const settings = await loadNotificationSettings(session);
   return settings
@@ -19,7 +19,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const session = await getNotificationAdminSession();
+  const session = await getNotificationAdminSession(new URL(request.url).searchParams.get('school'));
   if (!session.ok) return reply({ error: session.error }, session.status);
   const body = await readStudentBody(request);
   if (!body)

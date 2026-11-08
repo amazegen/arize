@@ -9,8 +9,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function CounselorNotificationAdminPage() {
-  const session = await getNotificationAdminSession();
+export default async function CounselorNotificationAdminPage({ searchParams }: { searchParams: Promise<{ school?: string }> }) {
+  const session = await getNotificationAdminSession((await searchParams).school);
   const signIn = "/student/sign-in?next=%2Fstudent%2Fadmin%2Fnotifications";
   if (!session.ok && session.status === 401) redirect(signIn);
   if (!session.ok)
@@ -46,6 +46,8 @@ export default async function CounselorNotificationAdminPage() {
     );
   return (
     <StudentNotificationSettings
+      key={session.schoolId}
+      schoolId={session.schoolId}
       initial={settings}
       schoolName={session.schoolName}
     />

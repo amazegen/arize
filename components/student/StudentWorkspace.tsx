@@ -39,6 +39,7 @@ type School = {
   time_zone?: string;
   counselor_url: string | null;
   counselor_instructions: string;
+  counselor_instructions_es?: string | null;
 };
 type Goal = { id: string; title: string; is_complete: boolean; day: string };
 type Message = { id?: string; role: "user" | "assistant"; content: string };
@@ -952,7 +953,7 @@ function StudentWorkspaceContent({
             ) : null}
             <div style={{ marginTop: 28 }} />
             <h2>{school.name}</h2>
-            <p style={{ margin: "18px 0" }}>{school.counselor_instructions}</p>
+            <p style={{ margin: "18px 0" }}>{language === 'es' && school.counselor_instructions_es ? school.counselor_instructions_es : school.counselor_instructions}</p>
             {counselorUrl ? (
               <a
                 className="student-action secondary"

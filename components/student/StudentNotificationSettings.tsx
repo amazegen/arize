@@ -21,10 +21,12 @@ export type NotificationSettingsData = {
 export default function StudentNotificationSettings({
   initial,
   schoolName,
+  schoolId,
   preview = false,
 }: {
   initial: NotificationSettingsData;
   schoolName: string;
+  schoolId?: string;
   preview?: boolean;
 }) {
   const [saved, setSaved] = useState(initial);
@@ -68,7 +70,7 @@ export default function StudentNotificationSettings({
           ],
         };
       } else {
-        const response = await studentFetch("/api/student/admin/notifications", {
+        const response = await studentFetch(`/api/student/admin/notifications${schoolId ? `?school=${encodeURIComponent(schoolId)}` : ''}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -104,7 +106,7 @@ export default function StudentNotificationSettings({
   }
 
   return (
-    <StaffRoleFrame role="Counselor / therapist" schoolName={schoolName} home={preview ? "/student-design?screen=staff-therapist" : "/student/admin"} notifications preview={preview}>
+    <StaffRoleFrame role="Counselor / therapist" schoolName={schoolName} schoolId={schoolId} home={preview ? "/student-design?screen=staff-therapist" : `/student/admin${schoolId ? `?school=${encodeURIComponent(schoolId)}` : ''}`} notifications preview={preview}>
       <main className="staff-content">
         <div className="student-intro">
           <h1>Counselor Notifications</h1>

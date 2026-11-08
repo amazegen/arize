@@ -1251,3 +1251,6 @@
 .op-composer>div>span { color:#4d5c42; font-size:12px; }
 .student-chat-context { color:#405b48; font-size:.9rem; margin:12px 0; }
 .account-security-qr { display:block; max-width:100%; height:auto; margin:16px auto; background:#fff; border-radius:12px; }
+.staff-school-picker { display:grid; gap:8px; margin:12px 0 18px; color:#f5f0e8; font-size:14px; }
+.staff-school-picker select { width:100%; min-width:0; min-height:44px; padding:10px; border:1px solid #879b82; border-radius:10px; background:#233f30; color:#fff; font:inherit; }
+.staff-school-picker select:focus-visible { outline:3px solid #e4df9f; outline-offset:3px; }

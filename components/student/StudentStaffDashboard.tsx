@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LayoutDashboard, Inbox, BookOpen, ShieldCheck, BarChart3, Settings, ArrowUpRight, CheckCircle2, Clock3 } from "lucide-react";
@@ -17,6 +17,7 @@ import { FOLLOWUP_STAGES, type StaffDashboardData, type FollowupStage, type Supp
 const stageLabels = { new: "New request", acknowledged: "Acknowledged", contacted: "Contact made", closed: "Closed" };
 export default function StudentStaffDashboard({ initial, preview = false }: { initial: StaffDashboardData; preview?: boolean }) {
   const router = useRouter();
+  const [switchingSchool, startSchoolTransition] = useTransition();
   const { dirty, setDirty } = useUnsavedForm();
   const [refreshed, setRefreshed] = useState("");
   const [tab, setTab] = useState("overview");
@@ -37,7 +38,7 @@ export default function StudentStaffDashboard({ initial, preview = false }: { in
     setBusy(request.id); setError(""); setMessage("");
     try {
       if (!preview) {
-        const response = await studentFetch("/api/student/admin/dashboard", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestId: request.id, stage }) });
+        const response = await studentFetch(`/api/student/admin/dashboard${data.schoolId ? `?school=${encodeURIComponent(data.schoolId)}` : ''}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestId: request.id, stage }) });
         if (!response.ok) throw new Error("The change could not be saved. Reload and check your staff access.");
       }
       setData((current) => ({ ...current, requests: current.requests.map((r) => r.id === request.id ? { ...r, stage, updated_at: new Date().toISOString() } : r) }));
@@ -51,7 +52,7 @@ export default function StudentStaffDashboard({ initial, preview = false }: { in
     if (dirty && !window.confirm("You have unsaved follow-up changes. Discard them and refresh?")) return;
     setBusy("page"); setError("");
     try {
-      const response = await studentFetch(`/api/student/admin/dashboard?offset=${next}`);
+      const response = await studentFetch(`/api/student/admin/dashboard?offset=${next}${data.schoolId ? `&school=${encodeURIComponent(data.schoolId)}` : ''}`);
       if (!response.ok) throw new Error("Could not load this page. Please check your staff access.");
       setData(await response.json()); setOffset(next); setDrafts({}); setDirty(false); setRefreshed(new Date().toLocaleTimeString());
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load requests."); }
@@ -72,8 +73,13 @@ export default function StudentStaffDashboard({ initial, preview = false }: { in
       <aside className="staff-sidebar">
         <Link className="student-brand" href={preview ? "/student-design?screen=home" : "/student/admin"}><StudentBrand /></Link>
         <div className="staff-role"><span className="staff-eyebrow">YOUR WORKSPACE</span><strong>{therapist ? "Therapist / counselor" : "School partner"}</strong><span>{data.schoolName}</span></div>
+        {therapist && data.schools && data.schools.length > 1 && <label className="staff-school-picker">School workspace<select value={data.schoolId} disabled={busy !== null || switchingSchool} onChange={event => {
+          if (dirty && !window.confirm('Discard unsaved follow-up changes and switch schools?')) return;
+          const schoolId = event.target.value;
+          startSchoolTransition(() => router.push(`/student/admin?school=${encodeURIComponent(schoolId)}`));
+        }}>{data.schools.map(school => <option key={school.id} value={school.id}>{school.name}</option>)}</select>{switchingSchool && <span role="status">Loading school…</span>}</label>}
         <nav aria-label="Staff dashboard sections">{menu.map(([key, label, Icon]) => <button key={key} aria-current={tab === key ? "page" : undefined} onClick={() => { setTab(key); setMessage(""); setError(""); }}><Icon size={20} aria-hidden />{label}</button>)}</nav>
-        {therapist && <Link className="staff-settings-link" href={preview ? "/student-design?screen=admin-notifications" : "/student/admin/notifications"}><Settings size={19} aria-hidden />Notification settings<ArrowUpRight size={16} aria-hidden /></Link>}
+        {therapist && <Link className="staff-settings-link" href={preview ? "/student-design?screen=admin-notifications" : `/student/admin/notifications${data.schoolId ? `?school=${encodeURIComponent(data.schoolId)}` : ''}`}><Settings size={19} aria-hidden />Notification settings<ArrowUpRight size={16} aria-hidden /></Link>}
         {!preview && <button className="staff-settings-link staff-signout" disabled={busy !== null} onClick={signOut}>{busy === "signout" ? "Signing out…" : "Sign out"}</button>}
         {!preview && <Link className="staff-settings-link" href="/student/security"><ShieldCheck size={19} />Account security</Link>}
         <div className="staff-sidebar-note"><ShieldCheck size={22} aria-hidden /><p>{therapist ? "Requests are shared by the student. This is not a live monitoring system." : "Program-level information only. No access to individual student wellness activity."}</p></div>

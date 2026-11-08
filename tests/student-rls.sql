@@ -249,10 +249,10 @@ reset role;
 \ir ../supabase/migrations/20261030003146_student_chat_trusted_turns.sql
 \ir student-ai-requests.sql
 \ir ../supabase/migrations/20261030004134_student_report_source_freeze.sql
-do $$ declare c uuid; begin
- select c1.id into c from public.student_classrooms c1 where exists(select 1 from public.student_school_reports r where r.school_id=c1.school_id and r.month='2026-08-01') limit 1;
+do $$ declare c uuid; m date:=(date_trunc('month',now())-interval '2 months')::date; begin
+ select c1.id into c from public.student_classrooms c1 where exists(select 1 from public.student_school_reports r where r.school_id=c1.school_id and r.month=m) limit 1;
  if c is null then raise exception 'Missing frozen attendance fixture'; end if;
- begin insert into public.student_class_records(classroom_id,day,enrolled,present,absent) values(c,'2026-08-02',20,20,0); raise exception 'Published source changed'; exception when object_not_in_prerequisite_state then null; end;
+ begin insert into public.student_class_records(classroom_id,day,enrolled,present,absent) values(c,m+1,20,20,0); raise exception 'Published source changed'; exception when object_not_in_prerequisite_state then null; end;
 end $$;
 create table auth.mfa_factors(id uuid primary key,user_id uuid,status text);
 create function auth.jwt() returns jsonb language sql stable as $$ select jsonb_build_object('aal',current_setting('request.jwt.claim.aal',true)); $$;
@@ -288,5 +288,7 @@ reset role;
 \ir ../supabase/migrations/20261030051936_student_operator_directory.sql
 \ir ../supabase/migrations/20261030052029_student_school_calendar.sql
 \ir student-privacy-operations.sql
+\ir ../supabase/migrations/20261108214941_student_counselor_school_scope.sql
+\ir student-counselor-scope.sql
 rollback;
 \echo 'Student RLS integration assertions passed (transaction rolled back).'

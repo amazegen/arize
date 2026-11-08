@@ -3,10 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { isStudentEdition } from "./policy";
 import { resolveCounselorRecipient } from "./notification-settings";
 import { staffAssurance } from "./staff-assurance";
+import { validId } from './features';
 
 // A staff role is separate from student enrollment and checked fresh on each
 // request. A user's editable name, email, or auth metadata never grants it.
-export async function getNotificationAdminSession() {
+export async function getNotificationAdminSession(schoolId?: string | null) {
+  if (schoolId && !validId(schoolId)) return { ok: false as const, status: 400, error: 'Choose a valid school.' };
   if (!isStudentEdition())
     return { ok: false as const, status: 404, error: "Not found" };
   if (
@@ -18,7 +20,7 @@ export async function getNotificationAdminSession() {
       status: 503,
       error: "The student administration backend is not configured yet.",
     };
-  const supabase = await createClient();
+  const supabase = await createClient(schoolId);
   const {
     data: { user },
     error: authError,
@@ -48,7 +50,14 @@ export async function getNotificationAdminSession() {
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
-  const scope = staff ?? legacy;
+  let scope = staff ?? legacy;
+  if (staff) {
+    const current = await supabase.rpc('student_staff_scope');
+    if (current.error || !current.data) return { ok: false as const, status: 403, error: 'This school is not assigned to your account.' };
+    scope = { ...staff, school_id: current.data.schoolId };
+  } else if (schoolId && schoolId !== legacy?.school_id) {
+    return { ok: false as const, status: 403, error: 'This school is not assigned to your account.' };
+  }
   if (error)
     return {
       ok: false as const,
