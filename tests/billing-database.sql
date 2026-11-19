@@ -62,6 +62,25 @@ do $$ begin
  insert into storage.objects(bucket_id,name,owner_id) values('village-audio',auth.uid()::text||'/allowed',auth.uid()::text);
 end $$;
 reset role;
+-- Database and JavaScript must agree on bounded recovery. No real clock wait.
+update public.access_grants set starts_at=now()-interval '30 days',ends_at=now()-interval '71 hours'
+ where external_reference='sub_fixture';
+set local role authenticated;
+do $$ begin if not arize_billing_private.has_plus() then raise exception 'Database lost eligible 72-hour renewal grace';end if;end $$;
+reset role;
+update public.access_grants set ends_at=now()-interval '72 hours' where external_reference='sub_fixture';
+set local role authenticated;
+do $$ begin if arize_billing_private.has_plus() then raise exception 'Database grace exceeded 72 hours';end if;end $$;
+reset role;
+update public.access_grants set ends_at=now()-interval '1 second',metadata=metadata||'{"cancel_at_period_end":true}'::jsonb where external_reference='sub_fixture';
+set local role authenticated;
+do $$ begin if arize_billing_private.has_plus() then raise exception 'Known cancellation received renewal extension';end if;end $$;
+reset role;
+update public.access_grants set metadata=metadata||'{"stripe_status":"past_due","cancel_at_period_end":false}'::jsonb where external_reference='sub_fixture';
+set local role authenticated;
+do $$ begin if arize_billing_private.has_plus() then raise exception 'Expired failed-payment grace was extended again';end if;end $$;
+reset role;
+update public.access_grants set ends_at=now()+interval '1 month',metadata=metadata||'{"stripe_status":"active","cancel_at_period_end":false}'::jsonb where external_reference='sub_fixture';
 update public.membership_launch set stripe_mode='live';
 set local role authenticated;
 do $$ begin if arize_billing_private.has_plus() then raise exception 'Test grant unlocked live billing';end if;end $$;

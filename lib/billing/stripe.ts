@@ -1,7 +1,7 @@
 import 'server-only'
 
 import Stripe from 'stripe'
-import { billingConfigErrors } from './config'
+import { billingAppOrigin, billingConfigErrors } from './config'
 
 export const STRIPE_API_VERSION = '2026-10-28.endive' as const
 export const STRIPE_CHECKOUT_INTEGRATION_ID = 'arize_checkout_kqmdtavn'
@@ -72,12 +72,7 @@ export function getConfiguredStripePriceIds() {
 }
 
 export function getPublicAppUrl() {
-  const configured = requiredEnv('NEXT_PUBLIC_APP_URL')
-  const url = new URL(configured)
-  if (url.protocol !== 'https:' && url.hostname !== 'localhost') {
-    throw new Error('NEXT_PUBLIC_APP_URL must use HTTPS')
-  }
-  return url.origin
+  return billingAppOrigin(requiredEnv('NEXT_PUBLIC_APP_URL'))
 }
 
 export function assertExpectedStripeMode(livemode: boolean) {

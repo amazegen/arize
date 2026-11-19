@@ -4,6 +4,17 @@ Mission Control: `task_9d7c17b8-3764-4d14-8914-e75e25bb892a`.
 
 ## Scope and release status
 
+### Phase 2 continuation — November 19, 2026
+
+- Current main remains `beff76d`; PR #2's `50f5d83` baseline already contains it, so no rebase/conflict resolution was needed. No merge or deployment performed.
+- Client explicitly left Reflect and Friday Reflection unchanged. Do not build or remove them in this phase.
+- New [sandbox acceptance guide](billing-acceptance.md) separates actual local evidence from blocked provider/hosted acceptance. New [go-live runbook](stripe-go-live.md) is instructions only, not activation authorization.
+- Corrected local billing origin handling: the config validator allowed `127.0.0.1` HTTP but the runtime redirect helper rejected it. Both now share one strict origin validator; unsafe/non-loopback HTTP and path/query/credential origins remain rejected.
+- Added signature/time-boundary acceptance regressions and database grace checks. Extended only local Storage fixtures so the documented schema-upgrade path can run in a disposable cluster. No new application tables/migration or hosted schema changes were necessary.
+- Logged-in layout checks used a loopback-only fictional fixture, not real Supabase data: 14 routes at 375/768/1280, no document overflow; saved-chat opening, room wrapping, goal controls and membership cards inspected. No layout edits were justified by these checks. Fixture scope does not establish every Core/error/keyboard/device state or provider functionality.
+- Stripe connector needs reauthentication. The shared login reached the owner's passkey step; no email-code alternative appeared. Recovery that removes two-step security was not used. An existing invited-admin login is the preferred path. Real sandbox checkout, portal, decline/recovery and signed endpoint acceptance remain pending, so PR #2 stays draft.
+- Vercel metadata indicates the adult project points to `amazegen/arize2.0`, whereas this PR is in `amazegen/arize`. Resolve that release-source mismatch before later activation; no integration was changed. Student PR #3 remains separate.
+
 This PR is based on mainline `beff76d`. No Student Edition files, backend, domain or Vercel project are changed. Do not merge, apply the migration, turn on billing, or deploy without a separate release instruction. `vercel.json` disables automatic Git deployments for this PR's branch only; it does not disable main's existing release behavior or change build-machine settings.
 
 Local unit tests use fake Stripe responses. Local PostgreSQL tests simulate Supabase roles. Neither is evidence that real Stripe sandbox checkout, real hosted Auth deletion, SMTP, webhooks, or live billing have passed. The production checklist must remain open until those checks actually happen.

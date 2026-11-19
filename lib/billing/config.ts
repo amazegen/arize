@@ -1,5 +1,15 @@
 export type BillingEnvironment = Record<string, string | undefined>
 
+export function billingAppOrigin(value: string | undefined) {
+  const url = new URL(value ?? '')
+  const loopback = ['localhost', '127.0.0.1'].includes(url.hostname)
+  if (url.username || url.password || url.search || url.hash || url.pathname !== '/'
+    || (url.protocol !== 'https:' && !(url.protocol === 'http:' && loopback))) {
+    throw new Error('App URL must be an HTTPS origin (local HTTP allowed only on loopback)')
+  }
+  return url.origin
+}
+
 export function billingConfigErrors(env: BillingEnvironment) {
   const errors: string[] = []
   for (const flag of ['BILLING_ENFORCEMENT_ENABLED', 'STRIPE_CHECKOUT_ENABLED', 'NEXT_PUBLIC_BILLING_CHECKOUT_ENABLED']) {
@@ -22,9 +32,7 @@ export function billingConfigErrors(env: BillingEnvironment) {
   if (!env.SUPABASE_SERVICE_ROLE_KEY) errors.push('SUPABASE_SERVICE_ROLE_KEY is required')
   if (enforce && (env.BILLING_ACCESS_SIGNING_SECRET?.length ?? 0) < 32) errors.push('Membership continuity needs a server-only signing secret of at least 32 characters')
   try {
-    const url = new URL(env.NEXT_PUBLIC_APP_URL ?? '')
-    if (url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new Error('origin')
-    if (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname))) throw new Error('https')
+    billingAppOrigin(env.NEXT_PUBLIC_APP_URL)
   } catch { errors.push('NEXT_PUBLIC_APP_URL must be an HTTPS origin (local HTTP allowed only on loopback)') }
   if (env.VERCEL_ENV === 'preview' && mode === 'live') errors.push('Preview deployments must never use live Stripe')
   return errors
