@@ -290,5 +290,7 @@ reset role;
 \ir student-privacy-operations.sql
 \ir ../supabase/migrations/20261108214941_student_counselor_school_scope.sql
 \ir student-counselor-scope.sql
+\ir ../supabase/migrations/20261119183625_student_operations_mfa_guard.sql
+\ir student-operations-mfa.sql
 rollback;
 \echo 'Student RLS integration assertions passed (transaction rolled back).'
