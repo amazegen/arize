@@ -1,51 +1,30 @@
 import { NextResponse } from 'next/server'
 import { safeBillingError } from '@/lib/billing/safe-error'
-import { assertExpectedStripeAccount, getPublicAppUrl, getStripe, isStripeCheckoutConfigured } from '@/lib/billing/stripe'
+import { assertExpectedStripeAccount, getPublicAppUrl, getStripe } from '@/lib/billing/stripe'
 import { createClient } from '@/lib/supabase/server'
-
+import { createAdminClient } from '@/lib/supabase/admin'
+import { NO_STORE, sameOrigin } from '@/lib/billing/policy'
+import { billingStore } from '@/lib/billing/store'
+import { BillingWorkflowError, portalWorkflow } from '@/lib/billing/workflows'
 export const runtime = 'nodejs'
-
-function isAllowedOrigin(request: Request) {
-  const origin = request.headers.get('origin')
-  return !origin || origin === new URL(request.url).origin
-}
-
+export const maxDuration = 60
+const reply = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: NO_STORE })
 export async function POST(request: Request) {
-  if (!isAllowedOrigin(request)) {
-    return NextResponse.json({ error: 'Invalid request origin.' }, { status: 403 })
-  }
-  if (!isStripeCheckoutConfigured()) {
-    return NextResponse.json({ error: 'Billing management is not available yet.' }, { status: 503 })
-  }
-
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Please sign in again.' }, { status: 401 })
-
-  const { data: customer, error } = await supabase
-    .from('billing_customers')
-    .select('stripe_customer_id')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (error) {
-    console.error('[billing portal: customer lookup]', safeBillingError(error))
-    return NextResponse.json({ error: 'Unable to load your billing profile.' }, { status: 503 })
-  }
-  if (!customer) {
-    return NextResponse.json({ error: 'No billing profile was found for this account.' }, { status: 404 })
-  }
-
+  if (!sameOrigin(request)) return reply({ error: 'Invalid request origin.' }, 403)
   try {
+    const client = await createClient()
+    const { data: { user } } = await client.auth.getUser()
+    if (!user) return reply({ error: 'Please sign in again.' }, 401)
+    const configuration = process.env.STRIPE_PORTAL_CONFIGURATION_ID?.trim()
+    if (!configuration?.startsWith('bpc_')) return reply({ error: 'Billing management is not configured yet.' }, 503)
+    // Keep cancellation/payment recovery available even if new checkout is paused.
     const stripe = getStripe()
     await assertExpectedStripeAccount(stripe)
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customer.stripe_customer_id,
-      return_url: `${getPublicAppUrl()}/upgrade`,
-    })
-    return NextResponse.json({ url: session.url })
-  } catch (portalError) {
-    console.error('[billing portal]', safeBillingError(portalError))
-    return NextResponse.json({ error: 'Unable to open billing management. Please try again.' }, { status: 502 })
+    const url = await portalWorkflow({ stripe, store: billingStore(createAdminClient()), userId: user.id,
+      configuration, appUrl: getPublicAppUrl(), live: process.env.STRIPE_EXPECTED_MODE === 'live' })
+    return reply({ url })
+  } catch (error) {
+    console.error('[billing portal]', safeBillingError(error))
+    return reply({ error: error instanceof BillingWorkflowError ? error.message : 'Unable to open billing management. Please try again.' }, error instanceof BillingWorkflowError ? error.status : 502)
   }
 }

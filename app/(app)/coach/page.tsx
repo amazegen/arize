@@ -84,7 +84,7 @@ export default function CoachPage() {
             role: 'assistant',
             content: `${profile?.name ? profile.name.split(' ')[0] + ', I' : 'I'} see you were feeling ${tagList} in your last check-in. Do you want to talk through what's been happening, or would it help to work on something specific today?`,
           }
-          setMessages([contextualOpening])
+          setMessages(previous => previous.length === 1 && previous[0] === INITIAL_MESSAGE ? [contextualOpening] : previous)
         }
       }
     }
@@ -94,7 +94,7 @@ export default function CoachPage() {
     if (searchParams.get('prompt') === 'help-goals') {
       setTimeout(() => textareaRef.current?.focus(), 300)
     }
-  }, [])
+  }, [supabase, searchParams, access.limits.coachConversationHistory])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

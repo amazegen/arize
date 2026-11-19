@@ -9,12 +9,16 @@ import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/legal/consent'
 import { getUserAccess } from '@/lib/access/server'
 import { AccessProvider } from '@/components/access/AccessProvider'
 import { EarlyMemberTrialModal } from '@/components/access/EarlyMemberTrialModal'
+import { AccountDeletionPanel } from '@/components/billing/AccountDeletionPanel'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/sign-in')
+
+  const { data: deletion } = await supabase.from('account_deletion_jobs').select('id').eq('user_id', user.id).maybeSingle()
+  if (deletion) return <main className="app-container deletion-pending"><AppHeader /><AccountDeletionPanel pending /></main>
 
   const { data: consent } = await supabase
     .from('legal_consents')

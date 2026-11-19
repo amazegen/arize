@@ -1,107 +1,70 @@
 import type Stripe from 'stripe'
+import { randomUUID } from 'node:crypto'
 import { NextResponse } from 'next/server'
-import { billingFailureLabel, safeBillingError } from '@/lib/billing/safe-error'
+import { safeBillingError } from '@/lib/billing/safe-error'
 import { assertExpectedStripeAccount, assertExpectedStripeMode, getStripe } from '@/lib/billing/stripe'
 import { syncStripeSubscription } from '@/lib/billing/subscriptions'
+import { processBillingWebhook } from '@/lib/billing/webhook-workflow'
+import { NO_STORE } from '@/lib/billing/policy'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
-
-const HANDLED_EVENTS = new Set<Stripe.Event.Type>([
-  'checkout.session.completed',
-  'customer.subscription.created',
-  'customer.subscription.updated',
-  'customer.subscription.deleted',
-  'invoice.paid',
-  'invoice.payment_failed',
-])
-
-function subscriptionIdFromInvoice(invoice: Stripe.Invoice) {
-  const subscription = invoice.parent?.subscription_details?.subscription
-  if (!subscription) return null
-  return typeof subscription === 'string' ? subscription : subscription.id
-}
+export const maxDuration = 60
 
 export async function POST(request: Request) {
+  const reply = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: NO_STORE })
   const signature = request.headers.get('stripe-signature')
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim()
-  if (!signature || !webhookSecret) {
-    return NextResponse.json({ error: 'Webhook is not configured.' }, { status: 503 })
-  }
-
+  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim()
+  if (!signature || !secret) return reply({ error: 'Webhook is not configured.' }, 503)
   let event: Stripe.Event
+  let stripe: Stripe
+  try { stripe = getStripe() } catch { return reply({ error: 'Webhook is not configured.' }, 503) }
   try {
-    const rawBody = await request.text()
-    event = getStripe().webhooks.constructEvent(rawBody, signature, webhookSecret)
+    // Verify the original bytes, never a parsed/re-serialized JSON payload.
+    const reader = request.body?.getReader()
+    const chunks: Uint8Array[] = []
+    let size = 0
+    if (!reader) return reply({ error: 'Missing payload.' }, 400)
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      size += value.byteLength
+      if (size > 1_048_576) { await reader.cancel(); return reply({ error: 'Payload too large.' }, 413) }
+      chunks.push(value)
+    }
+    event = stripe.webhooks.constructEvent(Buffer.concat(chunks), signature, secret)
     assertExpectedStripeMode(event.livemode)
   } catch (error) {
     console.error('[billing webhook: verification]', safeBillingError(error))
-    return NextResponse.json({ error: 'Invalid webhook signature.' }, { status: 400 })
+    return reply({ error: 'Invalid webhook signature or mode.' }, 400)
   }
-
-  if (!HANDLED_EVENTS.has(event.type)) return NextResponse.json({ received: true })
-
-  const supabase = createAdminClient()
-  const { data: claimed, error: claimError } = await supabase.rpc('claim_billing_webhook_event', {
-    p_event_id: event.id,
-    p_event_type: event.type,
-    p_livemode: event.livemode,
-  })
-
-  if (claimError) {
-    console.error('[billing webhook: claim]', safeBillingError(claimError))
-    return NextResponse.json({ error: 'Unable to record webhook.' }, { status: 503 })
-  }
-  if (!claimed) return NextResponse.json({ received: true, duplicate: true })
-
   try {
-    const stripe = getStripe()
     await assertExpectedStripeAccount(stripe)
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object
-      if (session.mode === 'subscription' && session.metadata?.arize_app === 'arize') {
-        const subscriptionId = typeof session.subscription === 'string'
-          ? session.subscription
-          : session.subscription?.id
-        if (subscriptionId) {
-          await syncStripeSubscription(supabase, await stripe.subscriptions.retrieve(subscriptionId))
-        }
-      }
-    } else if (
-      event.type === 'customer.subscription.created'
-      || event.type === 'customer.subscription.updated'
-      || event.type === 'customer.subscription.deleted'
-    ) {
-      await syncStripeSubscription(supabase, event.data.object)
-    } else if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') {
-      const subscriptionId = subscriptionIdFromInvoice(event.data.object)
-      if (subscriptionId) {
-        await syncStripeSubscription(supabase, await stripe.subscriptions.retrieve(subscriptionId))
-      }
-    }
-
-    const { error: completeError } = await supabase
-      .from('billing_webhook_events')
-      .update({
-        status: 'processed',
-        processed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        error: null,
-      })
-      .eq('event_id', event.id)
-    if (completeError) throw completeError
-
-    return NextResponse.json({ received: true })
+    const admin = createAdminClient()
+    const result = await processBillingWebhook(stripe, {
+      async claim(event, token) {
+        const { data, error } = await admin.rpc('claim_billing_webhook_v2', {
+          p_event_id: event.id, p_event_type: event.type, p_livemode: event.livemode, p_token: token,
+        })
+        if (error || !['claimed', 'processed', 'busy'].includes(data)) throw error ?? new Error('Invalid webhook claim')
+        return data as 'claimed' | 'processed' | 'busy'
+      },
+      async finish(id, token, failure) {
+        const { data, error } = await admin.rpc('finish_billing_webhook_v2', { p_event_id: id, p_token: token, p_error: failure ?? null })
+        if (error || !data) throw error ?? new Error('Webhook lease expired')
+      },
+      async sync(id) { await syncStripeSubscription(admin, await stripe.subscriptions.retrieve(id), stripe) },
+      async risk(event, ids) {
+        const { error } = await admin.from('billing_risk_events').upsert({
+          event_id: event.id, event_type: event.type, livemode: event.livemode, subscription_ids: ids,
+        }, { onConflict: 'event_id', ignoreDuplicates: true })
+        if (error) throw error
+        console.warn('[billing risk review required]', event.type)
+      },
+    }, event, randomUUID())
+    return reply({ received: true, ...result })
   } catch (error) {
     console.error('[billing webhook: processing]', safeBillingError(error))
-    await supabase
-      .from('billing_webhook_events')
-      .update({
-        status: 'failed',
-        error: billingFailureLabel(error),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('event_id', event.id)
-    return NextResponse.json({ error: 'Webhook processing failed.' }, { status: 500 })
+    return reply({ error: 'Webhook processing must be retried.' }, 503)
   }
 }

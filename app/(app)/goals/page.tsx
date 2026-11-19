@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, TrendingUp, ChevronLeft, ChevronRight, Check } from 'lucide-react'
@@ -27,11 +27,13 @@ function dateKey(date: Date) {
 
 export default function GoalsPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const access = useAccess()
   const isCore = hasCoreRestrictions(access)
   const [goals, setGoals] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const updating = useRef(new Set<string>())
   const [today] = useState(new Date())
   const [weekStart, setWeekStart] = useState(() => getWeekStart())
   const [selectedDay, setSelectedDay] = useState(today.getDay())
@@ -40,6 +42,7 @@ export default function GoalsPage() {
   const isCurrentWeek = weekKey === dateKey(currentWeekStart)
 
   useEffect(() => {
+    let canceled = false
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -47,7 +50,7 @@ export default function GoalsPage() {
       const weekEnd = new Date(weekStart)
       weekEnd.setDate(weekEnd.getDate() + 7)
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('goals')
         .select('*')
         .eq('user_id', user.id)
@@ -55,18 +58,26 @@ export default function GoalsPage() {
         .lt('week_of', dateKey(weekEnd))
         .order('created_at', { ascending: true })
 
-      setGoals(data ?? [])
+      if (canceled) return
+      setError(error ? 'We could not load your goals. Try changing the week or refresh the page.' : '')
+      if (!error) setGoals(data ?? [])
       setLoading(false)
     }
     load()
+    return () => { canceled = true }
   }, [supabase, weekKey, weekStart])
 
   async function toggleGoal(goal: Goal) {
+    if (updating.current.has(goal.id)) return
+    updating.current.add(goal.id)
+    setError('')
     const updated = !goal.is_complete
-    await supabase.from('goals').update({
+    const { error, data } = await supabase.from('goals').update({
       is_complete: updated,
       progress: updated ? 100 : goal.progress,
-    }).eq('id', goal.id)
+    }).eq('id', goal.id).select('id').maybeSingle()
+    updating.current.delete(goal.id)
+    if (error || !data) { setError('That goal was not changed. Check your connection or active-goal limit and try again.'); return }
     setGoals(prev => prev.map(g => g.id === goal.id ? { ...g, is_complete: updated, progress: updated ? 100 : g.progress } : g))
   }
 
@@ -96,6 +107,7 @@ export default function GoalsPage() {
 
   return (
     <div style={{ background: '#0E1C12', minHeight: '100%', paddingBottom: '16px' }}>
+      {error && <p role="alert" className="billing-notice">{error}</p>}
 
       {/* Header */}
       <div style={{ padding: '20px 24px 0' }}>
