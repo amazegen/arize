@@ -71,6 +71,11 @@ Run all checks together with `npm run check`.
 
 ## Security notes
 
+Phase 7 browser-reminder and unsigned iOS-foundation setup, tests and remaining
+release gates are in [docs/phase-7-push-ios.md](docs/phase-7-push-ios.md).
+The native starter is a separate local bundle under `apps/mobile`, not a remote
+website wrapper or a finished App Store release. Notification delivery is off by default.
+
 - Product tables use Row Level Security.
 - Coach requests are limited atomically in Postgres to 10 per minute and 100 per day for each user.
 - Village media uploads are limited to authenticated users’ own storage prefixes.

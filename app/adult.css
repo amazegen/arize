@@ -142,3 +142,18 @@
 }
 @media (max-width: 600px) { .adult-auth-page { padding: 20px 20px 32px; } .adult-auth-card { padding: 20px 0; border: 0; background: transparent; } }
 @media (prefers-reduced-motion: reduce) { .adult-theme *, .adult-theme *::before, .adult-theme *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+/* Optional reminders use the same adult card, type and control language. */
+.adult-theme .reminder-heading { display:flex; align-items:center; gap:10px; color:var(--green); }
+.adult-theme .reminder-heading h2 { margin:0; }
+.adult-theme .reminder-panel p { line-height:1.55; }
+.adult-theme .reminder-fields { display:grid; grid-template-columns:1fr 2fr; gap:16px; margin:20px 0 8px; }
+.adult-theme .reminder-fields label { display:grid; gap:8px; font-weight:700; min-width:0; }
+.adult-theme .reminder-fields input { box-sizing:border-box; width:100%; min-height:48px; padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:var(--surface); color:var(--ink); font:inherit; }
+.adult-theme .reminder-help { color:var(--muted); font-size:14px; }
+.adult-theme .reminder-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.adult-theme .reminder-actions button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; }
+.adult-theme .reminder-nudge { display:flex; align-items:center; flex-wrap:wrap; gap:12px; max-width:800px; margin:12px auto 100px; padding:20px; border:1px solid var(--border); border-radius:20px; background:var(--green-soft, #e3f1e6); }
+.adult-theme .reminder-nudge p { margin:4px 0 0; }
+.adult-theme .reminder-nudge a, .adult-theme .reminder-nudge button { color:var(--green); min-height:44px; display:inline-flex; align-items:center; padding:8px 12px; font:inherit; font-weight:700; }
+.adult-theme .reminder-nudge button { background:transparent; border:0; cursor:pointer; }
+@media(max-width:540px) { .adult-theme .reminder-fields { grid-template-columns:1fr; } .adult-theme .reminder-nudge { margin:12px 16px 100px; } }

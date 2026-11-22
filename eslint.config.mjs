@@ -5,5 +5,6 @@ import nextTypeScript from 'eslint-config-next/typescript'
 export default defineConfig([
   ...nextVitals,
   ...nextTypeScript,
-  globalIgnores(['.next/**', 'node_modules/**']),
+  { files: ['apps/mobile/**/*.tsx'], rules: { '@next/next/no-img-element': 'off' } },
+  globalIgnores(['.next/**', 'node_modules/**', 'apps/mobile/node_modules/**', 'apps/mobile/dist/**', 'apps/mobile/ios/**']),
 ])
