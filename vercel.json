@@ -1,0 +1,4 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": { "deploymentEnabled": { "codex/phase-3-clarity-console": false, "codex/phase-3-clarity-adult": false } }
+}

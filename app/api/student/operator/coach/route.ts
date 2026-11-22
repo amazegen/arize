@@ -7,6 +7,8 @@ import { studentCoachPrompt, STUDENT_COACH_PROMPT_VERSION } from "@/lib/student/
 import { studentSafetyReply } from "@/lib/student/safety";
 import { studentProviderFailure } from "@/lib/student/provider-errors";
 import { trustedAIRequest, requestFailure, validRequestId } from "@/lib/student/ai-request-server";
+import { activeConfig } from "@/lib/clarity/server";
+import { configText } from "@/lib/clarity/config";
 
 export async function POST(request: Request) {
   const reply = (data: unknown, status = 200) => Response.json(data, { status, headers: studentNoStore });
@@ -28,6 +30,7 @@ export async function POST(request: Request) {
   const signal = AbortSignal.timeout(35_000);
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 30000, maxRetries: 0 });
   try {
+    const configuration = await activeConfig(session.supabase, "student");
     const moderation = await openai.moderations.create({ model: "omni-moderation-latest", input: body.messages.map(m => m.content).join("\n") }, { signal });
     const classification = moderation.results[0];
     if (!classification) throw new Error("Missing moderation");
@@ -40,7 +43,7 @@ export async function POST(request: Request) {
     const result = await openai.chat.completions.create({
       model: process.env.STUDENT_COACH_MODEL, store: false, reasoning_effort: "low", max_completion_tokens: 1200,
       safety_identifier: createHash("sha256").update(`arize-operator-test/${session.user.id}`).digest("hex"),
-      messages: [{ role: "system", content: studentCoachPrompt(language) }, ...body.messages],
+      messages: [{ role: "system", content: `${studentCoachPrompt(language)}\n\n${configText(configuration.config)}` }, ...body.messages],
     }, { signal });
     const content = result.choices[0]?.message.content?.trim();
     if (!content) throw new Error("Missing response");
@@ -50,7 +53,7 @@ export async function POST(request: Request) {
     const safeContent = studentSafetyReply({ flagged: checked.flagged, categories: { ...checked.categories } }, language) ?? content;
     const saved = await turn.finish("completed", safeContent);
     if (saved.error) throw new Error("Unable to record safe result");
-    return reply({ content: safeContent, version: STUDENT_COACH_PROMPT_VERSION });
+    return reply({ content: safeContent, version: `${STUDENT_COACH_PROMPT_VERSION}/${configuration.version}` });
   } catch (error) {
     console.error(studentProviderFailure("operator-fictional-test", error));
     await turn.finish("failed");
