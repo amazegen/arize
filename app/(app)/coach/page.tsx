@@ -27,7 +27,7 @@ export default function CoachPage() {
   const access = useAccess()
   const isCore = hasCoreRestrictions(access)
 
-  const [messages, setMessages] = useState<CoachMessage[]>([INITIAL_MESSAGE])
+  const [messages, setMessages] = useState<(CoachMessage & { excludedFromContext?: boolean })[]>([INITIAL_MESSAGE])
   const [input, setInput] = useState(() =>
     searchParams.get('prompt') === 'help-goals'
       ? 'I want to set meaningful goals for this week. Can you help me think through what matters most right now?'
@@ -84,7 +84,7 @@ export default function CoachPage() {
             role: 'assistant',
             content: `${profile?.name ? profile.name.split(' ')[0] + ', I' : 'I'} see you were feeling ${tagList} in your last check-in. Do you want to talk through what's been happening, or would it help to work on something specific today?`,
           }
-          setMessages([contextualOpening])
+          setMessages(previous => previous.length === 1 && previous[0] === INITIAL_MESSAGE ? [contextualOpening] : previous)
         }
       }
     }
@@ -94,7 +94,7 @@ export default function CoachPage() {
     if (searchParams.get('prompt') === 'help-goals') {
       setTimeout(() => textareaRef.current?.focus(), 300)
     }
-  }, [])
+  }, [supabase, searchParams, access.limits.coachConversationHistory])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -108,7 +108,7 @@ export default function CoachPage() {
     setError('')
 
     const userMsg: CoachMessage = { role: 'user', content: messageContent }
-    const updatedMessages = [...messages, userMsg]
+    const updatedMessages: (CoachMessage & { excludedFromContext?: boolean })[] = [...messages, userMsg]
     setMessages(updatedMessages)
     setStreaming(true)
 
@@ -125,8 +125,20 @@ export default function CoachPage() {
       }
       if (!activeUserId) throw new Error('Unauthorized')
 
-      let activeConversationId = conversationId
-      if (!activeConversationId) {
+      // The server must approve the input before any raw user text or title is saved.
+      const response = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: updatedMessages.filter(message => !message.excludedFromContext).slice(-16).map(m => ({ role: m.role, content: m.content })) }),
+      })
+      if (!response.ok) {
+        const responseError = await response.json().catch(() => null) as { error?: string } | null
+        throw new Error(responseError?.error || 'Failed to get response')
+      }
+      const inputBlocked = response.headers.get('X-Clarity-Input-Blocked') === 'true'
+      if (inputBlocked) setMessages(current => current.map((message, index) => index >= updatedMessages.length - 1 ? { ...message, excludedFromContext: true } : message))
+      let activeConversationId = inputBlocked ? null : conversationId
+      if (!activeConversationId && !inputBlocked) {
         const title = messageContent.replace(/\s+/g, ' ').trim().slice(0, 72)
         const { data: created, error: createError } = await supabase
           .from('coach_conversations')
@@ -158,19 +170,6 @@ export default function CoachPage() {
         }
       }
 
-      const response = await fetch('/api/coach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: updatedMessages.slice(-16).map(m => ({ role: m.role, content: m.content })),
-        }),
-      })
-
-      if (!response.ok) {
-        const responseError = await response.json().catch(() => null) as { error?: string } | null
-        throw new Error(responseError?.error || 'Failed to get response')
-      }
-
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
 
@@ -185,6 +184,7 @@ export default function CoachPage() {
         setMessages(prev => {
           const updated = [...prev]
           updated[updated.length - 1] = {
+            ...updated[updated.length - 1],
             role: 'assistant',
             content: updated[updated.length - 1].content + chunk,
           }

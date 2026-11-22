@@ -292,5 +292,7 @@ reset role;
 \ir student-counselor-scope.sql
 \ir ../supabase/migrations/20261119183625_student_operations_mfa_guard.sql
 \ir student-operations-mfa.sql
+\ir ../supabase/migrations/20261122163011_clarity_configuration_console.sql
+\ir clarity-database.sql
 rollback;
 \echo 'Student RLS integration assertions passed (transaction rolled back).'

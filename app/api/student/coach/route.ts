@@ -10,6 +10,8 @@ import { STUDENT_NOTICE_VERSION } from "@/lib/student/policy";
 import { studentCoachPrompt } from "@/lib/student/coach";
 import { studentSafetyReply } from "@/lib/student/safety";
 import { studentProviderFailure } from "@/lib/student/provider-errors";
+import { activeConfig } from "@/lib/clarity/server";
+import { configText } from "@/lib/clarity/config";
 
 export const dynamic = "force-dynamic";
 const reply = (body: unknown, status = 200) =>
@@ -165,6 +167,7 @@ export async function POST(request: Request) {
     );
   }
   try {
+    const configuration = await activeConfig(supabase, "student");
     const result = await openai.chat.completions.create({
       model: process.env.STUDENT_COACH_MODEL,
       store: false,
@@ -174,7 +177,7 @@ export async function POST(request: Request) {
         .digest("hex"),
       reasoning_effort: "low",
       messages: [
-        { role: "system", content: studentCoachPrompt(language) },
+        { role: "system", content: `${studentCoachPrompt(language)}\n\n${configText(configuration.config)}` },
         ...(history ?? []).reverse().map((message) => ({
           role: message.role as "user" | "assistant",
           content: message.content,
