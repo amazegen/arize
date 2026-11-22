@@ -2,7 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "git": {
     "deploymentEnabled": {
-      "codex/core-membership-launch": false
+      "codex/core-membership-launch": false,
+      "codex/phase-3-clarity-console": false,
+      "codex/phase-3-clarity-adult": false
     }
   }
 }

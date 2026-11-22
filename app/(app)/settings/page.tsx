@@ -36,12 +36,15 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [clarityAdmin, setClarityAdmin] = useState(false)
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/sign-in'); return }
       setUserId(user.id)
+      const permission = await supabase.rpc('clarity_console_allowed', { p_edition: 'adult' })
+      setClarityAdmin(!permission.error && permission.data === true)
       const { data: profile } = await supabase
         .from('profiles')
         .select('name, username')
@@ -239,6 +242,7 @@ export default function SettingsPage() {
       {/* Divider */}
       <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', margin: '0 0 36px' }} />
 
+      {clarityAdmin ? <Link href="/admin/clarity" className="btn-secondary" style={{ display: 'inline-flex', margin: '20px 0' }}>Clarity AI configuration</Link> : null}
       {/* Support and privacy */}
       <div style={{ marginBottom: '36px' }}>
         <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#C9A227', marginBottom: '10px' }}>
