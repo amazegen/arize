@@ -5,6 +5,10 @@ import { LocalNotifications } from '@capacitor/local-notifications'
 import { disableReminder, enableReminder, nativeIOS, readReminder } from './reminders'
 import { PRIVACY_URL, TERMS_URL } from '../../../lib/legal/consent'
 import './mobile.css'
+import { Capacitor } from '@capacitor/core'
+import { mobileConfig } from './account/config'
+import { createAccounts } from './account/client'
+import { NativeApp } from './NativeApp'
 
 const steps = [
   { title: 'Notice your space', text: 'Look around at your own pace. Name three things you can see. You do not need to close your eyes.' },
@@ -77,4 +81,10 @@ function App() {
     <nav aria-label="Main navigation"><button aria-current={screen !== 'settings' ? 'page' : undefined} onClick={() => setScreen('home')}><span aria-hidden="true">⌂</span>My space</button><button aria-current={screen === 'settings' ? 'page' : undefined} onClick={() => setScreen('settings')}><span aria-hidden="true">⚙</span>Settings</button></nav>
   </div>
 }
-createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)
+function entry() {
+  try {
+    const config=mobileConfig(import.meta.env,Capacitor.isNativePlatform())
+    return config?<NativeApp accounts={createAccounts(config)}/>:<App/>
+  } catch { return <main className="mobile-shell"><h1>Account configuration unavailable.</h1><p>This build will not connect to insecure or Student services. Check the adult native configuration.</p></main> }
+}
+createRoot(document.getElementById('root')!).render(<StrictMode>{entry()}</StrictMode>)

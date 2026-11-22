@@ -1,0 +1,72 @@
+\set ON_ERROR_STOP on
+begin;
+insert into auth.users(id,email) values('71000000-0000-4000-8000-000000000001','native-one@example.test'),('71000000-0000-4000-8000-000000000002','native-two@example.test');
+insert into auth.sessions(id,user_id) values('72000000-0000-4000-8000-000000000001','71000000-0000-4000-8000-000000000001'),('72000000-0000-4000-8000-000000000002','71000000-0000-4000-8000-000000000002');
+insert into public.legal_consents(user_id,terms_version,privacy_version) values('71000000-0000-4000-8000-000000000001','2.0','2.0');
+set local role authenticated;
+set local request.jwt.claim.sub='71000000-0000-4000-8000-000000000001';
+set local request.jwt.claim.session_id='72000000-0000-4000-8000-000000000001';
+do $$ declare ctx jsonb;begin
+ ctx:=public.native_session_context();
+ if ctx is null or ctx->>'consented'<>'true' or ctx->>'needsMfa'<>'false' then raise exception 'Valid native session rejected';end if;
+ perform public.native_accept_ai_disclosure();
+ if public.native_session_context()->>'aiConsented'<>'true' then raise exception 'AI disclosure missing';end if;
+ begin perform * from native_private.ai_consents;raise exception 'Private disclosure table readable';exception when insufficient_privilege then null;end;
+ begin perform * from native_private.coach_turns;raise exception 'Private turns readable';exception when insufficient_privilege then null;end;
+ begin perform public.native_claim_turn(auth.uid(),'72000000-0000-4000-8000-000000000001',gen_random_uuid(),gen_random_uuid(),repeat('a',64));raise exception 'Client can claim checked turn';exception when insufficient_privilege then null;end;
+ begin perform native_private.active_session(auth.uid(),'72000000-0000-4000-8000-000000000001');raise exception 'Client can query arbitrary sessions';exception when insufficient_privilege then null;end;
+end $$;
+set local request.jwt.claim.session_id='72000000-0000-4000-8000-000000000002';
+do $$begin if public.native_session_context() is not null then raise exception 'Cross-account session accepted';end if;end $$;
+set local request.jwt.claim.session_id='72000000-0000-4000-8000-000000000001';
+reset role;
+insert into auth.mfa_factors(user_id,status) values('71000000-0000-4000-8000-000000000001','verified');
+set local role authenticated;
+do $$begin if public.native_session_context()->>'needsMfa'<>'true' then raise exception 'MFA bypass';end if;begin perform public.native_accept_ai_disclosure();raise exception 'MFA ignored';exception when insufficient_privilege then null;end;end $$;
+set local request.jwt.claim.aal='aal2';
+do $$begin if public.native_session_context()->>'needsMfa'<>'false' then raise exception 'Valid MFA rejected';end if;end $$;
+reset role;
+delete from auth.mfa_factors;
+update auth.sessions set not_after=now()-interval '1 second' where id='72000000-0000-4000-8000-000000000001';
+set local role authenticated;
+do $$begin if public.native_session_context() is not null then raise exception 'Expired session accepted';end if;end $$;
+reset role;
+update auth.sessions set not_after=null;
+set local role service_role;
+do $$begin if has_table_privilege(current_user,'auth.sessions','select') or has_table_privilege(current_user,'auth.users','select') then raise exception 'Fixture masks broad Auth permissions';end if;end $$;
+do $$ declare u uuid:='71000000-0000-4000-8000-000000000001';s uuid:='72000000-0000-4000-8000-000000000001';r uuid:=gen_random_uuid();c uuid:=gen_random_uuid();claim jsonb;again jsonb;t uuid;begin
+ claim:=public.native_claim_turn(u,s,r,c,repeat('a',64));t:=(claim->>'token')::uuid;
+ if public.native_claim_turn(u,s,r,c,repeat('a',64))->>'error'<>'busy' then raise exception 'Concurrent retry not blocked';end if;
+ if public.native_claim_turn(u,s,r,c,repeat('b',64))->>'error'<>'changed' then raise exception 'Changed retry body accepted';end if;
+ if public.native_finish_turn(u,s,r,gen_random_uuid(),'fictional input','checked reply',false) then raise exception 'Forged finish lease';end if;
+ if not public.native_finish_turn(u,s,r,t,'fictional input','checked reply',false) then raise exception 'Checked turn not saved';end if;
+ if public.native_finish_turn(u,s,r,t,'fictional input','checked reply',false) then raise exception 'Turn saved twice';end if;
+ again:=public.native_claim_turn(u,s,r,c,repeat('a',64));
+ if again->>'reply'<>'checked reply' or (select count(*) from public.coach_messages where conversation_id=c)<>2 then raise exception 'Retry duplicated history';end if;
+ r:=gen_random_uuid();c:=gen_random_uuid();claim:=public.native_claim_turn(u,s,r,c,repeat('c',64));t:=(claim->>'token')::uuid;
+ perform public.native_finish_turn(u,s,r,t,null,'Fixed safety resources only',true);
+ if exists(select 1 from public.coach_conversations where id=c) then raise exception 'Blocked input created history';end if;
+ r:='76000000-0000-4000-8000-000000000001';claim:=public.native_claim_turn(u,s,r,c,repeat('d',64));
+end $$;
+reset role;
+delete from auth.sessions where id='72000000-0000-4000-8000-000000000001';
+set local role service_role;
+do $$declare t uuid;begin
+ select token into t from native_private.coach_turns where user_id='71000000-0000-4000-8000-000000000001' and request_id='76000000-0000-4000-8000-000000000001';
+ if public.native_finish_turn('71000000-0000-4000-8000-000000000001','72000000-0000-4000-8000-000000000001','76000000-0000-4000-8000-000000000001',t,'fictional late input','checked late reply',false) then raise exception 'Revoked session saved response';end if;
+ begin perform public.native_claim_turn('71000000-0000-4000-8000-000000000001','72000000-0000-4000-8000-000000000001',gen_random_uuid(),gen_random_uuid(),repeat('e',64));raise exception 'Revoked session claimed turn';exception when insufficient_privilege then null;end;
+end $$;
+reset role;
+set local role authenticated;
+do $$begin if public.native_session_context() is not null then raise exception 'Signed-out JWT accepted';end if;end $$;
+reset role;
+do $$begin
+ if not (select relrowsecurity from pg_class where oid='native_private.coach_turns'::regclass) then raise exception 'Private ledger RLS missing';end if;
+ if exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname like 'native_%' and (p.prosecdef or has_function_privilege('anon',p.oid,'EXECUTE'))) then raise exception 'Public native function privilege unsafe';end if;
+end $$;
+create table public.student_schools(id uuid);
+set local role authenticated;
+do $$begin if public.native_session_context() is not null then raise exception 'Student context accepted';end if;end $$;
+reset role;
+rollback;
+\echo 'Native local session ownership/expiry/revocation/MFA/consent, server-only ledger, checked history and retry tests passed (rolled back).'

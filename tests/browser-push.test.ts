@@ -90,7 +90,7 @@ test('service worker ignores arbitrary remote text and URLs, has no fetch handle
   assert.doesNotMatch(JSON.stringify(shown), /private chat|evil.test/)
   assert.equal(opened, 'https://arize.example.test/home'); assert.equal('fetch' in handlers, false)
 })
-test('native foundation is bundled, adult-only, unsigned and not connected to hosted accounts/billing', () => {
+test('offline foundation remains bundled and account connections require separate explicit configuration', () => {
   const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
   const config = read('apps/mobile/capacitor.config.ts'), app = read('apps/mobile/src/main.tsx'), reminders = read('apps/mobile/src/reminders.ts')
   assert.match(config, /webDir: 'dist'/); assert.doesNotMatch(config, /server:\s*\{|allowNavigation|cleartext/)

@@ -2,6 +2,7 @@
 
 Review branch: `codex/phase-7-push-ios`, stacked on `codex/phase-6-marketing-site`.
 This is the approved **first slice**, not a complete native release.
+The later [native accounts/features continuation](phase-7-native-features.md) records the optional connected build and supersedes this starter's offline-only limitations; its release gates still apply.
 
 ## Boundaries respected
 
