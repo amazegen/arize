@@ -67,6 +67,8 @@ export function subscriptionAccessRecord(
         cancel_at_period_end: subscription.cancel_at_period_end,
         livemode: subscription.livemode,
         payment_grace: paymentGrace,
+        trial_started_at: subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : null,
+        trial_ends_at: trialEndsAt,
       } satisfies Json,
       updated_at: new Date().toISOString(),
     },

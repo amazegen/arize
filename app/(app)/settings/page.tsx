@@ -37,14 +37,19 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [clarityAdmin, setClarityAdmin] = useState(false)
+  const [founderAdmin, setFounderAdmin] = useState(false)
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/sign-in'); return }
       setUserId(user.id)
-      const permission = await supabase.rpc('clarity_console_allowed', { p_edition: 'adult' })
+      const [permission, founderPermission] = await Promise.all([
+        supabase.rpc('clarity_console_allowed', { p_edition: 'adult' }).abortSignal(AbortSignal.timeout(8_000)),
+        supabase.rpc('founder_dashboard_allowed').abortSignal(AbortSignal.timeout(8_000)),
+      ])
       setClarityAdmin(!permission.error && permission.data === true)
+      setFounderAdmin(!founderPermission.error && founderPermission.data === true)
       const { data: profile } = await supabase
         .from('profiles')
         .select('name, username')
@@ -247,6 +252,7 @@ export default function SettingsPage() {
       </section>
 
       {clarityAdmin ? <Link href="/admin/clarity" className="adult-secondary" style={{ display: 'inline-flex', margin: '20px 0' }}>Clarity AI configuration</Link> : null}
+      {founderAdmin ? <Link href="/admin/founder" className="adult-secondary" style={{ display: 'inline-flex', margin: '20px 0' }}>Founder overview</Link> : null}
       {/* Support and privacy */}
       <section id="profile-support" className="adult-panel adult-profile-section" aria-label="Support and privacy">
         <p style={{ fontSize: "14px", fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: "var(--green)", marginBottom: '10px' }}>
