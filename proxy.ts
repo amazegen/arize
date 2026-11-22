@@ -2,6 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
+  // Public marketing must render even if Auth is unavailable. The lead endpoint
+  // applies its own adult-edition, origin, validation and rate-limit checks.
+  if (request.nextUrl.pathname === '/' || request.nextUrl.pathname === '/api/marketing/leads') {
+    if (process.env.ARIZE_EDITION === 'student') return new NextResponse('Not found', { status: 404 })
+    return NextResponse.next()
+  }
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
