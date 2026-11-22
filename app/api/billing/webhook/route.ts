@@ -7,6 +7,7 @@ import { syncStripeSubscription } from '@/lib/billing/subscriptions'
 import { processBillingWebhook } from '@/lib/billing/webhook-workflow'
 import { NO_STORE } from '@/lib/billing/policy'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { observeBillingSafely } from '@/lib/founder/billing-observation'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -62,6 +63,15 @@ export async function POST(request: Request) {
         console.warn('[billing risk review required]', event.type)
       },
     }, event, randomUUID())
+    if (!result.ignored) {
+      const observed = await observeBillingSafely(event, async ({ eventId, subscriptionId, paidAt }) => {
+        const { error } = await admin.rpc('founder_record_billing_event', {
+          p_event_id: eventId, p_subscription_id: subscriptionId, p_paid_at: paidAt,
+        }).abortSignal(AbortSignal.timeout(1_500))
+        if (error) throw new Error('Reporting unavailable')
+      })
+      if (!observed) console.warn('[founder reporting]', { state: 'capture_unavailable' })
+    }
     return reply({ received: true, ...result })
   } catch (error) {
     console.error('[billing webhook: processing]', safeBillingError(error))
