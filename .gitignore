@@ -41,3 +41,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Independently bundled native foundation (not a Next export)
+/apps/mobile/node_modules/
+/apps/mobile/dist/
+/apps/mobile/ios/App/App/public/
+/apps/mobile/ios/App/App/capacitor.config.json
+/apps/mobile/ios/App/App.xcworkspace/xcuserdata/
+**/xcuserdata/
+**/DerivedData/

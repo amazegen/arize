@@ -2,6 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
+  // Public resources never refresh Auth or cache private pages. Dispatch applies
+  // its own independent server secret; the worker has no fetch/cache handler.
+  if (['/push-sw.js', '/manifest.webmanifest', '/api/notifications/dispatch'].includes(request.nextUrl.pathname)) {
+    if (process.env.ARIZE_EDITION === 'student') return new NextResponse('Not found', { status: 404 })
+    return NextResponse.next()
+  }
   // Public marketing must render even if Auth is unavailable. The lead endpoint
   // applies its own adult-edition, origin, validation and rate-limit checks.
   if (request.nextUrl.pathname === '/' || request.nextUrl.pathname === '/api/marketing/leads') {

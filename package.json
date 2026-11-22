@@ -22,13 +22,15 @@
     "openai": "^6.39.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "stripe": "23.1.0"
+    "stripe": "23.1.0",
+    "web-push": "4.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "3.6.4",
     "eslint": "9.39.2",
     "eslint-config-next": "16.4.5",
     "tailwindcss": "^4",
@@ -43,6 +45,8 @@
     "js-yaml": "4.3.2",
     "brace-expansion@<2": "1.1.21",
     "brace-expansion@>=4": "5.0.12",
-    "@typescript-eslint/typescript-estree": { "minimatch": "11.0.1" }
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.1"
+    }
   }
 }

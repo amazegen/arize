@@ -10,6 +10,7 @@ import { getUserAccess } from '@/lib/access/server'
 import { AccessProvider } from '@/components/access/AccessProvider'
 import { EarlyMemberTrialModal } from '@/components/access/EarlyMemberTrialModal'
 import { AccountDeletionPanel } from '@/components/billing/AccountDeletionPanel'
+import { ReminderNudge } from '@/components/notifications/ReminderNudge'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -44,6 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <BottomNav />
           <WelcomeModal />
           <EarlyMemberTrialModal />
+          <ReminderNudge userId={user.id} />
         </AccessProvider>
     </div>
   )

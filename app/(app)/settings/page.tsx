@@ -20,6 +20,8 @@ import { getUsernameError, normalizeUsername } from '@/lib/profile/username'
 import { createClient } from '@/lib/supabase/client'
 import { useAccess } from '@/components/access/AccessProvider'
 import { AccountDeletionPanel } from '@/components/billing/AccountDeletionPanel'
+import { BrowserReminders } from '@/components/notifications/BrowserReminders'
+import { browserRemindersEnabled, stopThisBrowserReminder } from '@/lib/notifications/browser'
 
 const feedbackUrl = process.env.NEXT_PUBLIC_FEEDBACK_URL?.trim() || '/feedback'
 
@@ -124,6 +126,7 @@ export default function SettingsPage() {
   }
 
   async function handleSignOut() {
+    if (browserRemindersEnabled) await stopThisBrowserReminder().catch(() => undefined)
     await supabase.auth.signOut()
     router.push('/sign-in')
   }
@@ -144,6 +147,7 @@ export default function SettingsPage() {
         <Link href="/reset/history">Your reflections <ChevronRight size={17} /></Link>
         <Link href="/goals/patterns">Your patterns <ChevronRight size={17} /></Link>
       </div>
+      <BrowserReminders />
       <h2 className="adult-section-label">Settings</h2>
       <nav aria-label="Profile sections" className="adult-profile-links">
         <a href="#profile-account">Account <ChevronRight size={17} /></a>
