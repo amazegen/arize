@@ -16,7 +16,7 @@ const user = { id, aud: 'authenticated', role: 'authenticated', email: 'layout@e
   confirmed_at: now, created_at: now, updated_at: now, last_sign_in_at: now,
   app_metadata: { provider: 'email', providers: ['email'] }, user_metadata: { full_name: profile.name }, identities: [], is_anonymous: false }
 const tables = {
-  profiles: [profile], legal_consents: [{ id: 'fixture-consent', user_id: id, terms_version: '2.0', privacy_version: '2.0' }],
+  profiles: [profile], legal_consents: process.argv.includes('--without-consent') ? [] : [{ id: 'fixture-consent', user_id: id, terms_version: '2.0', privacy_version: '2.0' }],
   account_deletion_jobs: [], access_grants: [], billing_customers: [],
   goals: [{ id: '30000000-0000-4000-8000-000000000001', user_id: id, title: 'Layout fixture goal with a longer title that should wrap cleanly', category: 'Personal', progress: 0, is_complete: false, deadline: today, week_of: week.toISOString().slice(0, 10), notes: 'Synthetic layout note only.', created_at: now }],
   check_ins: [{ id: 'fixture-checkin', user_id: id, mood: 'steady', mood_score: 3, energy: 5, emotion_tags: ['Layout fixture'], journal_text: 'Synthetic layout sample only.', time_of_day: 'morning', created_at: now }],
@@ -50,6 +50,7 @@ createServer(async (req, res) => {
     return json(res, 200, { access_token: token, refresh_token: 'synthetic-layout-refresh', token_type: 'bearer', expires_in: 3600, expires_at: issued + 3600, user })
   }
   if (url.pathname === '/auth/v1/user') return json(res, 200, user)
+  if (url.pathname === '/auth/v1/logout' && req.method === 'POST') return json(res, 200, {})
   if (url.pathname === '/rest/v1/rpc/membership_rollout_state') return json(res, 200, { enabled: false, stripeMode: 'test' })
   if (url.pathname === '/rest/v1/rpc/get_village_moderator_ids') return json(res, 200, [])
   if (url.pathname.startsWith('/rest/v1/') && ['GET', 'HEAD'].includes(req.method)) {

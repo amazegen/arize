@@ -1,0 +1,30 @@
+/* Arize light-theme roles carried forward from Student CSS; Jadon FINAL COPIES
+   refines the palette. Scoped: Student Edition and marketing are unchanged. */
+.adult-theme {
+  --ink: #0e1c12;
+  --muted: #55645a;
+  --cream: #fffbf3;
+  /* Slightly darker than Figma #2f7d4f for AA text on green-soft. */
+  --green: #2b7449;
+  --yellow: #ffc93c;
+  --orange: #f99655;
+  --surface: #ffffff;
+  --surface-soft: #f5f6f1;
+  --green-soft: #e3f1e6;
+  --yellow-soft: #fff4d6;
+  --border: #e6e1d6;
+  --error: #9b3e2d;
+  --error-soft: #fff0e9;
+  --focus: #175c9b;
+  --shadow: 0 6px 16px rgb(58 46 18 / 8%);
+  --radius-card: 20px;
+  --font-adult: var(--font-nunito), var(--font-dm-sans), Arial, sans-serif;
+  --adult-header-height: 80px;
+  --adult-nav-height: calc(80px + env(safe-area-inset-bottom, 0px));
+  color: var(--ink);
+  background: var(--cream);
+  font-family: var(--font-adult);
+  font-size: 17px;
+  line-height: 1.5;
+  color-scheme: light;
+}

@@ -7,31 +7,31 @@ const SLIDES = [
     emoji: '✦',
     title: 'Welcome to Arize',
     body: 'Thank you for joining us. You\'ve taken a meaningful step — and we\'re honored to be part of your journey.',
-    accent: '#C9A227',
+    accent: "var(--green)",
   },
   {
     emoji: '🌿',
     title: 'Built for You',
     body: 'Arize was designed for diverse communities navigating spaces where they haven\'t always been seen, heard, or supported. This is a space that gets it.',
-    accent: '#4A7C59',
+    accent: "var(--green)",
   },
   {
     emoji: '💫',
     title: 'Three Pillars',
     body: 'Be seen. Be heard. Feel connected. Every feature in this app serves one of these three goals — because you deserve all three.',
-    accent: '#7BADC4',
+    accent: "var(--green)",
   },
   {
     emoji: '👥',
     title: 'The Village',
     body: 'Your community of peers and support. Real conversations in private rooms, with people who understand what you\'re navigating. The village gets stronger together.',
-    accent: '#A8C4AF',
+    accent: "var(--green)",
   },
   {
     emoji: '🌱',
     title: 'Clarity Coach',
     body: 'Your AI thinking partner — available 24/7 to help you process situations, prepare for hard conversations, and find your next move. You don\'t have to figure it out alone.',
-    accent: '#C9A227',
+    accent: "var(--green)",
   },
 ]
 
@@ -57,16 +57,16 @@ export function WelcomeModal() {
   const isLast = step === SLIDES.length - 1
 
   return (
-    <div style={{
+    <div className="adult-welcome-overlay" role="dialog" aria-modal="true" aria-labelledby="adult-welcome-title" style={{
       position: 'fixed', inset: 0, zIndex: 1000,
       background: 'rgba(10,20,9,0.92)', backdropFilter: 'blur(8px)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       padding: '0',
     }}>
-      <div style={{
+      <div className="adult-welcome-card" style={{
         width: '100%', maxWidth: '430px',
-        background: 'linear-gradient(180deg, #1A2E1E 0%, #0E1C12 100%)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: "var(--green-soft)",
+        border: "1px solid var(--border)",
         borderRadius: '28px 28px 0 0',
         padding: '32px 28px 40px',
         minHeight: '480px',
@@ -77,7 +77,7 @@ export function WelcomeModal() {
           {SLIDES.map((_, i) => (
             <div key={i} style={{
               width: i === step ? '20px' : '6px', height: '6px', borderRadius: '100px',
-              background: i === step ? slide.accent : 'rgba(255,255,255,0.15)',
+              background: i === step ? slide.accent : "var(--surface-soft)",
               transition: 'all 0.3s',
             }} />
           ))}
@@ -87,20 +87,20 @@ export function WelcomeModal() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
           <div style={{
             width: '72px', height: '72px', borderRadius: '24px',
-            background: `linear-gradient(135deg, ${slide.accent}30, ${slide.accent}10)`,
-            border: `1px solid ${slide.accent}40`,
+            background: `var(--green-soft)`,
+            border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '32px', marginBottom: '24px',
+            fontSize: '32px', marginBottom: "20px",
           }}>
             {slide.emoji}
           </div>
-          <h2 style={{
-            fontFamily: 'var(--font-playfair)', fontSize: '26px', color: '#F5F0E8',
+          <h2 id="adult-welcome-title" style={{
+            fontFamily: "var(--font-adult)", fontSize: '26px', color: "var(--ink)",
             fontWeight: 400, lineHeight: 1.2, marginBottom: '16px',
           }}>
             {slide.title}
           </h2>
-          <p style={{ fontSize: '14px', color: '#BDB5A0', lineHeight: 1.7, maxWidth: '320px' }}>
+          <p style={{ fontSize: "16px", color: "var(--muted)", lineHeight: 1.7, maxWidth: '320px' }}>
             {slide.body}
           </p>
         </div>
@@ -111,10 +111,10 @@ export function WelcomeModal() {
             <button
               onClick={dismiss}
               style={{
-                width: '100%', background: '#C9A227', color: '#0E1C12',
+                width: '100%', background: "var(--orange)", color: "var(--ink)",
                 border: 'none', borderRadius: '14px', padding: '16px',
                 fontSize: '15px', fontWeight: 700, cursor: 'pointer',
-                fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.02em',
+                fontFamily: "var(--font-adult)", letterSpacing: '0.02em',
               }}>
               Let&apos;s go →
             </button>
@@ -123,19 +123,19 @@ export function WelcomeModal() {
               <button
                 onClick={() => setStep(s => s + 1)}
                 style={{
-                  width: '100%', background: '#C9A227', color: '#0E1C12',
+                  width: '100%', background: "var(--orange)", color: "var(--ink)",
                   border: 'none', borderRadius: '14px', padding: '16px',
                   fontSize: '15px', fontWeight: 700, cursor: 'pointer',
-                  fontFamily: 'var(--font-dm-sans)',
+                  fontFamily: "var(--font-adult)",
                 }}>
                 Next →
               </button>
               <button
                 onClick={dismiss}
                 style={{
-                  width: '100%', background: 'transparent', color: '#BDB5A0',
+                  width: '100%', background: 'transparent', color: "var(--muted)",
                   border: 'none', borderRadius: '14px', padding: '12px',
-                  fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                  fontSize: "16px", cursor: 'pointer', fontFamily: "var(--font-adult)",
                 }}>
                 Skip intro
               </button>

@@ -69,14 +69,10 @@ export default function HomeGreeting({
   }, [])
 
   return (
-    <div style={{ padding: '20px 24px 0' }}>
-      <p style={{ fontSize: '12px', color: '#BDB5A0', marginBottom: '4px', letterSpacing: '0.04em' }}>
-        {greeting},
-      </p>
-      <h1 style={{ fontFamily: 'var(--font-playfair)', fontSize: '28px', color: '#F5F0E8', fontWeight: 500, marginBottom: '2px', lineHeight: 1.2 }}>
-        {firstName} ✦
-      </h1>
-      <p style={{ fontSize: '12px', color: '#BDB5A0' }}>{dateLabel}</p>
+    <div className="adult-home-greeting">
+      <h1>{greeting}, {firstName}.</h1>
+      <p>Private support for you, built by people like you.</p>
+      <p className="adult-greeting-date">{dateLabel}</p>
     </div>
   )
 }

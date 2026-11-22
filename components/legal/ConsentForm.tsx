@@ -44,25 +44,25 @@ export function ConsentForm() {
       <div style={{
         width: '58px', height: '58px', borderRadius: '18px',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(201,162,39,0.14)', color: '#C9A227',
+        background: "var(--yellow-soft)", color: "var(--green)",
       }}>
         <ShieldCheck size={30} aria-hidden="true" />
       </div>
 
       <div>
         <p style={{
-          color: '#C9A227', fontSize: '12px', fontWeight: 700,
+          color: "var(--green)", fontSize: "14px", fontWeight: 700,
           letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px',
         }}>
           Before you continue
         </p>
         <h1 style={{
-          color: '#F5F0E8', fontFamily: 'var(--font-playfair)', fontSize: '30px',
+          color: "var(--ink)", fontFamily: "var(--font-adult)", fontSize: '30px',
           fontWeight: 400, lineHeight: 1.2, marginBottom: '12px',
         }}>
           Review and agree
         </h1>
-        <p style={{ color: '#BDB5A0', fontSize: '15px', lineHeight: 1.65 }}>
+        <p style={{ color: "var(--muted)", fontSize: '15px', lineHeight: 1.65 }}>
           Please review Arize&apos;s legal documents. You must accept them before entering the app.
         </p>
       </div>
@@ -79,15 +79,15 @@ export function ConsentForm() {
             rel="noopener noreferrer"
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
-              padding: '15px 16px', borderRadius: '12px', color: '#F5F0E8', textDecoration: 'none',
-              background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(255,255,255,0.1)',
+              padding: '15px 16px', borderRadius: '12px', color: "var(--ink)", textDecoration: 'none',
+              background: "var(--surface-soft)", border: "1px solid var(--border)",
             }}
           >
             <span>
               <span style={{ display: 'block', fontSize: '15px', fontWeight: 600 }}>{document.label}</span>
-              <span style={{ color: '#BDB5A0', fontSize: '12px' }}>Version {document.version}</span>
+              <span style={{ color: "var(--muted)", fontSize: "14px" }}>Version {document.version}</span>
             </span>
-            <ExternalLink size={18} color="#C9A227" aria-hidden="true" />
+            <ExternalLink size={18} color="var(--green)" aria-hidden="true" />
           </a>
         ))}
       </div>
@@ -95,8 +95,8 @@ export function ConsentForm() {
       <label style={{
         display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer',
         padding: '16px', borderRadius: '12px',
-        background: accepted ? 'rgba(74,124,89,0.18)' : 'rgba(255,255,255,0.035)',
-        border: `1px solid ${accepted ? 'rgba(107,158,122,0.55)' : 'rgba(255,255,255,0.1)'}`,
+        background: accepted ? "var(--green-soft)" : "var(--surface-soft)",
+        border: `1px solid ${accepted ? 'rgba(107,158,122,0.55)' : 'var(--border)'}`,
       }}>
         <input
           type="checkbox"
@@ -108,22 +108,22 @@ export function ConsentForm() {
         <span style={{
           width: '22px', height: '22px', flex: '0 0 22px', marginTop: '1px',
           display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px',
-          background: accepted ? '#C9A227' : 'transparent',
-          border: accepted ? '1px solid #C9A227' : '1px solid rgba(255,255,255,0.35)',
-          color: '#0E1C12',
+          background: accepted ? "var(--orange)" : 'transparent',
+          border: accepted ? "1px solid var(--green)" : "1px solid var(--border)",
+          color: "var(--ink)",
         }} aria-hidden="true">
           {accepted && <Check size={16} strokeWidth={3} />}
         </span>
-        <span style={{ color: '#F5F0E8', fontSize: '14px', lineHeight: 1.55 }}>
+        <span style={{ color: "var(--ink)", fontSize: "16px", lineHeight: 1.55 }}>
           I confirm that I am at least 18 years old, agree to the Terms of Use, and acknowledge the Privacy Policy.
         </span>
       </label>
 
       {error && (
         <p role="alert" style={{
-          color: '#E4846A', background: 'rgba(196,97,74,0.12)',
-          border: '1px solid rgba(196,97,74,0.25)', borderRadius: '10px',
-          padding: '11px 13px', fontSize: '13px',
+          color: 'var(--error)', background: "var(--error-soft)",
+          border: "1px solid var(--error)", borderRadius: '10px',
+          padding: '11px 13px', fontSize: "16px",
         }}>
           {error}
         </p>
@@ -134,9 +134,9 @@ export function ConsentForm() {
         disabled={!accepted || saving}
         style={{
           width: '100%', padding: '15px', borderRadius: '13px', border: 'none',
-          background: accepted ? '#C9A227' : 'rgba(201,162,39,0.32)',
-          color: accepted ? '#0E1C12' : 'rgba(245,240,232,0.55)',
-          fontFamily: 'var(--font-dm-sans)', fontSize: '15px', fontWeight: 700,
+          background: accepted ? "var(--orange)" : "var(--yellow-soft)",
+          color: accepted ? "var(--ink)" : 'var(--muted)',
+          fontFamily: "var(--font-adult)", fontSize: '15px', fontWeight: 700,
           cursor: accepted && !saving ? 'pointer' : 'not-allowed',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
         }}
@@ -144,7 +144,7 @@ export function ConsentForm() {
         {saving ? 'Saving agreement…' : <><span>Agree and continue</span><ArrowRight size={17} /></>}
       </button>
 
-      <p style={{ color: '#8F8A7E', fontSize: '11px', lineHeight: 1.5, textAlign: 'center' }}>
+      <p style={{ color: 'var(--muted)', fontSize: "14px", lineHeight: 1.5, textAlign: 'center' }}>
         Arize records the date and document versions you accept.
       </p>
     </form>

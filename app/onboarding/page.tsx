@@ -10,36 +10,36 @@ import { getUsernameError, normalizeUsername } from '@/lib/profile/username'
 
 const steps = [
   {
-    icon: <Sparkles size={28} color="#C9A227" />,
-    iconBg: 'rgba(201,162,39,0.15)',
+    icon: <Sparkles size={28} color="var(--green)" />,
+    iconBg: "var(--yellow-soft)",
     title: 'Welcome to Arize',
     body: 'Arize is your private space to manage stress, set intentional goals, and stay emotionally grounded as a Black professional in corporate America.',
     sub: 'Everything here is yours. Private, secure, and built with your experience in mind.',
   },
   {
-    icon: <Target size={28} color="#6B9E7A" />,
-    iconBg: 'rgba(74,124,89,0.2)',
+    icon: <Target size={28} color="var(--green)" />,
+    iconBg: "var(--green-soft)",
     title: 'Meet your goals',
     body: 'Every week starts with a Sunday goal session — a moment to set intentions, not react to urgency. Daily resets keep you grounded. Friday reflections close the loop.',
     sub: 'Progress is tracked. Wins are celebrated. Nothing slips through.',
   },
   {
-    icon: <TrendingUp size={28} color="#E8B84B" />,
-    iconBg: 'rgba(232,184,75,0.15)',
+    icon: <TrendingUp size={28} color="var(--green)" />,
+    iconBg: 'var(--yellow-soft)',
     title: 'Understand your patterns',
     body: 'Your Daily Reset data builds your personal Pattern Map over time — showing you what lifts you, what drains you, and how resilient you actually are.',
-    sub: 'Your data is yours. It never leaves your account.',
+    sub: 'Your reflections and goals are not shared with other members.',
   },
   {
-    icon: <Users size={28} color="#7BADC4" />,
-    iconBg: 'rgba(123,173,196,0.15)',
+    icon: <Users size={28} color="var(--green)" />,
+    iconBg: "var(--green-soft)",
     title: 'Find your village',
     body: 'The Village is a private community organized around your lived experience — rooms like First Gen in Finance, Manager Mode, and Navigating the Room.',
-    sub: 'Real people who get it. Safe, moderated, and always on your side.',
+    sub: 'Real people who get it. Share at your own pace.',
   },
   {
-    icon: <MessageCircle size={28} color="#A8C4AF" />,
-    iconBg: 'rgba(74,124,89,0.15)',
+    icon: <MessageCircle size={28} color="var(--green)" />,
+    iconBg: "var(--green-soft)",
     title: 'Your Clarity Coach',
     body: 'Clarity is your AI thinking partner that’s there 24/7—available before a hard conversation, after a meeting that left you feeling unseen, or whenever you need to process.',
     sub: 'Culturally aware. Affirming. Never a therapist — always a coach.',
@@ -97,10 +97,10 @@ export default function OnboardingPage() {
   const current = steps[step]
 
   return (
-    <div style={{
-      background: '#0A1409', minHeight: '100dvh',
+    <div className="adult-theme adult-auth" style={{
+      background: "var(--cream)", minHeight: '100dvh',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', padding: '24px',
+      justifyContent: 'center', padding: "20px",
     }}>
       <div style={{ width: '100%', maxWidth: '440px' }}>
 
@@ -109,13 +109,13 @@ export default function OnboardingPage() {
           {steps.map((_, i) => (
             <div key={i} style={{
               height: '4px', borderRadius: '100px', transition: 'all 0.3s',
-              background: i <= step ? '#C9A227' : 'rgba(255,255,255,0.12)',
+              background: i <= step ? "var(--orange)" : "var(--surface-soft)",
               width: i === step ? '24px' : '8px',
             }} />
           ))}
           <div style={{
             height: '4px', borderRadius: '100px', transition: 'all 0.3s',
-            background: isProfileStep ? '#C9A227' : 'rgba(255,255,255,0.12)',
+            background: isProfileStep ? "var(--orange)" : "var(--surface-soft)",
             width: isProfileStep ? '24px' : '8px',
           }} />
         </div>
@@ -125,28 +125,28 @@ export default function OnboardingPage() {
             <div style={{
               width: '64px', height: '64px', borderRadius: '18px',
               background: current.iconBg, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', marginBottom: '24px',
+              justifyContent: 'center', marginBottom: "20px",
             }}>
               {current.icon}
             </div>
             <h2 style={{
-              fontFamily: 'var(--font-playfair)', fontSize: '28px', color: '#F5F0E8',
+              fontFamily: "var(--font-adult)", fontSize: '28px', color: "var(--ink)",
               fontWeight: 400, marginBottom: '16px', lineHeight: 1.2,
             }}>{current.title}</h2>
-            <p style={{ fontSize: '15px', color: '#F5F0E8', lineHeight: 1.7, marginBottom: '16px' }}>
+            <p style={{ fontSize: '15px', color: "var(--ink)", lineHeight: 1.7, marginBottom: '16px' }}>
               {current.body}
             </p>
-            <p style={{ fontSize: '13px', color: '#BDB5A0', lineHeight: 1.6, marginBottom: '40px' }}>
+            <p style={{ fontSize: "16px", color: "var(--muted)", lineHeight: 1.6, marginBottom: '40px' }}>
               {current.sub}
             </p>
             <button
               onClick={() => setStep(s => s + 1)}
               style={{
                 width: '100%', padding: '16px', borderRadius: '14px',
-                background: '#C9A227', color: '#0E1C12', border: 'none',
+                background: "var(--orange)", color: "var(--ink)", border: 'none',
                 fontSize: '15px', fontWeight: 600, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                fontFamily: 'var(--font-dm-sans)',
+                fontFamily: "var(--font-adult)",
               }}
             >
               {step < steps.length - 1 ? 'Next' : 'Set up my profile'} <ArrowRight size={16} />
@@ -154,10 +154,10 @@ export default function OnboardingPage() {
           </div>
         ) : (
           <div>
-            <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: '26px', color: '#F5F0E8', fontWeight: 400, marginBottom: '8px' }}>
+            <h2 style={{ fontFamily: "var(--font-adult)", fontSize: '26px', color: "var(--ink)", fontWeight: 400, marginBottom: '8px' }}>
               Tell us about yourself
             </h2>
-            <p style={{ fontSize: '13px', color: '#BDB5A0', marginBottom: '28px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: "16px", color: "var(--muted)", marginBottom: '28px', lineHeight: 1.5 }}>
               This helps Arize personalize your experience. You can always update this later.
             </p>
 
@@ -168,7 +168,7 @@ export default function OnboardingPage() {
                 { label: 'Company', value: company, set: setCompany, placeholder: 'Optional', required: false },
               ].map((field) => (
                 <div key={field.label}>
-                  <label style={{ fontSize: '11px', color: '#BDB5A0', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                  <label style={{ fontSize: "14px", color: "var(--muted)", letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
                     {field.label}{!field.required && ' (optional)'}
                   </label>
                   <input
@@ -178,9 +178,9 @@ export default function OnboardingPage() {
                     placeholder={field.placeholder}
                     style={{
                       width: '100%', padding: '13px 16px', borderRadius: '10px',
-                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                      color: '#F5F0E8', fontSize: '14px', outline: 'none',
-                      fontFamily: 'var(--font-dm-sans)',
+                      background: "var(--surface-soft)", border: "1px solid var(--border)",
+                      color: "var(--ink)", fontSize: "16px", outline: 'none',
+                      fontFamily: "var(--font-adult)",
                     }}
                   />
                 </div>
@@ -188,11 +188,11 @@ export default function OnboardingPage() {
 
               {/* Username */}
               <div>
-                <label style={{ fontSize: '11px', color: '#BDB5A0', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                <label style={{ fontSize: "14px", color: "var(--muted)", letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
                   Username (optional)
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#BDB5A0', fontSize: '14px', pointerEvents: 'none' }}>@</span>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: "var(--muted)", fontSize: "16px", pointerEvents: 'none' }}>@</span>
                   <input
                     type="text"
                     value={username}
@@ -204,17 +204,17 @@ export default function OnboardingPage() {
                     maxLength={20}
                     style={{
                       width: '100%', padding: '13px 16px 13px 28px', borderRadius: '10px',
-                      background: 'rgba(255,255,255,0.05)',
-                      border: `1px solid ${usernameError ? 'rgba(196,97,74,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                      color: '#F5F0E8', fontSize: '14px', outline: 'none',
-                      fontFamily: 'var(--font-dm-sans)',
+                      background: "var(--surface-soft)",
+                      border: `1px solid ${usernameError ? 'var(--error)' : 'var(--border)'}`,
+                      color: "var(--ink)", fontSize: "16px", outline: 'none',
+                      fontFamily: "var(--font-adult)",
                     }}
                   />
                 </div>
                 {usernameError && (
-                  <p style={{ fontSize: '12px', color: '#C4614A', marginTop: '6px' }}>{usernameError}</p>
+                  <p style={{ fontSize: "14px", color: "var(--error)", marginTop: '6px' }}>{usernameError}</p>
                 )}
-                <p style={{ fontSize: '11px', color: '#BDB5A0', marginTop: '5px' }}>
+                <p style={{ fontSize: "14px", color: "var(--muted)", marginTop: '5px' }}>
                   Shown in The Village. Letters, numbers, dots, underscores only.
                 </p>
               </div>
@@ -225,10 +225,10 @@ export default function OnboardingPage() {
               disabled={saving || !name.trim()}
               style={{
                 width: '100%', padding: '16px', borderRadius: '14px',
-                background: '#C9A227', color: '#0E1C12', border: 'none',
+                background: "var(--orange)", color: "var(--ink)", border: 'none',
                 fontSize: '15px', fontWeight: 600, cursor: !name.trim() ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                fontFamily: 'var(--font-dm-sans)', opacity: (!name.trim() || saving) ? 0.6 : 1,
+                fontFamily: "var(--font-adult)", opacity: (!name.trim() || saving) ? 0.6 : 1,
               }}
             >
               {saving ? 'Saving…' : <><span>Enter Arize</span> <Sparkles size={16} /></>}
