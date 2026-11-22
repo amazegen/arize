@@ -168,60 +168,60 @@ export default function GoalSessionPage() {
   }
 
   return (
-    <div style={{ background: '#0E1C12', minHeight: '100%', paddingBottom: '16px' }}>
+    <div style={{ background: "var(--cream)", minHeight: '100%', paddingBottom: '16px' }}>
 
-      <div style={{ padding: '16px 24px 0' }}>
-        <Link href="/goals" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#BDB5A0', textDecoration: 'none', fontSize: '13px', marginBottom: '16px' }}>
+      <div style={{ padding: "16px 20px 0" }}>
+        <Link href="/goals" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: "var(--muted)", textDecoration: 'none', fontSize: "16px", marginBottom: '16px' }}>
           <ArrowLeft size={16} /> Back to Goals
         </Link>
-        <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#C9A227', marginBottom: '8px' }}>
+        <p style={{ fontSize: "13px", fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: "var(--green)", marginBottom: '8px' }}>
           Sunday Goal Session
         </p>
-        <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: '22px', color: '#F5F0E8', fontWeight: 400, lineHeight: 1.3, marginBottom: '4px' }}>
+        <h2 style={{ fontFamily: "var(--font-adult)", fontSize: '22px', color: "var(--ink)", fontWeight: 400, lineHeight: 1.3, marginBottom: '4px' }}>
           Set Your Week
         </h2>
-        <p style={{ fontSize: '12px', color: '#BDB5A0', marginBottom: '4px' }}>{weekLabel}</p>
-        <p style={{ fontSize: '13px', fontFamily: 'var(--font-playfair)', fontStyle: 'italic', color: '#BDB5A0', lineHeight: 1.5 }}>
+        <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: '4px' }}>{weekLabel}</p>
+        <p style={{ fontSize: "16px", fontFamily: "var(--font-adult)", fontStyle: 'italic', color: "var(--muted)", lineHeight: 1.5 }}>
           &ldquo;What would make this week feel intentional?&rdquo;
         </p>
       </div>
 
-      <div style={{ margin: '16px 24px 0' }}>
+      <div style={{ margin: "16px 20px 0" }}>
         <Link href="/coach?prompt=help-goals" style={{
           display: 'flex', alignItems: 'center', gap: '12px',
-          background: 'rgba(74,124,89,0.12)', border: '1px solid rgba(74,124,89,0.3)',
+          background: "var(--green-soft)", border: "1px solid var(--border)",
           borderRadius: '12px', padding: '13px 16px', textDecoration: 'none',
         }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #6B9E7A, #243D28)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', flexShrink: 0 }}>🌿</div>
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: "var(--green-soft)", display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', flexShrink: 0 }}>🌿</div>
           <div>
-            <p style={{ fontSize: '12px', fontWeight: 600, color: '#A8C4AF', marginBottom: '2px' }}>Ask Clarity Coach</p>
-            <p style={{ fontSize: '11px', color: '#BDB5A0', lineHeight: 1.4 }}>Get help setting goals that align with your values</p>
+            <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--green)", marginBottom: '2px' }}>Ask Clarity Coach</p>
+            <p style={{ fontSize: "14px", color: "var(--muted)", lineHeight: 1.4 }}>Get help setting goals that align with your values</p>
           </div>
-          <MessageCircle size={16} color="#6B9E7A" style={{ flexShrink: 0 }} />
+          <MessageCircle size={16} color="var(--green)" style={{ flexShrink: 0 }} />
         </Link>
       </div>
 
-      <div style={{ margin: '20px 24px 0' }}>
-        <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#C9A227', marginBottom: '12px' }}>
+      <div style={{ margin: "20px 20px 0" }}>
+        <p style={{ fontSize: "13px", fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: "var(--green)", marginBottom: '12px' }}>
           Your Commitments
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {goals.map((goal, i) => (
-            <div key={i} style={{ background: '#1A2E1E', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '16px' }}>
+            <div key={i} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: '14px', padding: '16px' }}>
               {/* Title row */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
                 <div style={{
                   width: '22px', height: '22px', borderRadius: '50%',
-                  border: '2px solid rgba(74,124,89,0.5)',
+                  border: "2px solid var(--border)",
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, marginTop: '10px', fontSize: '11px', color: '#BDB5A0',
+                  flexShrink: 0, marginTop: '10px', fontSize: "14px", color: "var(--muted)",
                 }}>{i + 1}</div>
                 <div style={{ flex: 1 }}>
                   <label
                     htmlFor={`goal-title-${i}`}
                     style={{
-                      display: 'block', fontSize: '9px', color: '#BDB5A0',
+                      display: 'block', fontSize: "13px", color: "var(--muted)",
                       letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px',
                     }}
                   >
@@ -234,17 +234,17 @@ export default function GoalSessionPage() {
                     onChange={e => updateGoal(i, 'title', e.target.value)}
                     placeholder="What are you committing to?"
                     style={{
-                      width: '100%', background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.14)', borderRadius: '8px',
-                      color: '#F5F0E8', fontSize: '13px', outline: 'none',
-                      fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4,
+                      width: '100%', background: "var(--surface-soft)",
+                      border: "1px solid var(--border)", borderRadius: '8px',
+                      color: "var(--ink)", fontSize: "16px", outline: 'none',
+                      fontFamily: "var(--font-adult)", lineHeight: 1.4,
                       padding: '9px 10px', boxSizing: 'border-box',
                     }}
                   />
                 </div>
                 {goals.length > 1 && (
                   <button onClick={() => removeGoal(i)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#BDB5A0', padding: '8px 0', flexShrink: 0 }}>
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: "var(--muted)", padding: '8px 0', flexShrink: 0 }}>
                     <Trash2 size={14} />
                   </button>
                 )}
@@ -253,30 +253,30 @@ export default function GoalSessionPage() {
               {/* Category + Deadline */}
               <div style={{ display: 'flex', gap: '8px', paddingLeft: '32px', overflow: 'hidden', marginBottom: '10px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '9px', color: '#BDB5A0', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Category</label>
+                  <label style={{ fontSize: "13px", color: "var(--muted)", letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Category</label>
                   <select
                     value={goal.category}
                     onChange={e => updateGoal(i, 'category', e.target.value)}
                     style={{
-                      width: '100%', background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                      color: '#F5F0E8', fontSize: '12px', padding: '7px 10px',
-                      outline: 'none', fontFamily: 'var(--font-dm-sans)', boxSizing: 'border-box',
+                      width: '100%', background: "var(--surface-soft)",
+                      border: "1px solid var(--border)", borderRadius: '8px',
+                      color: "var(--ink)", fontSize: "14px", padding: '7px 10px',
+                      outline: 'none', fontFamily: "var(--font-adult)", boxSizing: 'border-box',
                     }}>
-                    {CATEGORIES.map(c => <option key={c} value={c} style={{ background: '#1A2E1E' }}>{c}</option>)}
+                    {CATEGORIES.map(c => <option key={c} value={c} style={{ background: "var(--surface)" }}>{c}</option>)}
                   </select>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '9px', color: '#BDB5A0', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Deadline</label>
+                  <label style={{ fontSize: "13px", color: "var(--muted)", letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Deadline</label>
                   <input
                     type="date"
                     value={goal.deadline}
                     onChange={e => updateGoal(i, 'deadline', e.target.value)}
                     style={{
-                      width: '100%', background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                      color: goal.deadline ? '#F5F0E8' : '#BDB5A0', fontSize: '12px',
-                      padding: '7px 10px', outline: 'none', fontFamily: 'var(--font-dm-sans)',
+                      width: '100%', background: "var(--surface-soft)",
+                      border: "1px solid var(--border)", borderRadius: '8px',
+                      color: goal.deadline ? "var(--ink)" : "var(--muted)", fontSize: "14px",
+                      padding: '7px 10px', outline: 'none', fontFamily: "var(--font-adult)",
                       colorScheme: 'dark', boxSizing: 'border-box', minWidth: 0,
                     }}
                   />
@@ -289,7 +289,7 @@ export default function GoalSessionPage() {
                   onClick={() => setExpandedNotes(expandedNotes === i ? null : i)}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    fontSize: '11px', color: '#BDB5A0', padding: '0', fontFamily: 'var(--font-dm-sans)',
+                    fontSize: "14px", color: "var(--muted)", padding: '0', fontFamily: "var(--font-adult)",
                     display: 'flex', alignItems: 'center', gap: '4px',
                   }}>
                   {expandedNotes === i ? '▲' : '▼'} {goal.notes ? 'Edit goal' : 'Add goal'}
@@ -303,10 +303,10 @@ export default function GoalSessionPage() {
                     autoFocus
                     style={{
                       width: '100%', marginTop: '8px',
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px',
-                      padding: '10px', fontSize: '12px', color: '#F5F0E8',
-                      lineHeight: 1.5, outline: 'none', fontFamily: 'var(--font-dm-sans)',
+                      background: "var(--surface-soft)",
+                      border: "1px solid var(--border)", borderRadius: '8px',
+                      padding: '10px', fontSize: "14px", color: "var(--ink)",
+                      lineHeight: 1.5, outline: 'none', fontFamily: "var(--font-adult)",
                       boxSizing: 'border-box', resize: 'none',
                     }}
                   />
@@ -321,39 +321,39 @@ export default function GoalSessionPage() {
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               width: '100%', background: 'transparent',
-              border: '1px dashed rgba(255,255,255,0.12)', borderRadius: '12px',
-              padding: '13px', color: '#BDB5A0', fontSize: '13px',
-              cursor: 'pointer', marginTop: '10px', fontFamily: 'var(--font-dm-sans)',
+              border: "1px dashed var(--border)", borderRadius: '12px',
+              padding: '13px', color: "var(--muted)", fontSize: "16px",
+              cursor: 'pointer', marginTop: '10px', fontFamily: "var(--font-adult)",
             }}>
             <Plus size={14} /> Add another commitment
           </button>
         )}
         {isCore && goals.filter(goal => !goal.isComplete).length >= (access.limits.activeGoals ?? 3) && (
-          <div style={{ marginTop: '10px', padding: '12px 14px', borderRadius: '10px', background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.18)', color: '#BDB5A0', fontSize: '12px', lineHeight: 1.5 }}>
-            Core supports {access.limits.activeGoals} active goals. <Link href="/upgrade" style={{ color: '#F2D98A', fontWeight: 600 }}>See Plus</Link> for unlimited goals.
+          <div style={{ marginTop: '10px', padding: '12px 14px', borderRadius: '10px', background: "var(--yellow-soft)", border: "1px solid var(--yellow)", color: "var(--muted)", fontSize: "14px", lineHeight: 1.5 }}>
+            Core supports {access.limits.activeGoals} active goals. <Link href="/upgrade" style={{ color: "var(--green)", fontWeight: 600 }}>See Plus</Link> for unlimited goals.
           </div>
         )}
       </div>
 
-      <div style={{ margin: '16px 24px 0', padding: '14px', background: 'rgba(201,162,39,0.08)', borderRadius: '12px', border: '1px solid rgba(201,162,39,0.15)' }}>
-        <p style={{ fontSize: '11px', color: '#BDB5A0', lineHeight: 1.5 }}>
-          <span style={{ color: '#C9A227', fontWeight: 600 }}>Tip:</span> Keep it to 3–5 meaningful commitments. Quality over quantity. These should stretch you without breaking you.
+      <div style={{ margin: "16px 20px 0", padding: '14px', background: "var(--yellow-soft)", borderRadius: '12px', border: "1px solid var(--yellow)" }}>
+        <p style={{ fontSize: "14px", color: "var(--muted)", lineHeight: 1.5 }}>
+          <span style={{ color: "var(--green)", fontWeight: 600 }}>Tip:</span> Keep it to 3–5 meaningful commitments. Quality over quantity. These should stretch you without breaking you.
         </p>
       </div>
 
       {error && (
-        <div style={{ margin: '12px 24px 0' }}>
-          <p style={{ fontSize: '13px', color: '#C4614A', padding: '10px 14px', background: 'rgba(196,97,74,0.1)', borderRadius: '8px' }}>{error}</p>
+        <div style={{ margin: "12px 20px 0" }}>
+          <p style={{ fontSize: "16px", color: "var(--error)", padding: '10px 14px', background: "var(--error-soft)", borderRadius: '8px' }}>{error}</p>
         </div>
       )}
 
-      <div style={{ margin: '20px 24px 0' }}>
+      <div style={{ margin: "20px 20px 0" }}>
         <button onClick={handleSave} disabled={saving}
           style={{
-            width: '100%', background: '#C9A227', color: '#0E1C12', border: 'none', borderRadius: '12px', padding: '16px',
-            fontSize: '14px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
+            width: '100%', background: "var(--orange)", color: "var(--ink)", border: 'none', borderRadius: '12px', padding: '16px',
+            fontSize: "16px", fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            fontFamily: 'var(--font-dm-sans)', opacity: saving ? 0.7 : 1,
+            fontFamily: "var(--font-adult)", opacity: saving ? 0.7 : 1,
           }}>
           {saving ? 'Saving…' : <><Sparkles size={16} /> Lock in my commitments</>}
         </button>

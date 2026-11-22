@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useId } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Send, Mic, MicOff, Video, VideoOff, Crown, LockKeyhole } from 'lucide-react'
@@ -10,7 +10,7 @@ import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js'
 import { useAccess } from '@/components/access/AccessProvider'
 import { canAccessVillageRoom } from '@/lib/access/entitlements'
 
-const AVATAR_COLORS = ['#4A7C59', '#C9A227', '#7BADC4', '#C4614A', '#A8C4AF', '#E8B84B']
+const AVATAR_COLORS = ["var(--green-soft)", "var(--yellow-soft)", "var(--surface-soft)", '#e2eaf4', "var(--green-soft)", '#ffe5d4']
 
 function getAvatarColor(userId: string) {
   const hash = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
@@ -28,11 +28,13 @@ export default function RoomPage() {
   const roomId = params.roomId as string
   const supabase = createClient()
   const access = useAccess()
+  const channelId = useId()
 
   const [room, setRoom] = useState<VillageRoom | null>(null)
   const [messages, setMessages] = useState<VillageMessage[]>([])
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string | null } | null>(null)
-  const [isMember, setIsMember] = useState(false)
+  const [membershipRoomId, setMembershipRoomId] = useState<string | null>(null)
+  const isMember = membershipRoomId === roomId
   const [isModerator, setIsModerator] = useState(false)
   const [moderatorIds, setModeratorIds] = useState<Set<string>>(new Set())
   const [text, setText] = useState('')
@@ -51,15 +53,32 @@ export default function RoomPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const videoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  const loadMessages = useCallback(async () => {
+    const { data } = await supabase
+      .from('village_messages').select('*, profiles(name, username)')
+      .eq('room_id', roomId).order('created_at', { ascending: true }).limit(100)
+    setMessages((data ?? []) as VillageMessage[])
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+  }, [roomId, supabase])
+
+  const loadModerators = useCallback(async () => {
+    const { data } = await supabase.rpc('get_village_moderator_ids', { target_room_id: roomId })
+    if (data) setModeratorIds(new Set(data))
+  }, [roomId, supabase])
+
   useEffect(() => {
+    let cancelled = false
     async function init() {
       const { data: { user } } = await supabase.auth.getUser()
+      if (cancelled) return
       if (!user) { router.push('/sign-in'); return }
 
       const { data: profile } = await supabase.from('profiles').select('name').eq('id', user.id).single()
+      if (cancelled) return
       setCurrentUser({ id: user.id, name: profile?.name ?? null })
 
       const { data: roomData } = await supabase.from('village_rooms').select('*').eq('id', roomId).single()
+      if (cancelled) return
       setRoom(roomData)
 
       if (roomData && !canAccessVillageRoom(access, roomData.name)) {
@@ -71,50 +90,41 @@ export default function RoomPage() {
         .from('village_memberships').select('user_id, is_moderator')
         .eq('user_id', user.id).eq('room_id', roomId).single()
 
+      if (cancelled) return
+      setMembershipRoomId(membership ? roomId : null)
+      setIsModerator(membership?.is_moderator ?? false)
       if (membership) {
-        setIsMember(true)
-        setIsModerator(membership.is_moderator ?? false)
         await loadMessages()
         await loadModerators()
-        subscribeToMessages()
       }
 
-      setLoading(false)
+      if (!cancelled) setLoading(false)
     }
     init()
     return () => {
+      cancelled = true
       if (timerRef.current) clearInterval(timerRef.current)
       if (videoTimerRef.current) clearInterval(videoTimerRef.current)
     }
-  }, [roomId])
+  }, [roomId, supabase, router, access, loadMessages, loadModerators])
 
-  async function loadMessages() {
-    const { data } = await supabase
-      .from('village_messages').select('*, profiles(name, username)')
-      .eq('room_id', roomId).order('created_at', { ascending: true }).limit(100)
-    setMessages((data ?? []) as VillageMessage[])
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
-  }
-
-  async function loadModerators() {
-    const { data } = await supabase.rpc('get_village_moderator_ids', {
-      target_room_id: roomId,
-    })
-    if (data) setModeratorIds(new Set(data))
-  }
-
-  function subscribeToMessages() {
-    supabase.channel(`room:${roomId}`)
+  const canReadRoom = !!room && room.id === roomId && canAccessVillageRoom(access, room.name)
+  useEffect(() => {
+    if (!isMember || !canReadRoom) return
+    let active = true
+    // Per-mount identity avoids reusing an unsubscribing channel on a quick revisit.
+    const channel = supabase.channel(`room:${roomId}:${channelId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'village_messages', filter: `room_id=eq.${roomId}` },
         async (payload: RealtimePostgresInsertPayload<{ id: string }>) => {
           const { data: newMsg } = await supabase.from('village_messages').select('*, profiles(name, username)').eq('id', payload.new.id).single()
-          if (newMsg) {
-            setMessages(prev => [...prev, newMsg as VillageMessage])
+          if (active && newMsg) {
+            setMessages(prev => prev.some(msg => msg.id === newMsg.id) ? prev : [...prev, newMsg as VillageMessage])
             setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
           }
         })
       .subscribe()
-  }
+    return () => { active = false; void supabase.removeChannel(channel) }
+  }, [isMember, canReadRoom, roomId, channelId, supabase])
 
   async function joinRoom() {
     if (!currentUser) return
@@ -123,12 +133,11 @@ export default function RoomPage() {
       console.error('Unable to join room:', error)
       return
     }
-    setIsMember(true)
+    setMembershipRoomId(roomId)
     setIsModerator(Boolean(isFirst))
     if (isFirst) setModeratorIds(new Set([currentUser.id]))
     await loadMessages()
     await loadModerators()
-    subscribeToMessages()
   }
 
   async function sendMessage() {
@@ -249,72 +258,72 @@ export default function RoomPage() {
 
   if (loading) {
     return (
-      <div style={{ background: '#0E1C12', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#BDB5A0', fontSize: '13px' }}>Loading room…</p>
+      <div style={{ background: "var(--cream)", minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: "var(--muted)", fontSize: "16px" }}>Loading room…</p>
       </div>
     )
   }
 
   if (room && !canAccessVillageRoom(access, room.name)) {
     return (
-      <div style={{ background: '#0E1C12', minHeight: '100%', padding: '18px 24px' }}>
-        <Link href="/village" style={{ color: '#BDB5A0', display: 'inline-flex', alignItems: 'center', gap: '7px', textDecoration: 'none', fontSize: '13px' }}>
+      <div style={{ background: "var(--cream)", minHeight: '100%', padding: "18px 20px" }}>
+        <Link href="/village" style={{ color: "var(--muted)", display: 'inline-flex', alignItems: 'center', gap: '7px', textDecoration: 'none', fontSize: "16px" }}>
           <ArrowLeft size={18} /> Back to Village
         </Link>
-        <div style={{ maxWidth: '340px', margin: '72px auto 0', textAlign: 'center', padding: '28px 22px', borderRadius: '20px', background: '#1A2E1E', border: '1px solid rgba(201,162,39,0.24)' }}>
-          <div style={{ width: '52px', height: '52px', display: 'grid', placeItems: 'center', margin: '0 auto 16px', borderRadius: '16px', background: 'rgba(201,162,39,0.12)', color: '#F2D98A' }}>
+        <div style={{ maxWidth: '340px', margin: '72px auto 0', textAlign: 'center', padding: '28px 22px', borderRadius: '20px', background: "var(--surface)", border: "1px solid var(--yellow)" }}>
+          <div style={{ width: '52px', height: '52px', display: 'grid', placeItems: 'center', margin: '0 auto 16px', borderRadius: '16px', background: "var(--yellow-soft)", color: "var(--green)" }}>
             <LockKeyhole size={24} />
           </div>
-          <h1 style={{ fontFamily: 'var(--font-playfair)', fontSize: '23px', color: '#F5F0E8', fontWeight: 500, marginBottom: '10px' }}>{room.name} is a Plus room</h1>
-          <p style={{ color: '#BDB5A0', fontSize: '13px', lineHeight: 1.55, marginBottom: '20px' }}>Core members can join Wins Only with text chat. Plus opens every room along with voice and video messages.</p>
-          <Link href="/upgrade" style={{ display: 'block', padding: '13px', borderRadius: '12px', background: '#C9A227', color: '#0E1C12', fontWeight: 700, textDecoration: 'none' }}>See Arize Plus</Link>
+          <h1 style={{ fontFamily: "var(--font-adult)", fontSize: '23px', color: "var(--ink)", fontWeight: 500, marginBottom: '10px' }}>{room.name} is a Plus room</h1>
+          <p style={{ color: "var(--muted)", fontSize: "16px", lineHeight: 1.55, marginBottom: '20px' }}>Core members can join Wins Only with text chat. Plus opens every room along with voice and video messages.</p>
+          <Link href="/upgrade" style={{ display: 'block', padding: '13px', borderRadius: '12px', background: "var(--orange)", color: "var(--ink)", fontWeight: 700, textDecoration: 'none' }}>See Arize Plus</Link>
         </div>
       </div>
     )
   }
 
   return (
-    <div style={{ background: '#0E1C12', display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 146px)' }}>
+    <div className="adult-chat" style={{ background: "var(--cream)", display: 'flex', flexDirection: 'column' }}>
 
       {/* Room header */}
-      <div style={{ padding: '12px 16px', background: 'rgba(26,46,30,0.9)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-        <Link href="/village" style={{ color: '#BDB5A0', display: 'flex', alignItems: 'center' }}>
+      <div style={{ padding: '12px 16px', background: "var(--green-soft)", borderBottom: "1px solid var(--border)", display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+        <Link href="/village" aria-label="Back to Village rooms" style={{ color: "var(--muted)", display: 'flex', alignItems: 'center', minWidth: 44, minHeight: 44 }}>
           <ArrowLeft size={20} />
         </Link>
         <div style={{ flex: 1 }}>
-          <p style={{ fontFamily: 'var(--font-playfair)', fontSize: '16px', color: '#F5F0E8', fontWeight: 400, lineHeight: 1.2 }}>
+          <p style={{ fontFamily: "var(--font-adult)", fontSize: '16px', color: "var(--ink)", fontWeight: 400, lineHeight: 1.2 }}>
             {room?.name ?? 'Room'}
           </p>
-          <p style={{ fontSize: '11px', color: '#BDB5A0' }}>{room?.description}</p>
+          <p style={{ fontSize: "14px", color: "var(--muted)" }}>{room?.description}</p>
         </div>
         {isModerator && (
-          <span style={{ fontSize: '10px', color: '#C9A227', background: 'rgba(201,162,39,0.1)', padding: '3px 8px', borderRadius: '100px', border: '1px solid rgba(201,162,39,0.2)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{ fontSize: "13px", color: "var(--green)", background: "var(--yellow-soft)", padding: '3px 8px', borderRadius: '100px', border: "1px solid var(--yellow)", display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Crown size={10} /> Mod
           </span>
         )}
       </div>
 
       {!isMember ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: "40px 20px", textAlign: 'center' }}>
           <p style={{ fontSize: '18px', marginBottom: '16px' }}>💬</p>
-          <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: '20px', color: '#F5F0E8', fontWeight: 400, marginBottom: '12px' }}>
+          <h3 style={{ fontFamily: "var(--font-adult)", fontSize: '20px', color: "var(--ink)", fontWeight: 400, marginBottom: '12px' }}>
             Join {room?.name}
           </h3>
-          <p style={{ fontSize: '13px', color: '#BDB5A0', lineHeight: 1.5, marginBottom: '24px', maxWidth: '280px' }}>
+          <p style={{ fontSize: "16px", color: "var(--muted)", lineHeight: 1.5, marginBottom: "20px", maxWidth: '280px' }}>
             {room?.description} Join to read and participate in the conversation.
           </p>
           <button onClick={joinRoom}
-            style={{ background: '#C9A227', color: '#0E1C12', border: 'none', padding: '13px 28px', borderRadius: '100px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-dm-sans)' }}>
+            style={{ background: "var(--orange)", color: "var(--ink)", border: 'none', padding: '13px 28px', borderRadius: '100px', fontSize: "16px", fontWeight: 600, cursor: 'pointer', fontFamily: "var(--font-adult)" }}>
             Join this room
           </button>
         </div>
       ) : (
         <>
           {/* Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="adult-chat-scroll" role="log" aria-label="Village conversation" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {messages.length === 0 && (
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                <p style={{ fontSize: '13px', color: '#BDB5A0', lineHeight: 1.5 }}>
+                <p style={{ fontSize: "16px", color: "var(--muted)", lineHeight: 1.5 }}>
                   Be the first to say something in {room?.name}.
                 </p>
               </div>
@@ -334,8 +343,8 @@ export default function RoomPage() {
                         width: '28px', height: '28px', borderRadius: '50%',
                         background: getAvatarColor(msg.user_id),
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '10px', fontWeight: 600, color: 'white', flexShrink: 0,
-                        border: isMsgModerator ? '2px solid #C9A227' : '2px solid transparent',
+                        fontSize: "13px", fontWeight: 600, color: 'var(--ink)', flexShrink: 0,
+                        border: isMsgModerator ? "2px solid var(--green)" : '2px solid transparent',
                         cursor: isModerator && !isMsgModerator ? 'pointer' : 'default',
                         padding: 0,
                       }}>
@@ -344,17 +353,17 @@ export default function RoomPage() {
                   )}
                   <div style={{ maxWidth: '88%' }}>
                     {!isOwn && (
-                      <p style={{ fontSize: '10px', color: '#BDB5A0', marginBottom: '3px', marginLeft: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: '3px', marginLeft: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         {name}
-                        {isMsgModerator && <Crown size={9} color="#C9A227" />}
+                        {isMsgModerator && <Crown size={9} color="var(--green)" />}
                       </p>
                     )}
-                    <div style={{
+                    <div className="adult-chat-bubble" data-role={isOwn ? 'user' : 'assistant'} style={{
                       padding: (msg.message_type === 'audio' || msg.message_type === 'video') ? '6px 8px' : '9px 12px',
                       borderRadius: isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                      background: isOwn ? 'rgba(201,162,39,0.15)' : 'rgba(74,124,89,0.2)',
-                      border: `1px solid ${isOwn ? 'rgba(201,162,39,0.25)' : 'rgba(74,124,89,0.3)'}`,
-                      fontSize: '15px', color: '#F5F0E8', lineHeight: 1.45,
+                      background: isOwn ? "var(--yellow-soft)" : "var(--green-soft)",
+                      border: `1px solid ${isOwn ? 'var(--yellow)' : 'var(--border)'}`,
+                      fontSize: '15px', color: "var(--ink)", lineHeight: 1.45,
                     }}>
                       {msg.message_type === 'audio' && msg.audio_url ? (
                         <audio controls src={msg.audio_url} style={{ height: '32px', maxWidth: '200px', display: 'block' }} />
@@ -364,7 +373,7 @@ export default function RoomPage() {
                         msg.content
                       )}
                     </div>
-                    <p style={{ fontSize: '9px', color: '#BDB5A0', marginTop: '3px', textAlign: isOwn ? 'right' : 'left', marginRight: isOwn ? '4px' : 0, marginLeft: isOwn ? 0 : '4px' }}>
+                    <p style={{ fontSize: "13px", color: "var(--muted)", marginTop: '3px', textAlign: isOwn ? 'right' : 'left', marginRight: isOwn ? '4px' : 0, marginLeft: isOwn ? 0 : '4px' }}>
                       {new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                     </p>
                   </div>
@@ -375,66 +384,67 @@ export default function RoomPage() {
           </div>
 
           {/* Input bar */}
-          <div style={{ padding: '12px 16px', background: 'rgba(26,46,30,0.9)', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+          <div className="adult-chat-composer" style={{ padding: '12px 16px', flexShrink: 0 }}>
             {videoRecording ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <video ref={videoPreviewRef} muted playsInline style={{ width: '100%', maxHeight: '180px', borderRadius: '12px', objectFit: 'cover', background: '#000' }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(196,97,74,0.1)', border: '1px solid rgba(196,97,74,0.3)', borderRadius: '20px', padding: '10px 16px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#C4614A', display: 'inline-block' }} />
-                    <span style={{ fontSize: '13px', color: '#C4614A' }}>Recording {formatTime(videoRecordingSeconds)} / 1:00</span>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', background: "var(--error-soft)", border: "1px solid var(--error)", borderRadius: '20px', padding: '10px 16px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: "var(--error)", display: 'inline-block' }} />
+                    <span style={{ fontSize: "16px", color: "var(--error)" }}>Recording {formatTime(videoRecordingSeconds)} / 1:00</span>
                   </div>
-                  <button onClick={stopVideoRecording}
-                    style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#C4614A', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
+                  <button onClick={stopVideoRecording} aria-label="Stop video recording"
+                    style={{ width: '40px', height: '40px', borderRadius: '50%', background: "var(--error)", border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
                     <VideoOff size={16} />
                   </button>
                 </div>
               </div>
             ) : recording ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(196,97,74,0.1)', border: '1px solid rgba(196,97,74,0.3)', borderRadius: '20px', padding: '10px 16px' }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#C4614A', display: 'inline-block' }} />
-                  <span style={{ fontSize: '13px', color: '#C4614A' }}>Recording {formatTime(recordingSeconds)}</span>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', background: "var(--error-soft)", border: "1px solid var(--error)", borderRadius: '20px', padding: '10px 16px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: "var(--error)", display: 'inline-block' }} />
+                  <span style={{ fontSize: "16px", color: "var(--error)" }}>Recording {formatTime(recordingSeconds)}</span>
                 </div>
-                <button onClick={stopRecording}
-                  style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#C4614A', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
+                <button onClick={stopRecording} aria-label="Stop voice recording"
+                  style={{ width: '40px', height: '40px', borderRadius: '50%', background: "var(--error)", border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
                   <MicOff size={16} />
                 </button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {access.limits.villageMedia ? <><button onClick={startRecording}
-                  style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#BDB5A0', flexShrink: 0 }}>
+                {access.limits.villageMedia ? <><button onClick={startRecording} aria-label="Record voice message"
+                  style={{ width: '36px', height: '36px', borderRadius: '50%', background: "var(--surface-soft)", border: "1px solid var(--border)", cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: "var(--muted)", flexShrink: 0 }}>
                   <Mic size={15} />
                 </button>
-                <button onClick={startVideoRecording}
-                  style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#BDB5A0', flexShrink: 0 }}>
+                <button onClick={startVideoRecording} aria-label="Record video message"
+                  style={{ width: '36px', height: '36px', borderRadius: '50%', background: "var(--surface-soft)", border: "1px solid var(--border)", cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: "var(--muted)", flexShrink: 0 }}>
                   <Video size={15} />
                 </button></> : (
-                  <Link href="/upgrade" aria-label="Unlock voice and video with Plus" title="Voice and video are available with Plus" style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F2D98A', flexShrink: 0 }}>
+                  <Link href="/upgrade" aria-label="Unlock voice and video with Plus" title="Voice and video are available with Plus" style={{ width: '44px', height: '44px', borderRadius: '50%', background: "var(--yellow-soft)", border: "1px solid var(--yellow)", display: 'flex', alignItems: 'center', justifyContent: 'center', color: "var(--green)", flexShrink: 0 }}>
                     <LockKeyhole size={15} />
                   </Link>
                 )}
                 <textarea
+                  aria-label="Message the Village room"
                   value={text}
                   onChange={e => setText(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Say something…"
                   rows={1}
                   style={{
-                    flex: 1, background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px',
-                    padding: '10px 16px', fontSize: '13px', color: '#F5F0E8',
-                    outline: 'none', fontFamily: 'var(--font-dm-sans)', maxHeight: '100px', lineHeight: 1.4,
+                    flex: 1, minWidth: 0, background: "var(--surface-soft)",
+                    border: "1px solid var(--border)", borderRadius: '20px',
+                    padding: '10px 16px', fontSize: "16px", color: "var(--ink)",
+                    outline: 'none', fontFamily: "var(--font-adult)", maxHeight: '100px', lineHeight: 1.4,
                   }}
                 />
-                <button onClick={sendMessage} disabled={!text.trim() || sending}
+                <button onClick={sendMessage} disabled={!text.trim() || sending} aria-label="Send message"
                   style={{
                     width: '40px', height: '40px', borderRadius: '50%',
-                    background: text.trim() ? '#C9A227' : 'rgba(255,255,255,0.1)',
+                    background: text.trim() ? "var(--orange)" : "var(--surface-soft)",
                     border: 'none', cursor: text.trim() ? 'pointer' : 'default',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0, color: text.trim() ? '#0E1C12' : '#BDB5A0',
+                    flexShrink: 0, color: text.trim() ? "var(--ink)" : "var(--muted)",
                   }}>
                   <Send size={16} />
                 </button>

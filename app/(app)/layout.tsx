@@ -18,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect('/sign-in')
 
   const { data: deletion } = await supabase.from('account_deletion_jobs').select('id').eq('user_id', user.id).maybeSingle()
-  if (deletion) return <main className="app-container deletion-pending"><AppHeader /><AccountDeletionPanel pending /></main>
+  if (deletion) return <div className="adult-theme"><main className="adult-content deletion-pending"><AppHeader /><AccountDeletionPanel pending /></main></div>
 
   const { data: consent } = await supabase
     .from('legal_consents')
@@ -33,19 +33,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const access = await getUserAccess(supabase, user.id)
 
   return (
-    <div style={{ background: '#0A1409', minHeight: '100dvh' }}>
-      <div className="app-container">
+    <div className="adult-theme adult-shell">
+      <a className="adult-skip-link" href="#adult-main">Skip to content</a>
         <AccessProvider access={access}>
-          <AppHeader />
+          <AppHeader initial={String(user.user_metadata?.full_name || user.email || 'A').slice(0, 1).toUpperCase()} />
           {/* Page content */}
-          <main style={{ paddingBottom: '88px', minHeight: 'calc(100dvh - 58px)' }}>
-            {children}
+          <main id="adult-main" className="adult-main" tabIndex={-1}>
+            <div className="adult-content">{children}</div>
           </main>
           <BottomNav />
           <WelcomeModal />
           <EarlyMemberTrialModal />
         </AccessProvider>
-      </div>
     </div>
   )
 }

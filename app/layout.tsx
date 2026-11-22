@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, DM_Sans } from "next/font/google";
+import { Playfair_Display, DM_Sans, Nunito } from "next/font/google";
 import "./globals.css";
+import "./adult.css";
+
+const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"], weight: ["400", "600", "700", "800"], display: "swap" });
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -42,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${playfair.variable} ${dmSans.variable}`}>
+    <html lang="en" className={`${playfair.variable} ${dmSans.variable} ${nunito.variable}`}>
       <body>{children}</body>
     </html>
   );

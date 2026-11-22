@@ -29,23 +29,23 @@ export default async function ConsentPage() {
   }
 
   return (
-    <main style={{
-      background: '#0A1409', minHeight: '100dvh', padding: '28px 22px',
+    <main className="adult-theme adult-auth" style={{
+      background: "var(--cream)", minHeight: '100dvh', padding: '28px 22px',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div style={{ width: '100%', maxWidth: '480px' }}>
         <Link href="/" aria-label="Arize home" style={{
           display: 'inline-flex', alignItems: 'center', gap: '10px',
-          color: '#F5F0E8', textDecoration: 'none', marginBottom: '28px',
-          fontFamily: 'var(--font-playfair)', fontSize: '22px',
+          color: "var(--ink)", textDecoration: 'none', marginBottom: '28px',
+          fontFamily: "var(--font-adult)", fontSize: '22px',
         }}>
           <Image src="/flower%20nobg.png" alt="" width={40} height={40} />
           Arize
         </Link>
         <section style={{
-          background: 'rgba(26,46,30,0.82)', border: '1px solid rgba(255,255,255,0.09)',
-          borderRadius: '22px', padding: 'clamp(24px, 6vw, 34px)',
-          boxShadow: '0 24px 70px rgba(0,0,0,0.22)',
+          background: "var(--green-soft)", border: "1px solid var(--border)",
+          borderRadius: '22px', padding: "clamp(20px, 6vw, 34px)",
+          boxShadow: "var(--shadow)",
         }}>
           <ConsentForm />
         </section>

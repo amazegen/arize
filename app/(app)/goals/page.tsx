@@ -106,32 +106,31 @@ export default function GoalsPage() {
   }
 
   return (
-    <div style={{ background: '#0E1C12', minHeight: '100%', paddingBottom: '16px' }}>
+    <div style={{ background: "var(--cream)", minHeight: '100%', paddingBottom: '16px' }}>
       {error && <p role="alert" className="billing-notice">{error}</p>}
 
       {/* Header */}
-      <div style={{ padding: '20px 24px 0' }}>
-        <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#C9A227', marginBottom: '8px' }}>
+      <div style={{ padding: "20px 20px 0" }}>
+        <p style={{ fontSize: "13px", fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: "var(--green)", marginBottom: '8px' }}>
           Goals & Accountability
         </p>
-        <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: '24px', color: '#F5F0E8', fontWeight: 500, lineHeight: 1.3, marginBottom: '4px' }}>
-          Intentional Goals
-        </h2>
+        <h1>Goals</h1>
+        <p style={{ color: 'var(--muted)', marginTop: 6 }}>Small steps you choose.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
-          <button onClick={() => moveWeek(-1)} aria-label="View previous week" style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', background: '#1A2E1E', color: '#BDB5A0', display: 'grid', placeItems: 'center', cursor: 'pointer' }}>
+          <button onClick={() => moveWeek(-1)} aria-label="View previous week" style={{ width: '30px', height: '30px', borderRadius: '50%', border: "1px solid var(--border)", background: "var(--surface)", color: "var(--muted)", display: 'grid', placeItems: 'center', cursor: 'pointer' }}>
             <ChevronLeft size={16} />
           </button>
-          <p style={{ fontSize: '12px', color: '#BDB5A0', flex: 1 }}>
+          <p style={{ fontSize: "14px", color: "var(--muted)", flex: 1 }}>
             {weekLabel} · {doneCount} of {goals.length} complete
           </p>
-          <button onClick={() => moveWeek(1)} disabled={isCurrentWeek} aria-label="View next week" style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', background: '#1A2E1E', color: '#BDB5A0', display: 'grid', placeItems: 'center', cursor: isCurrentWeek ? 'default' : 'pointer', opacity: isCurrentWeek ? 0.3 : 1 }}>
+          <button onClick={() => moveWeek(1)} disabled={isCurrentWeek} aria-label="View next week" style={{ width: '30px', height: '30px', borderRadius: '50%', border: "1px solid var(--border)", background: "var(--surface)", color: "var(--muted)", display: 'grid', placeItems: 'center', cursor: isCurrentWeek ? 'default' : 'pointer', opacity: isCurrentWeek ? 0.3 : 1 }}>
             <ChevronRight size={16} />
           </button>
         </div>
       </div>
 
       {/* Week rhythm */}
-      <div style={{ margin: '18px 24px 0', display: 'flex', gap: '6px' }}>
+      <div style={{ margin: "18px 20px 0", display: 'flex', gap: '6px' }}>
         {DAY_LABELS.map((day, i) => {
           const dayDate = new Date(weekStart)
           dayDate.setDate(dayDate.getDate() + i)
@@ -142,19 +141,19 @@ export default function GoalsPage() {
             <button key={day} onClick={() => setSelectedDay(i)} aria-label={`View goals for ${dayDate.toLocaleDateString()}`} style={{
               flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
               gap: '6px', padding: '10px 4px', borderRadius: '8px',
-              background: isSelected ? 'rgba(201,162,39,0.16)' : '#1A2E1E',
-              border: `1px solid ${isSelected ? '#C9A227' : isToday ? 'rgba(201,162,39,0.45)' : 'rgba(255,255,255,0.05)'}`,
-              fontSize: '9px',
-              color: isSelected ? '#F2D98A' : '#BDB5A0',
+              background: isSelected ? "var(--yellow-soft)" : "var(--surface)",
+              border: `1px solid ${isSelected ? 'var(--green)' : isToday ? 'var(--yellow)' : 'var(--border)'}`,
+              fontSize: "13px",
+              color: isSelected ? "var(--green)" : "var(--muted)",
               letterSpacing: '0.05em', textTransform: 'uppercase',
-              cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+              cursor: 'pointer', fontFamily: "var(--font-adult)",
             }}>
               <div style={{
                 width: '7px', height: '7px', borderRadius: '50%',
-                background: isPast ? '#4A7C59' : isToday ? '#C9A227' : 'rgba(255,255,255,0.1)',
+                background: isPast ? "var(--green)" : isToday ? "var(--orange)" : "var(--surface-soft)",
               }} />
-              <span>{day}</span>
-              <span style={{ fontSize: '9px' }}>{dayDate.getDate()}</span>
+              <span style={{ whiteSpace: 'nowrap' }}>{day}</span>
+              <span style={{ fontSize: "13px" }}>{dayDate.getDate()}</span>
             </button>
           )
         })}
@@ -163,25 +162,25 @@ export default function GoalsPage() {
       {/* Sunday session banner */}
       {isCurrentWeek && (
       <div style={{
-        margin: '16px 24px 0',
-        background: 'linear-gradient(135deg, rgba(36,61,40,1) 0%, rgba(14,28,18,1) 100%)',
-        border: '1px solid rgba(201,162,39,0.25)',
+        margin: "16px 20px 0",
+        background: "var(--green-soft)",
+        border: "1px solid var(--yellow)",
         borderRadius: '20px', padding: '18px', position: 'relative', overflow: 'hidden',
       }}>
         <span style={{
           position: 'absolute', right: '16px', top: '14px',
-          fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(201,162,39,0.3)', fontWeight: 600,
+          fontSize: "13px", letterSpacing: '0.2em', color: "var(--green)", fontWeight: 600,
         }}>SUNDAY</span>
-        <p style={{ fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#C9A227', marginBottom: '6px' }}>
+        <p style={{ fontSize: "13px", letterSpacing: '0.12em', textTransform: 'uppercase', color: "var(--green)", marginBottom: '6px' }}>
           Sunday Goal Session
         </p>
-        <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: '16px', color: '#F5F0E8', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.3, marginBottom: '14px' }}>
+        <h3 style={{ fontFamily: "var(--font-adult)", fontSize: '16px', color: "var(--ink)", fontWeight: 400, fontStyle: 'italic', lineHeight: 1.3, marginBottom: '14px' }}>
           &ldquo;Set the week from a place<br />of intention, not reaction.&rdquo;
         </h3>
         <Link href="/goals/session" style={{
           display: 'inline-flex', alignItems: 'center', gap: '6px',
-          background: 'rgba(201,162,39,0.15)', border: '1px solid #C9A227',
-          color: '#C9A227', fontSize: '12px', fontWeight: 500,
+          background: "var(--yellow-soft)", border: "1px solid var(--green)",
+          color: "var(--green)", fontSize: "14px", fontWeight: 500,
           padding: '8px 16px', borderRadius: '100px',
           textDecoration: 'none',
         }}>
@@ -191,44 +190,44 @@ export default function GoalsPage() {
       )}
 
       {/* Pattern Map link */}
-      <div style={{ margin: '12px 24px 0' }}>
+      <div style={{ margin: "12px 20px 0" }}>
         <Link href="/goals/patterns" style={{
           display: 'flex', alignItems: 'center', gap: '12px',
-          background: 'rgba(123,173,196,0.08)', border: '1px solid rgba(123,173,196,0.2)',
+          background: "var(--green-soft)", border: "1px solid var(--border)",
           borderRadius: '12px', padding: '13px 16px', textDecoration: 'none',
         }}>
-          <TrendingUp size={16} color="#7BADC4" />
-          <span style={{ flex: 1, fontSize: '13px', color: '#F5F0E8' }}>View your Pattern Map</span>
-          <span style={{ fontSize: '11px', color: '#7BADC4' }}>{isCore ? '7-day view' : 'All-time views'} →</span>
+          <TrendingUp size={16} color="var(--green)" />
+          <span style={{ flex: 1, fontSize: "16px", color: "var(--ink)" }}>View your Pattern Map</span>
+          <span style={{ fontSize: "14px", color: "var(--green)" }}>{isCore ? '7-day view' : 'All-time views'} →</span>
         </Link>
       </div>
 
       {/* Goals list */}
-      <div style={{ margin: '16px 24px 0' }}>
-        <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#C9A227', marginBottom: '4px' }}>
+      <div style={{ margin: "16px 20px 0" }}>
+        <p style={{ fontSize: "13px", fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: "var(--green)", marginBottom: '4px' }}>
           {selectedDayLabel}
         </p>
-        <p style={{ fontSize: '12px', color: '#BDB5A0', marginBottom: '12px' }}>
+        <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: '12px' }}>
           Dated goals for this day plus your week-long commitments
         </p>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <p style={{ fontSize: '13px', color: '#BDB5A0' }}>Loading goals…</p>
+            <p style={{ fontSize: "16px", color: "var(--muted)" }}>Loading goals…</p>
           </div>
         ) : selectedGoals.length === 0 ? (
           <div style={{
-            background: '#1A2E1E', border: '1px dashed rgba(255,255,255,0.1)',
+            background: "var(--surface)", border: "1px dashed var(--border)",
             borderRadius: '12px', padding: '28px', textAlign: 'center',
           }}>
-            <p style={{ fontSize: '14px', color: '#BDB5A0', marginBottom: '12px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: "16px", color: "var(--muted)", marginBottom: '12px', lineHeight: 1.5 }}>
               No goals are scheduled for this day.
             </p>
             {isCurrentWeek && (
               <Link href="/goals/session" style={{
                 display: 'inline-flex', alignItems: 'center', gap: '6px',
-                background: '#C9A227', color: '#0E1C12', textDecoration: 'none',
-                padding: '10px 20px', borderRadius: '100px', fontSize: '13px', fontWeight: 600,
+                background: "var(--orange)", color: "var(--ink)", textDecoration: 'none',
+                padding: '10px 20px', borderRadius: '100px', fontSize: "16px", fontWeight: 600,
               }}>
                 <Plus size={14} /> Set your goals
               </Link>
@@ -239,41 +238,46 @@ export default function GoalsPage() {
             {selectedGoals.map(goal => (
               <div
                 key={goal.id}
+                className="adult-goal-row"
+                data-complete={goal.is_complete}
                 style={{
-                  background: '#1A2E1E', border: '1px solid rgba(255,255,255,0.05)',
+                  background: "var(--surface)", border: "1px solid var(--border)",
                   borderRadius: '12px', padding: '14px 16px',
-                  opacity: goal.is_complete ? 0.62 : 1,
+                  opacity: 1,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '10px' }}>
                   <button
                     onClick={() => toggleGoal(goal)}
+                    className="adult-goal-toggle"
+                    aria-label={`${goal.is_complete ? 'Mark incomplete' : 'Complete goal'}: ${goal.title}`}
+                    aria-pressed={goal.is_complete}
                     style={{
                       width: '20px', height: '20px', borderRadius: '50%',
-                      border: `2px solid ${goal.is_complete ? '#4A7C59' : '#4A7C59'}`,
-                      background: goal.is_complete ? '#4A7C59' : 'transparent',
+                      border: `2px solid ${goal.is_complete ? 'var(--border)' : 'var(--border)'}`,
+                      background: goal.is_complete ? "var(--green)" : 'transparent',
                       flexShrink: 0, marginTop: '2px', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'white', fontSize: '10px',
+                      color: 'white', fontSize: "13px",
                     }}
                   >
                     {goal.is_complete && <Check size={12} strokeWidth={3} />}
                   </button>
                   <span style={{
-                    fontSize: '13px', color: goal.is_complete ? '#BDB5A0' : '#F5F0E8',
+                    fontSize: "16px", color: goal.is_complete ? "var(--muted)" : "var(--ink)",
                     lineHeight: 1.4, flex: 1,
                   }}>
                     {goal.title}
                   </span>
                 </div>
-                <div style={{ height: '4px', background: 'rgba(255,255,255,0.07)', borderRadius: '100px', overflow: 'hidden' }}>
+                <div style={{ height: '4px', background: "var(--surface-soft)", borderRadius: '100px', overflow: 'hidden' }}>
                   <div style={{
                     height: '100%', borderRadius: '100px',
-                    background: goal.is_complete ? '#4A7C59' : '#C9A227',
+                    background: goal.is_complete ? "var(--green)" : "var(--orange)",
                     width: `${goal.progress}%`, transition: 'width 0.4s',
                   }} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '10px', color: '#BDB5A0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: "13px", color: "var(--muted)" }}>
                   <span>{goal.category}</span>
                   <span>{goal.is_complete ? 'Done ✓' : `${goal.progress}%`}</span>
                 </div>
@@ -284,9 +288,9 @@ export default function GoalsPage() {
 
         {isCurrentWeek && <Link href="/goals/session" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          background: 'transparent', border: '1px dashed rgba(255,255,255,0.12)',
-          borderRadius: '12px', padding: '14px', color: '#BDB5A0',
-          fontSize: '13px', textDecoration: 'none', marginTop: '10px',
+          background: 'transparent', border: "1px dashed var(--border)",
+          borderRadius: '12px', padding: '14px', color: "var(--muted)",
+          fontSize: "16px", textDecoration: 'none', marginTop: '10px',
           transition: 'all 0.2s',
         }}>
           <Plus size={14} /> Add a new commitment
@@ -294,15 +298,15 @@ export default function GoalsPage() {
       </div>
 
       {/* Friday reflection link */}
-      <div style={{ margin: '16px 24px 0' }}>
+      <div style={{ margin: "16px 20px 0" }}>
         <Link href="/goals/friday-reflection" style={{
           display: 'flex', alignItems: 'center', gap: '12px',
-          background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.15)',
+          background: "var(--yellow-soft)", border: "1px solid var(--yellow)",
           borderRadius: '12px', padding: '13px 16px', textDecoration: 'none',
         }}>
           <span style={{ fontSize: '16px' }}>🪞</span>
-          <span style={{ flex: 1, fontSize: '13px', color: '#F5F0E8' }}>Friday Reflection</span>
-          <span style={{ fontSize: '11px', color: '#C9A227' }}>Close the week →</span>
+          <span style={{ flex: 1, fontSize: "16px", color: "var(--ink)" }}>Friday Reflection</span>
+          <span style={{ fontSize: "14px", color: "var(--green)" }}>Close the week →</span>
         </Link>
       </div>
     </div>

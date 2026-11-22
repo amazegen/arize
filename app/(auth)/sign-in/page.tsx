@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, ArrowRight } from 'lucide-react'
+import AdultAuthFrame from '@/components/ui/AdultAuthFrame'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignInPage() {
@@ -44,42 +45,17 @@ export default function SignInPage() {
   }
 
   return (
-    <div style={{
-      background: '#0A1409', minHeight: '100dvh', display: 'flex',
-      flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '24px',
-    }}>
-      <div style={{ width: '100%', maxWidth: '400px' }}>
-
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <Link href="/" aria-label="Arize home">
-            <img src="/flower%20nobg.png" alt="Arize" style={{ width: '72px', height: '72px', objectFit: 'contain', display: 'block', margin: '0 auto 16px' }} />
-          </Link>
-          <h1 style={{ fontFamily: 'var(--font-playfair)', fontSize: '28px', color: '#F5F0E8', fontWeight: 400, marginBottom: '6px' }}>
-            Welcome back
-          </h1>
-          <p style={{ fontSize: '13px', color: '#BDB5A0' }}>
-            Sign in to your Arize account
-          </p>
-        </div>
-
-        {/* Card */}
-        <div style={{
-          background: 'rgba(26,46,30,0.8)', border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '20px', padding: '28px',
-        }}>
-
+    <AdultAuthFrame title="Sign in" subtitle="Good to see you again.">
           {/* Google */}
           <button
             onClick={handleGoogleSignIn}
             disabled={googleLoading}
             style={{
               width: '100%', padding: '13px', borderRadius: '12px',
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-              color: '#F5F0E8', fontSize: '14px', fontWeight: 500,
+              background: "var(--surface-soft)", border: "1px solid var(--border)",
+              color: "var(--ink)", fontSize: "16px", fontWeight: 500,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              cursor: 'pointer', marginBottom: '20px', fontFamily: 'var(--font-dm-sans)',
+              cursor: 'pointer', marginBottom: '20px', fontFamily: "var(--font-adult)",
               opacity: googleLoading ? 0.6 : 1,
             }}
           >
@@ -95,56 +71,61 @@ export default function SignInPage() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px',
           }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-            <span style={{ fontSize: '11px', color: '#BDB5A0', letterSpacing: '0.06em' }}>or</span>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ flex: 1, height: '1px', background: "var(--surface-soft)" }} />
+            <span style={{ fontSize: "14px", color: "var(--muted)", letterSpacing: '0.06em' }}>or</span>
+            <div style={{ flex: 1, height: '1px', background: "var(--surface-soft)" }} />
           </div>
 
           {/* Email form */}
           <form onSubmit={handleEmailSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div>
-              <label style={{ fontSize: '11px', color: '#BDB5A0', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+              <label htmlFor="sign-in-email" style={{ fontSize: "14px", color: "var(--muted)", letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
                 Email
               </label>
               <input
                 type="email"
+                id="sign-in-email"
+                autoComplete="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
                 placeholder="you@work.com"
                 style={{
                   width: '100%', padding: '12px 16px', borderRadius: '10px',
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#F5F0E8', fontSize: '14px', outline: 'none',
-                  fontFamily: 'var(--font-dm-sans)',
+                  background: "var(--surface-soft)", border: "1px solid var(--border)",
+                  color: "var(--ink)", fontSize: "16px", outline: 'none',
+                  fontFamily: "var(--font-adult)",
                 }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: '11px', color: '#BDB5A0', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+              <label htmlFor="sign-in-password" style={{ fontSize: "14px", color: "var(--muted)", letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  id="sign-in-password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
                   style={{
                     width: '100%', padding: '12px 44px 12px 16px', borderRadius: '10px',
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                    color: '#F5F0E8', fontSize: '14px', outline: 'none',
-                    fontFamily: 'var(--font-dm-sans)',
+                    background: "var(--surface-soft)", border: "1px solid var(--border)",
+                    color: "var(--ink)", fontSize: "16px", outline: 'none',
+                    fontFamily: "var(--font-adult)",
                   }}
                 />
                 <button
                   type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword(s => !s)}
                   style={{
                     position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', cursor: 'pointer', color: '#BDB5A0',
+                    background: 'none', border: 'none', cursor: 'pointer', color: "var(--muted)",
                     display: 'flex', alignItems: 'center',
                   }}
                 >
@@ -154,7 +135,7 @@ export default function SignInPage() {
             </div>
 
             {error && (
-              <p style={{ fontSize: '13px', color: '#C4614A', padding: '10px 14px', background: 'rgba(196,97,74,0.1)', borderRadius: '8px' }}>
+              <p style={{ fontSize: "16px", color: "var(--error)", padding: '10px 14px', background: "var(--error-soft)", borderRadius: '8px' }}>
                 {error}
               </p>
             )}
@@ -164,24 +145,21 @@ export default function SignInPage() {
               disabled={loading}
               style={{
                 width: '100%', padding: '14px', borderRadius: '12px',
-                background: '#C9A227', color: '#0E1C12', border: 'none',
-                fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                background: "var(--orange)", color: "var(--ink)", border: 'none',
+                fontSize: "16px", fontWeight: 600, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                fontFamily: 'var(--font-dm-sans)', opacity: loading ? 0.7 : 1,
+                fontFamily: "var(--font-adult)", opacity: loading ? 0.7 : 1,
               }}
             >
               {loading ? 'Signing in…' : <><span>Sign in</span> <ArrowRight size={16} /></>}
             </button>
           </form>
-        </div>
-
-        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '13px', color: '#BDB5A0' }}>
+        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: "16px", color: "var(--muted)" }}>
           Don&apos;t have an account?{' '}
-          <Link href="/sign-up" style={{ color: '#C9A227', textDecoration: 'none', fontWeight: 500 }}>
+          <Link href="/sign-up" style={{ color: "var(--green)", textDecoration: 'none', fontWeight: 500 }}>
             Sign up
           </Link>
         </p>
-      </div>
-    </div>
+    </AdultAuthFrame>
   )
 }
