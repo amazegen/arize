@@ -21,11 +21,14 @@ export function useAccounts(accounts:Accounts){
   },[accounts])
   useEffect(()=>{
     mounted.current=true
+    // Do not rely only on INITIAL_SESSION: SDK initialization can fail before
+    // an auth event is emitted (for example an unsupported native Web API).
+    const startup=setTimeout(()=>{if(mounted.current)void refresh()},0)
     const listener=accounts.client.auth.onAuthStateChange((event,next)=>{
       if(event==='SIGNED_OUT'){revision.current++;accounts.clearPrivate();owner.current=null;setSession(null);setRecovery(false);setLoading(false);void accounts.storage.removeItem(CONTINUITY_KEY).catch(()=>setError('Secure cleanup failed. Unlock your device and sign out again.'))}
       else {if(next?.user.id!==owner.current){accounts.clearPrivate();setSession(null);setLoading(true)}queueMicrotask(()=>{if(mounted.current)void refresh()})}
     })
-    return()=>{mounted.current=false;listener.data.subscription.unsubscribe();accounts.clearPrivate()}
+    return()=>{mounted.current=false;clearTimeout(startup);listener.data.subscription.unsubscribe();accounts.clearPrivate()}
   },[accounts,refresh])
   useEffect(()=>{
     let alive=true

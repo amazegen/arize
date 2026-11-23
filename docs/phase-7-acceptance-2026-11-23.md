@@ -1,6 +1,8 @@
 # Phase 7 — local iOS compilation and startup, November 23, 2026
 
-Adult-only continuation on `codex/phase-7-native-features`, stacked draft PR #9. Nothing merged, deployed, provisioned, signed or uploaded. No hosted database, Stripe, OpenAI or Student operation. This supplements the [November 22 receipt](phase-7-acceptance-2026-11-22.md); it does **not** certify Phase 7 or App Store readiness.
+Adult-only continuation on `codex/phase-7-native-features`, stacked draft PR #9. Nothing merged, deployed, provisioned or uploaded. No Apple account/certificate or physical-device/store signing. No hosted database, Stripe, OpenAI or Student operation. This supplements the [November 22 receipt](phase-7-acceptance-2026-11-22.md); it does **not** certify Phase 7 or App Store readiness.
+
+**Follow-up qualification:** the original compile checks below were unsigned. Connected Keychain testing subsequently required Xcode's **local ad-hoc simulator identity**, described at the end of this receipt. No Apple account, signing certificate, real team, provisioning profile or device/store signing was used.
 
 ## What changed
 
@@ -58,3 +60,14 @@ npm run ios:sync
 ```
 
 Normal account networking remains off by default. The simulator may retain its explicitly installed fictional-data fixture until replaced. No physical-device signing, Apple account action, real email delivery, production key copying or deployment is authorized by this receipt.
+
+## Follow-up — visible startup and simulator Keychain identity
+
+- Restored screen observations by raising the Device Hub window and switching to its compact iPhone view. Pointer input remains unreliable (`noWindowsAvailable`) and the app's WebKit fields are not exposed in the available accessibility tree. Mac menu controls and screenshots work; keyboard entry reached the fictional email field, but sign-in has **not** been verified.
+- The earlier running process was actually stalled on “Restoring your secure account.” Added an explicit initial `refresh()` in `useAccounts`; startup no longer relies solely on an `INITIAL_SESSION` event that may never be emitted after a storage failure. The unsigned fixture then surfaced its real secure-storage refusal.
+- Comparing the builds showed that the unsigned fixture lacked Xcode's simulated application identity. An Xcode build with `CODE_SIGN_IDENTITY=-`, `CODE_SIGNING_ALLOWED=YES` and an empty `DEVELOPMENT_TEAM` supplies `FAKETEAMID.com.amazegen.arize.dev` for the **simulator only**. It visibly reaches “Welcome back” without the secure-storage alert. This is not hardware Keychain acceptance.
+- Updated the connected fixture helper to use that local identity. It still forces Debug and the simulator SDK, preserves exact loopback-only transport and verifies the final app signature is ad-hoc, has no team identifier, contains no provisioning profile and carries only the expected simulated app identifier. No Apple signing key is selected. The default offline `ios:check --build` path remains unsigned.
+- The final helper rebuilt successfully at `/private/tmp/arize-ios-connected-simulator.ilyVnw`. The app currently installed for visible review is the Xcode local-identity build at `/private/tmp/arize-ios-xcode-local-identity.PTiDef/Build/Products/Debug-iphonesimulator/App.app`. It includes the explicit startup check; the final helper additionally defers that check to a cleanup-safe timer for React. It has not replaced the installed app during the user focus handoff. Both use fictional local services. A manually re-signed temporary copy did not launch; it was replaced by the actual Xcode-generated build, not retained as the tested path.
+- Mobile typecheck and all 13 tests pass, including the local-identity helper guards and explicit startup-check regression. Connected UI sign-in, session persistence, Goals, Clarity, Village, notifications, accessibility and physical-iPhone acceptance remain pending. The original browser/API receipts are not substitutes for these tests.
+
+To continue native UI testing, click the Email field in the compact `Arize Local Test iPhone` window. Use only the fictional reviewer credentials from the November 22 receipt. Do not use a production login or accept new legal terms as part of this fixture review.

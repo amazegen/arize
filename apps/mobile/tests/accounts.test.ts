@@ -31,14 +31,19 @@ test('browser review storage is memory-only and isolated per account client',asy
  const source=readFileSync(new URL('../src/account/storage.ts',import.meta.url),'utf8')
  assert.doesNotMatch(source,/localStorage\.|sessionStorage\.|Preferences\.|indexedDB\./)
 })
-test('connected simulator helper keeps loopback ATS and Debug-only unsigned builds out of the normal plist',()=>{
+test('connected simulator helper confines its local identity and loopback ATS to Debug simulator builds',()=>{
  const source=readFileSync(new URL('../../../tests/fixtures/native-services-simulator.mjs',import.meta.url),'utf8')
  assert.match(source,/--synthetic-only/);assert.match(source,/localServices\(\)/)
  assert.match(source,/'127\.0\.0\.1':\{NSExceptionAllowsInsecureHTTPLoads:true,NSIncludesSubdomains:false\}/)
  assert.doesNotMatch(source,/NSAllowsArbitraryLoads|allowProvisioningUpdates|'archive'|'upload'/)
- assert.match(source,/'-configuration','Debug'/);assert.match(source,/CODE_SIGNING_ALLOWED=NO/)
+ assert.match(source,/'-configuration','Debug'/);assert.match(source,/'CODE_SIGN_IDENTITY=-','CODE_SIGNING_ALLOWED=YES','DEVELOPMENT_TEAM='/)
  assert.match(source,/SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG ARIZE_SIMULATOR_TEST/)
  assert.match(source,/SimulatorFixture-Info\.plist/)
+ assert.match(source,/FAKETEAMID\.com\.amazegen\.arize\.dev/)
+ assert.match(source,/existsSync\(artifact\+'\/embedded\.mobileprovision'\),false/)
+ const hook=readFileSync(new URL('../src/account/useAccounts.ts',import.meta.url),'utf8')
+ assert.match(hook,/mounted\.current=true[\s\S]*void refresh\(\)[\s\S]*onAuthStateChange/)
+ assert.match(hook,/clearTimeout\(startup\)/)
 })
 test('Keychain is device-only, scoped, explicitly registered and used by the actual scene root',()=>{
  const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8')
