@@ -1,5 +1,7 @@
 # Phase 7 — real local acceptance and remaining iPhone gates
 
+Historical receipt: [November 23 compilation/startup update](phase-7-acceptance-2026-11-23.md) supersedes the missing-Xcode blocker below. Native visual/device acceptance is still pending.
+
 Continuation on the existing draft PR #9 / `codex/phase-7-native-features`. **Phase 7 is not fully finished.** No merge, deployment, hosted/live database access, Stripe provider operation, Apple portal change, signing or upload was performed. Student remains untouched at `a2a77f1`. Subscriptions remain paused and all billing test configuration stays sandbox-only.
 
 ## What changed in this continuation

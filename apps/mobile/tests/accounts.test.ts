@@ -14,6 +14,16 @@ test('authentication callback is code-only, exact-destination and rejects token 
  assert.equal(authCallback(`${callback}?code=${code}`,callback),code)
  for(const value of [`https://evil.test/auth/callback?code=${code}`,`${callback}?code=${code}&next=https://evil.test`,`${callback}?code=${code}#access_token=private`,`${callback}?code=${code}&code=again`,`${callback}/extra?code=${code}`,`${callback}?code=short`])assert.throws(()=>authCallback(value,callback))
 })
+test('loopback native transport requires both explicit test JS and a native Debug simulator gate',()=>{
+ const fixture={...env,VITE_NATIVE_SIMULATOR_TEST:'true',VITE_ADULT_SUPABASE_URL:'http://127.0.0.1:56581',VITE_ADULT_API_ORIGIN:'http://127.0.0.1:3190'}
+ assert.throws(()=>mobileConfig(fixture,true))
+ assert.throws(()=>mobileConfig(env,true,true))
+ assert.ok(mobileConfig(fixture,true,true)?.localTest)
+ for(const extra of [{VITE_ARIZE_EDITION:'student'},{VITE_ADULT_API_ORIGIN:'http://192.168.1.20:3190'},{VITE_ADULT_API_ORIGIN:'https://api.test'},{VITE_ADULT_SUPABASE_URL:'https://hosted.supabase.co'},{VITE_ADULT_API_ORIGIN:'http://127.0.0.1:3187'},{VITE_NATIVE_LOCAL_TEST:'false'}])assert.throws(()=>mobileConfig({...fixture,...extra},true,true))
+ const swift=readFileSync(new URL('../ios/App/App/ArizeKeychain.swift',import.meta.url),'utf8')
+ assert.match(swift,/#if DEBUG && targetEnvironment\(simulator\) && ARIZE_SIMULATOR_TEST/)
+ assert.match(swift,/#else\s+call.resolve\(\["simulatorFixture": false\]\)/)
+})
 test('browser review storage is memory-only and isolated per account client',async()=>{
  const a=accountStorage(),b=accountStorage();await a.setItem(AUTH_STORAGE_KEY,'fictional-session')
  assert.equal(await a.getItem(AUTH_STORAGE_KEY),'fictional-session');assert.equal(await b.getItem(AUTH_STORAGE_KEY),null)
@@ -21,12 +31,22 @@ test('browser review storage is memory-only and isolated per account client',asy
  const source=readFileSync(new URL('../src/account/storage.ts',import.meta.url),'utf8')
  assert.doesNotMatch(source,/localStorage\.|sessionStorage\.|Preferences\.|indexedDB\./)
 })
+test('connected simulator helper keeps loopback ATS and Debug-only unsigned builds out of the normal plist',()=>{
+ const source=readFileSync(new URL('../../../tests/fixtures/native-services-simulator.mjs',import.meta.url),'utf8')
+ assert.match(source,/--synthetic-only/);assert.match(source,/localServices\(\)/)
+ assert.match(source,/'127\.0\.0\.1':\{NSExceptionAllowsInsecureHTTPLoads:true,NSIncludesSubdomains:false\}/)
+ assert.doesNotMatch(source,/NSAllowsArbitraryLoads|allowProvisioningUpdates|'archive'|'upload'/)
+ assert.match(source,/'-configuration','Debug'/);assert.match(source,/CODE_SIGNING_ALLOWED=NO/)
+ assert.match(source,/SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG ARIZE_SIMULATOR_TEST/)
+ assert.match(source,/SimulatorFixture-Info\.plist/)
+})
 test('Keychain is device-only, scoped, explicitly registered and used by the actual scene root',()=>{
  const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8')
  const swift=read('ios/App/App/ArizeKeychain.swift')
  assert.match(swift,/kSecAttrAccessibleWhenUnlockedThisDeviceOnly/);assert.match(swift,/key.hasPrefix\("arize.native.adult."\)/);assert.match(swift,/kSecAttrSynchronizable as String: false/);assert.doesNotMatch(swift,/print\(|NSLog/)
  assert.match(read('ios/App/App/ArizeViewController.swift'),/registerPluginInstance\(ArizeKeychainPlugin\(\)\)/)
  assert.match(read('ios/App/App/SceneDelegate.swift'),/rootViewController = ArizeViewController\(\)/)
+ assert.match(read('capacitor.config.ts'),/loggingBehavior: 'none'/)
 })
 test('client sends bearer only to the configured native API and discards late results on account change',async()=>{
  const vault=accountStorage(),now=Math.floor(Date.now()/1000)

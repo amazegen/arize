@@ -1,7 +1,8 @@
 import { Capacitor, registerPlugin } from '@capacitor/core'
 export interface Vault { getItem(key:string):Promise<string|null>;setItem(key:string,value:string):Promise<void>;removeItem(key:string):Promise<void> }
-interface KeychainPlugin { get(options:{key:string}):Promise<{value:string|null}>;set(options:{key:string;value:string}):Promise<void>;remove(options:{key:string}):Promise<void> }
+interface KeychainPlugin { get(options:{key:string}):Promise<{value:string|null}>;set(options:{key:string;value:string}):Promise<void>;remove(options:{key:string}):Promise<void>;environment():Promise<{simulatorFixture:boolean}> }
 const keychain=registerPlugin<KeychainPlugin>('ArizeKeychain')
+export async function simulatorFixtureBuild(){return Capacitor.getPlatform()==='ios'&&(await keychain.environment()).simulatorFixture===true}
 export const AUTH_STORAGE_KEY='arize.native.adult.auth'
 export const CONTINUITY_KEY='arize.native.adult.continuity'
 export const FLOW_KEY='arize.native.adult.flow'

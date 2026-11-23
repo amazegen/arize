@@ -9,9 +9,18 @@ public class ArizeKeychainPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "get", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "set", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "remove", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "remove", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "environment", returnType: CAPPluginReturnPromise)
     ]
     private var service: String { (Bundle.main.bundleIdentifier ?? "com.amazegen.arize.dev") + ".adult.auth" }
+    @objc func environment(_ call: CAPPluginCall) {
+        // A JS build flag alone must never enable insecure release transport.
+        #if DEBUG && targetEnvironment(simulator) && ARIZE_SIMULATOR_TEST
+        call.resolve(["simulatorFixture": true])
+        #else
+        call.resolve(["simulatorFixture": false])
+        #endif
+    }
     private func query(_ call: CAPPluginCall) -> [String: Any]? {
         guard prepareInstall() else { call.reject("Unlock your device and retry secure account storage."); return nil }
         guard let key = call.getString("key"), key.hasPrefix("arize.native.adult."), key.count <= 100 else {
