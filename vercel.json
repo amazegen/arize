@@ -8,7 +8,8 @@
       "codex/phase-4-adult-redesign": false,
       "codex/phase-5-founder-dashboard": false,
       "codex/phase-6-marketing-site": false,
-      "codex/phase-7-push-ios": false
+      "codex/phase-7-push-ios": false,
+      "codex/phase-7-native-features": false
     }
   }
 }

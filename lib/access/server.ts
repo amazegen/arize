@@ -17,12 +17,13 @@ export function isBillingEnforcementEnabled() {
 export async function getUserAccess(
   supabase: SupabaseClient,
   userId: string,
+  native?: { continuityToken?: string },
 ): Promise<AccessSnapshot> {
   const billingEnabled = isBillingEnforcementEnabled()
   if (!billingEnabled) return resolveAccess([], false)
 
   async function unavailable() {
-    const token = (await cookies()).get(CONTINUITY_COOKIE)?.value
+    const token = native ? native.continuityToken : (await cookies()).get(CONTINUITY_COOKIE)?.value
     return verifyContinuity(token, userId, process.env.BILLING_ACCESS_SIGNING_SECRET ?? '')
       ?? { ...resolveAccess([], true), temporarilyUnavailable: true }
   }

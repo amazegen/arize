@@ -2,6 +2,9 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
+  // Native endpoints require a separately verified bearer + live Auth session.
+  // Never turn a missing bearer into cookie authentication or weaken web CSRF.
+  if (request.nextUrl.pathname.startsWith('/api/native/v1/')) return NextResponse.next()
   // Public resources never refresh Auth or cache private pages. Dispatch applies
   // its own independent server secret; the worker has no fetch/cache handler.
   if (['/push-sw.js', '/manifest.webmanifest', '/api/notifications/dispatch'].includes(request.nextUrl.pathname)) {

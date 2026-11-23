@@ -57,10 +57,13 @@ test("diagnostics never include prompts, responses, SDK errors or credentials", 
 });
 test("adult chat uses checked completion before history persistence and does not log SDK errors", () => {
   const route = readFileSync(new URL("../app/api/coach/route.ts", import.meta.url), "utf8");
-  assert.match(route, /activeConfig\(supabase, 'adult'\)/);
-  assert.match(route, /safeCompletion\(validated.messages/);
+  const generation = readFileSync(new URL("../lib/clarity/adult-generation.ts", import.meta.url), "utf8");
+  assert.match(route, /generateAdultReply\(supabase, validated.messages, userContext\)/);
+  assert.match(generation, /activeConfig\(supabase, 'adult'\)/);
+  assert.match(generation, /safeCompletion\(messages.slice\(-1\)/);
+  assert.match(generation, /model: 'gpt-4o-mini', store: false/);
   assert.match(route, /X-Clarity-Input-Blocked/);
-  assert.doesNotMatch(route, /stream: true|console.error\('\[coach route\]', err\)/);
+  assert.doesNotMatch(route + generation, /stream: true|console.error\('\[coach route\]', err\)/);
   const page = readFileSync(new URL("../app/(app)/coach/page.tsx", import.meta.url), "utf8");
   assert.ok(page.indexOf("fetch('/api/coach'") < page.indexOf(".insert({ user_id: activeUserId, title })"));
   assert.match(page, /if \(!activeConversationId && !inputBlocked\)/);

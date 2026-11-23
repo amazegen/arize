@@ -5,6 +5,11 @@ import { LocalNotifications } from '@capacitor/local-notifications'
 import { disableReminder, enableReminder, nativeIOS, readReminder } from './reminders'
 import { PRIVACY_URL, TERMS_URL } from '../../../lib/legal/consent'
 import './mobile.css'
+import { Capacitor } from '@capacitor/core'
+import { mobileConfig } from './account/config'
+import { createAccounts } from './account/client'
+import { NativeApp } from './NativeApp'
+import { simulatorFixtureBuild } from './account/storage'
 
 const steps = [
   { title: 'Notice your space', text: 'Look around at your own pace. Name three things you can see. You do not need to close your eyes.' },
@@ -77,4 +82,14 @@ function App() {
     <nav aria-label="Main navigation"><button aria-current={screen !== 'settings' ? 'page' : undefined} onClick={() => setScreen('home')}><span aria-hidden="true">⌂</span>My space</button><button aria-current={screen === 'settings' ? 'page' : undefined} onClick={() => setScreen('settings')}><span aria-hidden="true">⚙</span>Settings</button></nav>
   </div>
 }
-createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)
+async function entry() {
+  try {
+    const native=Capacitor.isNativePlatform()
+    const fixture=native&&import.meta.env.VITE_NATIVE_ENABLED==='true'&&import.meta.env.VITE_NATIVE_SIMULATOR_TEST==='true'?await simulatorFixtureBuild():false
+    const config=mobileConfig(import.meta.env,native,fixture)
+    return config?<NativeApp accounts={createAccounts(config)}/>:<App/>
+  } catch { return <main className="mobile-shell"><h1>Account configuration unavailable.</h1><p>This build will not connect to insecure or Student services. Check the adult native configuration.</p></main> }
+}
+const root=createRoot(document.getElementById('root')!)
+root.render(<main className="mobile-shell"><p role="status">Opening your space…</p></main>)
+void entry().then(app=>root.render(<StrictMode>{app}</StrictMode>))

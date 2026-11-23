@@ -6,6 +6,8 @@ const config: CapacitorConfig = {
   appId: 'com.amazegen.arize.dev',
   appName: 'Arize Foundation',
   webDir: 'dist',
+  // Bridge debug output must not serialize secure plugin arguments/results.
+  loggingBehavior: 'none',
   ios: { contentInset: 'automatic', preferredContentMode: 'mobile' },
 }
 export default config
