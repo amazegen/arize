@@ -1,0 +1,44 @@
+# Supabase CLI 2.75 local-only fixture; never deploy/push this configuration.
+project_id = "arize-native-acceptance"
+[api]
+enabled = true
+port = 56581
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+[db]
+port = 56582
+shadow_port = 56580
+major_version = 17
+[db.seed]
+enabled = false
+[realtime]
+enabled = true
+[studio]
+enabled = false
+[inbucket]
+enabled = true
+port = 56584
+[storage]
+enabled = true
+[edge_runtime]
+enabled = false
+[analytics]
+enabled = false
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3187"
+additional_redirect_urls = ["com.amazegen.arize.dev://auth/callback"]
+jwt_expiry = 3600
+enable_signup = true
+enable_anonymous_sign_ins = false
+minimum_password_length = 12
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+max_frequency = "1s"
+[auth.rate_limit]
+email_sent = 100
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true

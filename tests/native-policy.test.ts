@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {nativeEnabled,nativeOrigin,nativeHeaders,bearer,nativeBody,cursor} from '../lib/native/policy.ts'
+import {nativeEnabled,nativeOrigin,nativeHeaders,bearer,nativeBody,cursor,messageCursor} from '../lib/native/policy.ts'
 import {goalDraft,validDate} from '../lib/native/contracts.ts'
 const env={ARIZE_EDITION:'adult',NATIVE_API_ENABLED:'true',NATIVE_ALLOWED_ORIGINS:'capacitor://localhost,http://127.0.0.1:3183'}
 test('native gateway is off by default, adult-only, and never trusts wildcard/null origins or cookies as bearer',()=>{
@@ -15,6 +15,12 @@ test('native gateway is off by default, adult-only, and never trusts wildcard/nu
  assert.equal(bearer(new Request('https://api.test',{headers:{authorization:'Bearer '+ 'a'.repeat(9000)}})),null)
  const headers=nativeHeaders(new Request('https://api.test',{headers:{origin:'https://evil.test'}}),env)
  assert.equal(headers['Access-Control-Allow-Origin'],undefined);assert.equal(headers['Cache-Control'],'private, no-store');assert.match(headers.Vary,/Authorization/)
+})
+test('saved-message cursors retain bigint identities without floating-point rounding',()=>{
+ const encode=(id:unknown)=>Buffer.from(JSON.stringify({at:'2026-11-22T00:00:00Z',id})).toString('base64url')
+ assert.equal(messageCursor(null),null)
+ assert.equal(messageCursor(encode('9223372036854775807'))?.id,'9223372036854775807')
+ for(const id of ['0','-1','1.2','9223372036854775808','1),user_id.eq.forged',123])assert.throws(()=>messageCursor(encode(id)))
 })
 test('goal draft allows only existing adult fields and does not accept completion resets/owner injection',()=>{
  const value={id:'71000000-0000-4000-8000-000000000003',title:'  One small step ',category:'Personal',deadline:'2026-11-24',week_of:'2026-11-22',notes:null}

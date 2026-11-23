@@ -9,7 +9,9 @@
     "test": "node --test --experimental-strip-types tests/*.test.ts",
     "build": "tsc --noEmit && vite build",
     "ios:add": "cap add ios --packagemanager SPM",
-    "ios:sync": "cap sync ios"
+    "ios:sync": "cap sync ios",
+    "ios:check": "node scripts/check-ios.mjs",
+    "ios:build:simulator": "node scripts/check-ios.mjs --build"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

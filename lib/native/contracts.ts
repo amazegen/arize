@@ -12,7 +12,7 @@ export type NativeGoal = { id: string; title: string; category: string; deadline
 export type NativeRoom = { id: string; name: string; description: string | null; member: boolean; moderator: boolean }
 export type NativeMessage = { id: string; user_id: string; content: string; created_at: string; name: string; message_type: string }
 export type NativeConversation = { id: string; title: string; updated_at: string }
-export type NativeChatMessage = { role: 'user' | 'assistant'; content: string }
+export type NativeChatMessage = { id?: string; created_at?: string; role: 'user' | 'assistant'; content: string }
 export function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
 }

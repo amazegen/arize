@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { nativeSession } from './server'
 import { checked, NativeError, nativeAdmin } from './server'
 import { CATEGORIES, goalDraft, UUID, validDate } from './contracts'
-import { cursor } from './policy'
+import { cursor, messageCursor } from './policy'
 import { canAccessVillageRoom } from '../access/entitlements'
 import { validateCoachRequest } from '../coach/request'
 import { generateAdultReply } from '../clarity/adult-generation'
@@ -13,6 +13,7 @@ const goalFields='id,title,category,deadline,week_of,notes,is_complete,progress'
 function id(value: unknown): string { if (typeof value !== 'string' || !UUID.test(value)) throw new NativeError('input','Invalid record.');return value }
 function only(body: Record<string,unknown>, fields: string[]) { if (Object.keys(body).some(k=>!fields.includes(k))) throw new NativeError('input','Unexpected fields.') }
 function pageCursor(value: string|null) {try{return cursor(value)}catch{throw new NativeError('input','This history cursor is invalid. Reopen the list.')}}
+function pageMessageCursor(value: string|null) {try{return messageCursor(value)}catch{throw new NativeError('input','This message cursor is invalid. Reopen the conversation.')}}
 export async function nativeGoals(s: Session, method: string, url: URL, body: Record<string,unknown>) {
   const db=s.supabase,u=s.user.id
   if (method==='GET') {
@@ -104,11 +105,14 @@ export async function nativeCoach(s: Session, method: string, url: URL, body: Re
       const last=conversations.at(-1)
       return {conversations,before:conversations.length===50&&last?Buffer.from(JSON.stringify({at:last.updated_at,id:last.id})).toString('base64url'):null}
     }
-    if(url.searchParams.has('before'))throw new NativeError('input','Use the conversation list cursor separately.')
     const conversation=checked(await db.from('coach_conversations').select('id,title').eq('id',id(conversationId)).eq('user_id',u).maybeSingle())
     if (!conversation) throw new NativeError('not_found','Conversation not available.',404)
-    const messages=checked(await db.from('coach_messages').select('role,content,created_at').eq('conversation_id',conversationId).eq('user_id',u).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(200)) ?? []
-    return {conversation,messages:messages.reverse(),truncated:messages.length===200}
+    const before=pageMessageCursor(url.searchParams.get('before'))
+    let query=db.from('coach_messages').select('id::text,role,content,created_at').eq('conversation_id',conversationId).eq('user_id',u)
+    if(before)query=query.or(`created_at.lt.${before.at},and(created_at.eq.${before.at},id.lt.${before.id})`)
+    const rows=checked(await query.order('created_at',{ascending:false}).order('id',{ascending:false}).limit(201)) ?? []
+    const messages=rows.slice(0,200),oldest=messages.at(-1)
+    return {conversation,messages:messages.reverse(),before:rows.length>200&&oldest?Buffer.from(JSON.stringify({at:oldest.created_at,id:oldest.id})).toString('base64url'):null}
   }
   if (method!=='POST') throw new NativeError('method','Method not allowed.',405)
   if (!s.context.aiConsented) throw new NativeError('ai_consent','Review and accept the AI sharing disclosure first.',403)

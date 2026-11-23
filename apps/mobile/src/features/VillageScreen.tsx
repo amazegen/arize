@@ -13,7 +13,12 @@ export function VillageScreen({accounts}:{accounts:Accounts}){
     let live=true;const id=selected.id
     void load(id).catch(error=>{if(live)setNotice(error.message)})
     let scheduled:ReturnType<typeof setTimeout>|undefined
-    const channel=accounts.client.channel(`native-room:${id}:${crypto.randomUUID()}`).on('postgres_changes',{event:'INSERT',schema:'public',table:'village_messages',filter:`room_id=eq.${id}`},()=>{clearTimeout(scheduled);scheduled=setTimeout(()=>{if(live)void load(id).catch(()=>setNotice('Could not refresh messages. Tap Refresh when connected.'))},100)}).subscribe(status=>{if(live&&status==='SUBSCRIBED')void load(id).catch(()=>setNotice('Messages could not reconnect. Tap Refresh.'));if(live&&['CHANNEL_ERROR','TIMED_OUT'].includes(status))setNotice('Live updates are unavailable. You can still send text and tap Refresh messages.')})
+    const channel=accounts.client.channel(`native-room:${id}:${crypto.randomUUID()}`).on('system',{},event=>{
+      // Channel join can precede Postgres subscription readiness. Re-fetch after
+      // the database acknowledgement to close that initial/reconnect gap.
+      if(live&&event.extension==='postgres_changes'&&event.status==='ok')void load(id).then(()=>{if(live)setNotice('')}).catch(()=>{if(live)setNotice('Messages could not reconnect. Tap Refresh.')})
+      if(live&&event.extension==='postgres_changes'&&event.status==='error')setNotice('Live updates are unavailable. You can still send text and tap Refresh messages.')
+    }).on('postgres_changes',{event:'INSERT',schema:'public',table:'village_messages',filter:`room_id=eq.${id}`},()=>{clearTimeout(scheduled);scheduled=setTimeout(()=>{if(live)void load(id).catch(()=>{if(live)setNotice('Could not refresh messages. Tap Refresh when connected.')})},100)}).subscribe(status=>{if(live&&status==='SUBSCRIBED')void load(id).catch(()=>{if(live)setNotice('Messages could not reconnect. Tap Refresh.')});if(live&&['CHANNEL_ERROR','TIMED_OUT'].includes(status))setNotice('Live updates are unavailable. You can still send text and tap Refresh messages.')})
     const online=()=>{if(live)void load(id).catch(()=>undefined)};window.addEventListener('online',online)
     return()=>{live=false;clearTimeout(scheduled);window.removeEventListener('online',online);void accounts.client.removeChannel(channel)}
   },[accounts,selected?.id,selected?.member,load])

@@ -36,3 +36,14 @@ export function cursor(value: string | null) {
     return { at: String(decoded.at), id: String(decoded.id) }
   } catch { throw new Error('cursor') }
 }
+// coach_messages uses a bigint identity, not a UUID. Keep it as text so IDs
+// beyond JavaScript's safe integer range are never rounded in a page cursor.
+export function messageCursor(value: string | null) {
+  if (!value) return null
+  try {
+    if (value.length > 200) throw new Error()
+    const decoded = JSON.parse(Buffer.from(value,'base64url').toString('utf8'))
+    if (!/^\d{4}-\d{2}-\d{2}T[\d:.]+(?:Z|\+00:00)$/.test(decoded.at) || !Number.isFinite(Date.parse(decoded.at)) || typeof decoded.id !== 'string' || !/^[1-9]\d{0,18}$/.test(decoded.id) || BigInt(decoded.id)>BigInt('9223372036854775807')) throw new Error()
+    return {at:String(decoded.at),id:decoded.id as string}
+  } catch {throw new Error('cursor')}
+}
