@@ -42,6 +42,8 @@ createServer(async (req, res) => {
       return json(res, 200, value ? JSON.parse(value) : null)
     }
     if (!user) return json(res, 401, { message: 'Fictional session required' })
+    // Protocol-model fixture only; actual session/revocation coverage uses real local Auth.
+    if(url.pathname==='/rest/v1/rpc/native_session_context')return json(res,200,{sessionId:user.id,needsMfa:false,deleting:false})
     if (url.pathname === '/rest/v1/rpc/membership_rollout_state') return json(res, 200, { enabled: false, stripeMode: 'test' })
     if (['/rest/v1/rpc/clarity_console_allowed', '/rest/v1/rpc/founder_dashboard_allowed'].includes(url.pathname)) return json(res, 200, false)
     if (url.pathname.startsWith('/rest/v1/') && ['GET', 'HEAD'].includes(req.method)) {

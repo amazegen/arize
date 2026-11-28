@@ -1,12 +1,14 @@
 -- Disposable LOCAL database after marketing-bootstrap.sql + browser_push only.
 \set ON_ERROR_STOP on
 begin;
-insert into auth.users(id,email) values
- ('f1000000-0000-4000-8000-000000000001','push-one@example.test'),
- ('f1000000-0000-4000-8000-000000000002','push-two@example.test'),
- ('f1000000-0000-4000-8000-000000000003','push-empty@example.test');
+insert into auth.users(id,email,email_confirmed_at) values
+ ('f1000000-0000-4000-8000-000000000001','push-one@example.test',now()),
+ ('f1000000-0000-4000-8000-000000000002','push-two@example.test',now()),
+ ('f1000000-0000-4000-8000-000000000003','push-empty@example.test',now());
+update public.profiles set onboarded=true where id::text like 'f1000000-%';
+update public.browser_push_control set enabled=true where id;
 insert into public.legal_consents(user_id,terms_version,privacy_version)
- select id,'2.0','2.0' from auth.users where email like 'push-%@example.test';
+ select id,'2.0','2.0' from auth.users where id in('f1000000-0000-4000-8000-000000000001','f1000000-0000-4000-8000-000000000002','f1000000-0000-4000-8000-000000000003');
 insert into public.check_ins(user_id,mood,mood_score,energy) values
  ('f1000000-0000-4000-8000-000000000001','steady',3,5),('f1000000-0000-4000-8000-000000000002','steady',3,5);
 set local role authenticated;
@@ -42,7 +44,7 @@ begin
  if not public.browser_push_lease_valid((job->>'id')::uuid,(job->>'token')::uuid) then raise exception 'Valid lease rejected';end if;
  perform public.browser_push_finish((job->>'id')::uuid,(job->>'token')::uuid,'retry');
  if jsonb_array_length(public.browser_push_claim())<>0 then raise exception 'No retry backoff';end if;
- update public.browser_push_jobs set next_at=now()-interval '1 second';
+ update public.browser_push_jobs set next_at=now()-interval '1 second' where subscription_id in(select id from public.browser_push_subscriptions where user_id=a);
  claims:=public.browser_push_claim();job:=claims->0;
  perform public.browser_push_finish((job->>'id')::uuid,(job->>'token')::uuid,'sent');
  if jsonb_array_length(public.browser_push_claim())<>0 then raise exception 'Same-day duplicate';end if;
@@ -55,8 +57,11 @@ begin
  end loop;
  update public.browser_push_preferences set updated_at=now()-interval '2 seconds' where user_id=a;
  if public.browser_push_manage(a,'register',repeat('f',64),'{}','09:00','UTC')->>'error'<>'device_limit' then raise exception 'Device limit missing';end if;
+ update public.browser_push_subscriptions set expires_at=now()-interval '1 second' where user_id=a and endpoint_hash=md5('1')||md5('1');
+ update public.browser_push_preferences set updated_at=now()-interval '2 seconds' where user_id=a;
+ if public.browser_push_manage(a,'register',repeat('f',64),'{}','09:00','UTC') ? 'error' then raise exception 'Expired device still consumed budget';end if;
  perform public.browser_push_manage(a,'disable',repeat('a',64));
- if exists(select 1 from public.browser_push_jobs) then raise exception 'Unsubscribe did not cascade';end if;
+ if exists(select 1 from public.browser_push_jobs j join public.browser_push_subscriptions s on s.id=j.subscription_id where s.user_id=a) then raise exception 'Unsubscribe did not cascade';end if;
  -- A pending delivery is invalidated by changing its schedule.
  update public.browser_push_preferences set updated_at=now()-interval '2 seconds' where user_id=a;
  insert into public.browser_push_jobs(subscription_id,local_day,preference_version,due_at,expires_at,status,attempts,lease_token,lease_until)
@@ -64,7 +69,7 @@ begin
  from public.browser_push_subscriptions s join public.browser_push_preferences p on p.user_id=s.user_id where s.user_id=a limit 1 returning jsonb_build_object('id',id,'token',lease_token) into job;
  perform public.browser_push_manage(a,'schedule',null,null,'23:58','UTC');
  if public.browser_push_lease_valid((job->>'id')::uuid,(job->>'token')::uuid) then raise exception 'Schedule revocation ignored';end if;
- delete from public.browser_push_jobs;
+ delete from public.browser_push_jobs where subscription_id in(select id from public.browser_push_subscriptions where user_id=a);
 end $$;
 -- Synthetic lease, deletion, expiry and bounded retry checks.
 do $$ declare a uuid:='f1000000-0000-4000-8000-000000000001';s uuid;j uuid;t uuid:=gen_random_uuid();claims jsonb;begin
@@ -85,10 +90,14 @@ do $$ declare a uuid:='f1000000-0000-4000-8000-000000000001';s uuid;j uuid;t uui
  update public.browser_push_jobs set status='sending',lease_token=t where id=j;
  perform public.browser_push_finish(j,t,'gone');
  if exists(select 1 from public.browser_push_subscriptions where id=s) then raise exception '410 not removed';end if;
- delete from auth.users where id=a;
- if exists(select 1 from public.browser_push_preferences where user_id=a) or exists(select 1 from public.browser_push_subscriptions where user_id=a) then raise exception 'Account deletion did not cascade';end if;
 end $$;
 reset role;
+-- A trusted test operator deletes this fixture; never grant the service role broad Auth-table access.
+delete from auth.users where id='f1000000-0000-4000-8000-000000000001';
+do $$begin
+ if exists(select 1 from public.browser_push_preferences where user_id='f1000000-0000-4000-8000-000000000001')
+ or exists(select 1 from public.browser_push_subscriptions where user_id='f1000000-0000-4000-8000-000000000001') then raise exception 'Account deletion did not cascade';end if;
+end $$;
 do $$ begin
  if (select count(*) from pg_class where relname in ('browser_push_preferences','browser_push_subscriptions','browser_push_jobs') and relrowsecurity)<>3 then raise exception 'RLS missing';end if;
  if exists(select 1 from pg_proc p where p.proname like 'browser_push_%' and (p.prosecdef or has_function_privilege('anon',p.oid,'EXECUTE') or has_function_privilege('authenticated',p.oid,'EXECUTE'))) then raise exception 'Unsafe function grants';end if;

@@ -63,8 +63,10 @@ test('Village unsubscribes on exit and stops stale room initialization', () => {
   assert.match(room, /supabase\.removeChannel\(channel\)/)
   assert.match(room, /if \(!isMember \|\| !canReadRoom\) return/)
   assert.match(room, /const isMember = membershipRoomId === roomId/)
-  assert.match(room, /active && newMsg/)
-  assert.match(room, /prev\.some\(msg => msg\.id === newMsg\.id\)/)
+  assert.match(room, /active && payload\.new\.id/)
+  // Re-fetch the unique RLS-filtered set (including signed media), never append raw realtime payloads.
+  assert.match(room, /if\(version!==messageLoadVersion\.current\)return/)
+  assert.match(room, /setMessages\(safe\)/)
 })
 
 test('completed goals and auth controls remain identifiable without color alone', () => {

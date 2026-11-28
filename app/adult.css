@@ -1,5 +1,16 @@
 @import '../styles/arize-theme.css';
 
+.adult-theme .local-push-diagnostics { max-width: 900px; padding: 32px 20px; margin: 0 auto; display: grid; gap: 20px; overflow-wrap: anywhere; }
+.adult-theme .local-push-diagnostics section { display: grid; gap: 16px; }
+.adult-theme .local-push-status { margin: 0; display: grid; gap: 14px; }
+.adult-theme .local-push-status > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 6px 20px; }
+.adult-theme .local-push-status dt { font-weight: 800; }
+.adult-theme .local-push-status dd { margin: 0; }
+.adult-theme .local-push-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.adult-theme .local-push-events { margin: 0; padding-left: 24px; }
+.adult-theme .local-push-events li { margin-bottom: 14px; }
+.adult-theme .local-push-events li > * { display: block; }
+
 .adult-theme, .adult-theme * { box-sizing: border-box; }
 .adult-theme h1, .adult-theme h2, .adult-theme h3, .adult-theme p { margin: 0; }
 .adult-theme h1, .adult-theme h2, .adult-theme h3 { font-family: var(--font-adult); font-weight: 800 !important; letter-spacing: -.025em; }

@@ -71,3 +71,72 @@ Normal account networking remains off by default. The simulator may retain its e
 - Mobile typecheck and all 13 tests pass, including the local-identity helper guards and explicit startup-check regression. Connected UI sign-in, session persistence, Goals, Clarity, Village, notifications, accessibility and physical-iPhone acceptance remain pending. The original browser/API receipts are not substitutes for these tests.
 
 To continue native UI testing, click the Email field in the compact `Arize Local Test iPhone` window. Use only the fictional reviewer credentials from the November 22 receipt. Do not use a production login or accept new legal terms as part of this fixture review.
+
+## Retest after reducing other application load
+
+- User confirmed the live Device Hub window accepted taps after restarting the dedicated simulator and Device Hub, but even Apple's Settings app was very slow. Its screen reported “Optimizing Search and Siri.” No simulator data was erased; no unrelated application was closed.
+- After the user closed applications, installed the final `ilyVnw` fixture on the same test simulator and launched it successfully. Verified its process is running. Read Device Hub's keyboard options: Secure Keyboard Entry was already off, so no security setting was changed.
+- Native screen-control calls still timed out. Accessibility Inspector launched, but its control call timed out; a subsequent attempt to reconnect to Device Hub also timed out. No alternate UI automation was used. The inspection app may still be open. This is a testing-environment blocker, not a passing native sign-in or feature test.
+- Mobile typecheck and all 13 tests pass again.
+- Reran the **actual isolated local-service acceptance suite** successfully: verified Auth/setup; Goals persistence/completion/RLS/Core cap; 205-message pagination; real ledger/quota/checked-history with mocked AI and crisis handling; two-account WebSocket text delivery/deduplication; TOTP/AAL gates; bounded membership-outage continuity; refresh/revocation/bans; local confirmation/PKCE/duplicate-signup handling; local recovery/password replacement; and deletion of the suite's own disposable account. No Stripe, hosted database, external AI or real-email operation.
+- The first suite attempt exited during the local CLI status preflight, before creating test data. The diagnostic status check then reported the expected healthy, loopback-only stack; one retry passed the complete suite. No guard was bypassed, dependency upgraded or database reset performed.
+
+Native UI acceptance remains pending. Save work and restart the Mac before another native-control attempt if timeouts persist; this has **not** been done automatically. Reconfirm the fictional backend services after a restart rather than substituting hosted credentials. Student, subscriptions and all release/deployment boundaries are unchanged.
+
+## November 24 — post-restart native retest
+
+- User restarted the Mac. Verified the new uptime and cleared swap. The reboot removed the temporary CLI configuration/artifacts but preserved the existing Docker data and the installed simulator app. Restored only the guarded temporary CLI configuration at `/private/tmp/arize-native-services.VBaUS5`; did not reset data, replay schema, start the stopped `unpublished-original` containers or link a hosted project. Confirmed the surviving local installation is `adult` and published service ports remain bound to `127.0.0.1`.
+- Restarted the fictional-only AI stub on `127.0.0.1:3191` and adult gateway on `127.0.0.1:3190`. External AI, Stripe, email and hosted database calls remain prohibited by the local test network guard.
+- **Native sign-in PASS:** the installed local-identity fixture accepted the preconsented fictional reviewer and visibly reached the adult Home screen, including “Good morning, Local,” and Home/Goals/Clarity/Village/Profile navigation. No real credentials or new legal acceptance were used.
+- **Native process-restart session PASS:** terminated and relaunched `com.amazegen.arize.dev` on the dedicated test iPhone. After initial rendering, the same authenticated Home screen returned without re-entering credentials. This verifies this simulator's Keychain-backed session across process restart, not lock/unlock, reinstall or physical-device behavior.
+- **Native Goals navigation/load PASS:** user clicked Goals and confirmed it opened. A subsequent native screenshot showed the loaded Goals screen, current week/day selector, zero-goal empty state, add-goal form and selected Goals navigation. This verifies screen navigation and initial data load, not creation/editing/completion/history interactions.
+- Device Hub's direct pointer control remains intermittent: the next automated form-field click again failed with `noWindowsAvailable`, despite working screenshots and Mac menu controls. The user's successful click distinguishes this control-path failure from a generally unresponsive app. Goals mutations/history, Clarity, Village, sign-out, privacy cover, reminders and other native UI checks remain pending; they have not been promoted to passing from API tests alone.
+- Mobile typecheck, all 13 mobile tests and all 99 adult Node tests pass again. The actual isolated local-service suite also completed all 11 PASS groups: accounts/setup/Core/Plus; Goals persistence/completion/RLS/cap; 205-message pagination; checked AI/history/quota/idempotent retry with mocked generation; two-account realtime text; TOTP/AAL; bounded membership-RPC outage continuity; refresh/revocation/bans; local confirmation/PKCE/duplicate signup; local recovery; and deletion of the suite's own disposable account. No hosted provider was used. These are not substitutes for the still-pending native UI checks.
+
+No merge, deployment, hosted database operation, Student edit or Apple upload was performed.
+
+## November 24 — browser continuation; iPhone matrix deferred
+
+At the user's request, continued in the adult browser fixture instead of the slow simulator. Rebuilt through `native-services-mobile.mjs --synthetic-only` with the guarded existing local stack and served the static bundle at `http://127.0.0.1:3183/`. No iOS sync, hosted connection, schema change or deployment. Browser review sessions remain memory-only by design; these results do not replace iPhone Keychain/OS acceptance.
+
+| Browser check | Observed result |
+| --- | --- |
+| Goals completion regression | PASS: created a fictional goal, completed it, created another, and observed 1 of 2 complete with the original still checked. Both persisted after explicit sign-out/sign-in. No deletion performed. |
+| Previous-week navigation | PASS: moved from Nov 22 to Nov 15, saw that week's empty state, and returned using Next week. This does not verify a dated historical goal's contents. |
+| Saved Clarity continuation | PASS: opened the existing long chat, sent a clearly fictional continuation, received the mock-provider answer, loaded earlier messages through message 1, then signed out/in and reopened the continued conversation. Latest-turn scroll position was at the bottom after reopening. No real OpenAI call. |
+| Text-only Village | PASS: sent a fictional message in Local Review Room, refreshed, signed out/in, reopened the room and saw the saved text. Two-account realtime remains covered by the local-service suite, not this single-browser UI pass. |
+| Profile and greeting | PASS: changed the fictional display name, observed the changed first name on Home, and restored the original fixture name. Afternoon greeting matched the test's local time. |
+| Sign-out | PASS: returned to the sign-in screen with no authenticated navigation, then successfully signed back into the same fictional reviewer. |
+| Phone-width layout | PASS for the inspected 390×844 browser state: document width 390, no horizontal overflow. This is Chromium, not iOS WebKit/keyboard/safe-area acceptance. |
+| Console | No captured warnings/errors during this browser pass. |
+
+Minor polish observation, **not fixed in this testing pass**: reopening Village briefly displays “No messages yet” while the initial fetch is pending, before persisted messages appear. A distinct initial loading state would avoid that misleading empty-state flash.
+
+The subsequent Village fix below supersedes this observation.
+
+Screenshots (outside Git): `outputs/arize-browser-qa-2026-11-24/{goals-phone,village-phone,clarity-phone}.jpg` in the enclosing More Life Consulting workspace. Local browser left open on the saved conversation; temporary viewport override reset. Only the local receipt was edited. Student, subscriptions and release boundaries remain unchanged. Remaining iPhone tests are deferred, not passed; Phase 7 remains incomplete.
+
+## November 24 — Village loading fix and first-join acceptance
+
+- Added explicit initial room-list and message loading/error states. The message empty state appears only after a successful fetch. A failed initial fetch offers Refresh instead of falsely reporting an empty room; failed background refreshes retain previously loaded messages.
+- Added room-visit epochs and latest-request sequencing for message loads, so late or out-of-order initial/realtime fetches cannot overwrite the current visit. Room selection clears old pagination, draft text and retry state. Back-to-list navigation does not delete membership. Explicit Leave room still does.
+- Existing server membership persistence was already implemented; no database or authorization change was needed. Verified a **first-time join** in fictional Local Acceptance 1a444e52, Back → Open room without a new Join prompt, and a full browser reload/new login → Open room → saved messages. The UI snapshot captured Loading messages during reopening. After reauthentication, Join room count was zero and Leave room count was one. This did not silently enroll the account in other rooms or override leaving.
+- Regression coverage: actual server-rendered initial room-list loading test plus message-state/stale-request/back-navigation source guards (3 new tests; 16 total mobile tests). Mobile typecheck/default and connected browser builds, root lint/typecheck and adult 99-test regression were checked. No new dependency, schema, provider key or external service.
+- Browser console recorded no warnings/errors. Proof: enclosing workspace `outputs/arize-browser-qa-2026-11-24/village-fixed-phone.jpg`. Browser preview rebuilt/reloaded and left open; no iOS sync or simulator rebuild. Changes remain local on `codex/phase-7-native-features`; no commit/push, merge or deployment.
+
+### Remaining work besides the deferred iPhone matrix
+
+1. **Browser notification delivery and operations:** controlled real-provider permission/deny/enable/disable/expiry tests, dedicated adult VAPID configuration/contact, scheduler cadence/capacity/load checks, monitoring and kill-switch owner. The queue/dispatcher is implemented, but real sending and a scheduler are not activated. Hosted setup requires separate approval; do not use Student credentials.
+2. **Village abuse controls:** report/block/moderation workflows and message-abuse protection before a public native release. Text-only does not remove this release gate. Current local join/send/RLS/realtime checks do not certify hosted sustained load or long-offline catch-up.
+3. **Adult service acceptance:** separately authorized test-target migration/configuration and real Auth/email/callback, adult AI quality/availability and hosted Realtime/reconnect checks. Local Auth/REST/WebSocket tests are completed; mock AI and local Mailpit are not real-provider acceptance. Google sign-in remains disabled/provider-untested; decide which sign-in methods ship.
+4. **Release identity and handoff preparation:** approved bundle ID/callback destination, final app name/icon/splash, connected-app privacy manifest/labels/disclosures, support links, reviewer demo access and notes. Storefront billing/sign-in requirements need review before submission; no native purchases or live subscription activation is included here. These are release-readiness gates, not proof that the current first-slice scope included an Apple submission.
+
+APNs remote push is separate follow-up scope if requested; existing native reminders are local notifications. Apple upload, real sending, hosted migrations, merging and deployments remain unauthorized. Student and Stripe stay untouched. Phase 7 is not declared complete from these browser checks.
+
+## Village safety continuation
+
+The reporting/blocking/moderation/message-spam code and local acceptance now supersede the unimplemented text-Village abuse-controls item above. See [Village safety receipt](village-safety-2026-11-24.md) for exact limits, tests, private-media protections, remaining operational/media-review gates and rollout boundaries. Nothing has been installed on a live backend or assigned to a real moderator.
+
+## Browser push reliability continuation
+
+See [browser push acceptance](browser-push-acceptance-2026-11-24.md): bounded multi-batch capacity, hard HTTPS deadline, account/session-bound management, aggregate monitoring, default-paused database sender, expiry/cleanup improvements and a dry-run scheduler runner are locally prepared and tested. A 1,000-fictional-device queue passed with simulated delivery; this is not real provider/device acceptance. Actual notification permission/delivery, scheduler installation and any hosted rollout remain pending separate approval. Student and Stripe remain untouched; no merge/deployment or live database operation.

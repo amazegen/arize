@@ -9,6 +9,9 @@ import type { VillageRoom, VillageMessage } from '@/lib/types'
 import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js'
 import { useAccess } from '@/components/access/AccessProvider'
 import { canAccessVillageRoom } from '@/lib/access/entitlements'
+import { MessageSafety, RoomSafety } from '@/components/village/SafetyTools'
+import { safetyError, type SafetyRequest } from '@/lib/village/safety'
+import { villageMediaPath } from '@/lib/village/media'
 
 const AVATAR_COLORS = ["var(--green-soft)", "var(--yellow-soft)", "var(--surface-soft)", '#e2eaf4', "var(--green-soft)", '#ffe5d4']
 
@@ -35,7 +38,7 @@ export default function RoomPage() {
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string | null } | null>(null)
   const [membershipRoomId, setMembershipRoomId] = useState<string | null>(null)
   const isMember = membershipRoomId === roomId
-  const [isModerator, setIsModerator] = useState(false)
+  const [roomNotice, setRoomNotice] = useState('')
   const [moderatorIds, setModeratorIds] = useState<Set<string>>(new Set())
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
@@ -52,14 +55,28 @@ export default function RoomPage() {
   const videoPreviewRef = useRef<HTMLVideoElement>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const videoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const messageLoadVersion=useRef(0)
+  const invalidateMessages=useCallback(()=>{messageLoadVersion.current++},[])
 
   const loadMessages = useCallback(async () => {
-    const { data } = await supabase
+    const version=++messageLoadVersion.current
+    const { data, error } = await supabase
       .from('village_messages').select('*, profiles(name, username)')
       .eq('room_id', roomId).order('created_at', { ascending: true }).limit(100)
-    setMessages((data ?? []) as VillageMessage[])
+    if (error) { if(version===messageLoadVersion.current)setRoomNotice('Messages could not refresh. Please reopen the room.'); return }
+    const safe=await Promise.all((data??[]).map(async(message:VillageMessage)=>{
+      if(!message.audio_url)return message
+      const path=villageMediaPath(message.audio_url,process.env.NEXT_PUBLIC_SUPABASE_URL!)
+      if(!path)return {...message,audio_url:null}
+      const signed=await supabase.storage.from('village-audio').createSignedUrl(path,60)
+      return {...message,audio_url:signed.data?.signedUrl??null}
+    }))
+    if(version!==messageLoadVersion.current)return
+    setMessages(safe)
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
   }, [roomId, supabase])
+  const safetyRpc=useCallback(async(args:SafetyRequest)=>{const result=await supabase.rpc('village_safety',args);if(result.error)throw result.error;return result.data},[supabase])
+  const safetyChanged=useCallback(()=>{setMessages([]);void loadMessages()},[loadMessages])
 
   const loadModerators = useCallback(async () => {
     const { data } = await supabase.rpc('get_village_moderator_ids', { target_room_id: roomId })
@@ -92,7 +109,6 @@ export default function RoomPage() {
 
       if (cancelled) return
       setMembershipRoomId(membership ? roomId : null)
-      setIsModerator(membership?.is_moderator ?? false)
       if (membership) {
         await loadMessages()
         await loadModerators()
@@ -103,10 +119,11 @@ export default function RoomPage() {
     init()
     return () => {
       cancelled = true
+      invalidateMessages()
       if (timerRef.current) clearInterval(timerRef.current)
       if (videoTimerRef.current) clearInterval(videoTimerRef.current)
     }
-  }, [roomId, supabase, router, access, loadMessages, loadModerators])
+  }, [roomId, supabase, router, access, loadMessages, loadModerators, invalidateMessages])
 
   const canReadRoom = !!room && room.id === roomId && canAccessVillageRoom(access, room.name)
   useEffect(() => {
@@ -116,25 +133,23 @@ export default function RoomPage() {
     const channel = supabase.channel(`room:${roomId}:${channelId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'village_messages', filter: `room_id=eq.${roomId}` },
         async (payload: RealtimePostgresInsertPayload<{ id: string }>) => {
-          const { data: newMsg } = await supabase.from('village_messages').select('*, profiles(name, username)').eq('id', payload.new.id).single()
-          if (active && newMsg) {
-            setMessages(prev => prev.some(msg => msg.id === newMsg.id) ? prev : [...prev, newMsg as VillageMessage])
-            setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
-          }
+          if (active && payload.new.id) await loadMessages()
         })
       .subscribe()
-    return () => { active = false; void supabase.removeChannel(channel) }
-  }, [isMember, canReadRoom, roomId, channelId, supabase])
+    const refreshSafety=()=>{if(active&&!document.hidden)void loadMessages()}
+    const safetyPoll=setInterval(refreshSafety,15000)
+    document.addEventListener('visibilitychange',refreshSafety)
+    return () => { active = false; clearInterval(safetyPoll);document.removeEventListener('visibilitychange',refreshSafety);void supabase.removeChannel(channel) }
+  }, [isMember, canReadRoom, roomId, channelId, supabase, loadMessages])
 
   async function joinRoom() {
     if (!currentUser) return
     const { data: isFirst, error } = await supabase.rpc('join_village_room', { target_room_id: roomId })
     if (error) {
-      console.error('Unable to join room:', error)
+      setRoomNotice('Unable to join this room. Please check your access and try again.')
       return
     }
     setMembershipRoomId(roomId)
-    setIsModerator(Boolean(isFirst))
     if (isFirst) setModeratorIds(new Set([currentUser.id]))
     await loadMessages()
     await loadModerators()
@@ -144,8 +159,9 @@ export default function RoomPage() {
     if (!text.trim() || !currentUser || sending) return
     setSending(true)
     const content = text.trim()
-    setText('')
-    await supabase.from('village_messages').insert({ room_id: roomId, user_id: currentUser.id, content, message_type: 'text' })
+    const {error}=await supabase.from('village_messages').insert({ room_id: roomId, user_id: currentUser.id, content, message_type: 'text' })
+    if(error)setRoomNotice(safetyError(error))
+    else {setText('');setRoomNotice('');await loadMessages()}
     setSending(false)
   }
 
@@ -162,20 +178,20 @@ export default function RoomPage() {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
         const fileName = `${currentUser.id}/${roomId}/${Date.now()}.webm`
         const { error: uploadError } = await supabase.storage.from('village-audio').upload(fileName, blob, { contentType: 'audio/webm' })
-        if (uploadError) { console.error('Audio upload failed:', uploadError); return }
-        const { data: { publicUrl } } = supabase.storage.from('village-audio').getPublicUrl(fileName)
-        await supabase.from('village_messages').insert({
+        if (uploadError) { setRoomNotice('Audio upload could not be confirmed.'); return }
+        const result=await supabase.from('village_messages').insert({
           room_id: roomId, user_id: currentUser.id,
-          content: '🎤 Voice message', message_type: 'audio', audio_url: publicUrl,
+          content: '🎤 Voice message', message_type: 'audio', audio_url: fileName,
         })
+        if(result.error)setRoomNotice(safetyError(result.error));else await loadMessages()
       }
       recorder.start()
       mediaRecorderRef.current = recorder
       setRecording(true)
       setRecordingSeconds(0)
       timerRef.current = setInterval(() => setRecordingSeconds(s => s + 1), 1000)
-    } catch (err) {
-      console.error('Mic access denied:', err)
+    } catch {
+      setRoomNotice('Microphone is unavailable or permission was declined.')
     }
   }
 
@@ -208,12 +224,12 @@ export default function RoomPage() {
         const blob = new Blob(videoChunksRef.current, { type: mimeType })
         const fileName = `${currentUser.id}/${roomId}/video-${Date.now()}.${ext}`
         const { error: uploadError } = await supabase.storage.from('village-audio').upload(fileName, blob, { contentType: mimeType })
-        if (uploadError) { console.error('Video upload failed:', uploadError); return }
-        const { data: { publicUrl } } = supabase.storage.from('village-audio').getPublicUrl(fileName)
-        await supabase.from('village_messages').insert({
+        if (uploadError) { setRoomNotice('Video upload could not be confirmed.'); return }
+        const result=await supabase.from('village_messages').insert({
           room_id: roomId, user_id: currentUser.id,
-          content: '🎥 Video message', message_type: 'video', audio_url: publicUrl,
+          content: '🎥 Video message', message_type: 'video', audio_url: fileName,
         })
+        if(result.error)setRoomNotice(safetyError(result.error));else await loadMessages()
       }
       recorder.start()
       videoRecorderRef.current = recorder
@@ -225,8 +241,8 @@ export default function RoomPage() {
           return s + 1
         })
       }, 1000)
-    } catch (err) {
-      console.error('Camera access denied:', err)
+    } catch {
+      setRoomNotice('Camera is unavailable or permission was declined.')
     }
   }
 
@@ -235,19 +251,6 @@ export default function RoomPage() {
     videoRecorderRef.current?.stop()
     setVideoRecording(false)
     setVideoRecordingSeconds(0)
-  }
-
-  async function assignModerator(userId: string) {
-    if (!isModerator || userId === currentUser?.id) return
-    const { error } = await supabase.rpc('assign_village_moderator', {
-      target_room_id: roomId,
-      target_user_id: userId,
-    })
-    if (error) {
-      console.error('Unable to assign moderator:', error)
-      return
-    }
-    setModeratorIds(prev => new Set([...prev, userId]))
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -296,7 +299,7 @@ export default function RoomPage() {
           </p>
           <p style={{ fontSize: "14px", color: "var(--muted)" }}>{room?.description}</p>
         </div>
-        {isModerator && (
+        {moderatorIds.has(currentUser?.id??'') && (
           <span style={{ fontSize: "13px", color: "var(--green)", background: "var(--yellow-soft)", padding: '3px 8px', borderRadius: '100px', border: "1px solid var(--yellow)", display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Crown size={10} /> Mod
           </span>
@@ -319,6 +322,7 @@ export default function RoomPage() {
         </div>
       ) : (
         <>
+          <div style={{padding:'0 20px'}}><RoomSafety key={roomId} roomId={roomId} rpc={safetyRpc} onChanged={safetyChanged}/><p role="status">{roomNotice}</p></div>
           {/* Messages */}
           <div className="adult-chat-scroll" role="log" aria-label="Village conversation" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {messages.length === 0 && (
@@ -337,15 +341,14 @@ export default function RoomPage() {
                 <div key={msg.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexDirection: isOwn ? 'row-reverse' : 'row' }}>
                   {!isOwn && (
                     <button
-                      onClick={() => isModerator && !isMsgModerator ? assignModerator(msg.user_id) : undefined}
-                      title={isModerator && !isMsgModerator ? 'Make moderator' : undefined}
+                      title={isMsgModerator ? 'Assigned moderator' : 'Village member'}
                       style={{
                         width: '28px', height: '28px', borderRadius: '50%',
                         background: getAvatarColor(msg.user_id),
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: "13px", fontWeight: 600, color: 'var(--ink)', flexShrink: 0,
                         border: isMsgModerator ? "2px solid var(--green)" : '2px solid transparent',
-                        cursor: isModerator && !isMsgModerator ? 'pointer' : 'default',
+                        cursor: 'default',
                         padding: 0,
                       }}>
                       {getInitials(name)}
@@ -376,6 +379,7 @@ export default function RoomPage() {
                     <p style={{ fontSize: "13px", color: "var(--muted)", marginTop: '3px', textAlign: isOwn ? 'right' : 'left', marginRight: isOwn ? '4px' : 0, marginLeft: isOwn ? 0 : '4px' }}>
                       {new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                     </p>
+                    {!isOwn&&<MessageSafety roomId={roomId} messageId={msg.id} rpc={safetyRpc} onChanged={safetyChanged}/>}
                   </div>
                 </div>
               )
@@ -427,6 +431,7 @@ export default function RoomPage() {
                 <textarea
                   aria-label="Message the Village room"
                   value={text}
+                  maxLength={4000}
                   onChange={e => setText(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Say something…"

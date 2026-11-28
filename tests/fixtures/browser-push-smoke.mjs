@@ -16,12 +16,12 @@ assert.equal((await post({ action: '__proto__' })).status, 400)
 assert.equal((await post('x'.repeat(5000))).status, 400)
 const state = await post({ action: 'state' }); assert.equal(state.status, 200)
 assert.match(state.headers.get('cache-control'), /private, no-store/)
-assert.equal((await state.json()).eligible, true)
-assert.equal((await (await post({ action: 'state' }, { cookie: fresh })).json()).eligible, false)
+const settings=await state.json();assert.equal(settings.eligible,true)
+const freshSettings=await(await post({action:'state'},{cookie:fresh})).json();assert.equal(freshSettings.eligible,false)
 const curve = createECDH('prime256v1'); curve.generateKeys()
 const subscription = { endpoint: `https://fcm.googleapis.com/fcm/send/fictional-${randomBytes(8).toString('hex')}`, expirationTime: null, keys: { p256dh: curve.getPublicKey().toString('base64url'), auth: randomBytes(16).toString('base64url') } }
-const register = { action: 'register', subscription, time: '09:30', timezone: 'America/New_York' }
-assert.equal((await post(register, { cookie: fresh })).status, 409)
+const register = { action: 'register', subscription, time: '09:30', timezone: 'America/New_York',accountGuard:settings.accountGuard }
+assert.equal((await post({...register,accountGuard:freshSettings.accountGuard}, { cookie: fresh })).status, 409)
 assert.equal((await post({ ...register, subscription: { ...subscription, endpoint: 'https://127.0.0.1/private' } })).status, 400)
 assert.equal((await post(register)).status, 200)
 assert.equal((await fetch(`${app}/api/notifications/dispatch`, { method: 'POST' })).status, 401)

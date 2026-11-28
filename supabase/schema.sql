@@ -457,6 +457,8 @@ grant select on village_rooms to authenticated;
 grant select, insert, delete on village_memberships to authenticated;
 grant select, insert on village_messages to authenticated;
 grant select, insert, update on friday_reflections to authenticated;
+-- Hosted Supabase default privileges can otherwise retain broader grants.
+revoke all on coach_conversations, coach_messages from public, anon, authenticated;
 grant select, insert, update, delete on coach_conversations to authenticated;
 grant select, insert on coach_messages to authenticated;
 grant all on all tables in schema public to service_role;

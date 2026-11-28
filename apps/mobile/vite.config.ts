@@ -7,6 +7,8 @@ export default defineConfig(({ command,mode }) => {
  const config=mobileConfig(env,false)
  const origins=config?[config.apiOrigin,config.supabaseUrl,config.supabaseUrl.replace(/^https:/,'wss:').replace(/^http:/,'ws:')].filter((s,i,a)=>a.indexOf(s)===i).join(' '):''
  return {
+  // Shared adult components live outside this package; hooks must use the renderer's React instance.
+  resolve: { dedupe: ['react','react-dom'] },
   plugins: [react(), {
     name: 'local-development-csp',
     transformIndexHtml(html) {

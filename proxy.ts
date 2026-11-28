@@ -1,7 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { localPushPageAllowed } from './lib/notifications/local-diagnostics'
 
 export async function proxy(request: NextRequest) {
+  if(request.nextUrl.pathname==='/local/push-diagnostics'){
+    const headers={'Cache-Control':'private, no-store','X-Robots-Tag':'noindex, nofollow','X-Content-Type-Options':'nosniff'}
+    if(!localPushPageAllowed(process.env,request.headers.get('host')))return new NextResponse('Not found',{status:404,headers})
+    return NextResponse.next({headers})
+  }
   // Native endpoints require a separately verified bearer + live Auth session.
   // Never turn a missing bearer into cookie authentication or weaken web CSRF.
   if (request.nextUrl.pathname.startsWith('/api/native/v1/')) return NextResponse.next()

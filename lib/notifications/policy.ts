@@ -10,6 +10,7 @@ export interface BrowserSubscription {
   keys: { p256dh: string; auth: string }
 }
 export interface ReminderState {
+  accountGuard?: string
   eligible: boolean
   enabled: boolean
   subscribed: boolean
@@ -19,7 +20,7 @@ export interface ReminderState {
 export interface PushStore { call(name: string, args?: Record<string, unknown>): Promise<unknown> }
 
 export function pushEnabled(env: PushEnv): boolean {
-  return env.ARIZE_EDITION !== 'student' && env.BROWSER_PUSH_ENABLED === 'true'
+  return env.ARIZE_EDITION === 'adult' && env.BROWSER_PUSH_ENABLED === 'true'
     && env.NEXT_PUBLIC_BROWSER_PUSH_ENABLED === 'true'
 }
 export function samePushOrigin(request: Request, env: PushEnv): boolean {
@@ -34,7 +35,7 @@ export function reminderTime(time: unknown): time is string {
   return typeof time === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)
 }
 export function reminderZone(zone: unknown): zone is string {
-  if (typeof zone !== 'string' || zone.length > 80 || !/^[A-Za-z_+\-/]+$/.test(zone)) return false
+  if (typeof zone !== 'string' || zone.length > 80 || !/^[A-Za-z0-9_+\-/]+$/.test(zone)) return false
   try { new Intl.DateTimeFormat('en', { timeZone: zone }).format(); return true } catch { return false }
 }
 export function reminderState(value: unknown): ReminderState | null {
@@ -83,6 +84,25 @@ export function pushSenderConfig(env: PushEnv) {
   const subject = env.BROWSER_PUSH_CONTACT
   if (!keyLength(publicKey, 65) || !keyLength(privateKey, 32) || !subject || !/^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/.test(subject)) return null
   return { publicKey, privateKey, subject }
+}
+export function pushHealth(value:unknown){
+ if(!value||typeof value!=='object'||Array.isArray(value))return null
+ const v=value as Record<string,unknown>,counts:Record<string,number>={}
+ if(typeof v.enabled!=='boolean')return null
+ for(const key of ['pending','leased','oldestDueSeconds','failedDue24h','expiredDue24h']){if(typeof v[key]!=='number'||!Number.isSafeInteger(v[key])||Number(v[key])<0)return null;counts[key]=v[key] as number}
+ if(v.lastRunAt!==null&&(typeof v.lastRunAt!=='string'||!Number.isFinite(Date.parse(v.lastRunAt))))return null
+ let lastRun:Record<string,string|number>|null=null
+ if(v.lastRun!==null){
+  if(!v.lastRun||typeof v.lastRun!=='object')return null
+  const run=v.lastRun as Record<string,unknown>
+  if(!['complete','disabled','partial'].includes(String(run.state))||!['empty','limit','budget','configuration','provider_auth','storage'].includes(String(run.stop)))return null
+  lastRun={state:String(run.state),stop:String(run.stop)}
+  for(const k of ['claimed','sent','retry','removed','failed','revoked','unconfirmed','elapsedMs']){
+   if(typeof run[k]!=='number'||!Number.isInteger(run[k])||Number(run[k])<0||Number(run[k])>(k==='elapsedMs'?120000:500))return null
+   lastRun[k]=run[k] as number
+  }
+ }
+ return {enabled:v.enabled,...counts,lastRunAt:v.lastRunAt as string|null,lastRun}
 }
 export async function boundedJson(request: Request, max = 4_096): Promise<unknown> {
   if (!/^application\/json(?:;|$)/i.test(request.headers.get('content-type') ?? '')) throw new Error('Invalid request')

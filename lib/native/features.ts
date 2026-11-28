@@ -7,6 +7,7 @@ import { cursor, messageCursor } from './policy'
 import { canAccessVillageRoom } from '../access/entitlements'
 import { validateCoachRequest } from '../coach/request'
 import { generateAdultReply } from '../clarity/adult-generation'
+import { validSafetyRequest } from '../village/safety'
 
 type Session = Awaited<ReturnType<typeof nativeSession>>
 const goalFields='id,title,category,deadline,week_of,notes,is_complete,progress'
@@ -59,10 +60,17 @@ async function room(s: Session, roomId: string, member = true) {
 }
 export async function nativeVillage(s: Session, method: string, url: URL, body: Record<string,unknown>) {
   const db=s.supabase,u=s.user.id
+  if(method==='POST'&&body.action==='safety'){
+    const args={...body};delete args.action
+    if(!validSafetyRequest(args))throw new NativeError('input','Choose a valid Village safety action.')
+    const result=await db.rpc('village_safety',args)
+    if(result.error)throw new NativeError(result.error.code==='P0001'?'rate_limit':'safety',result.error.code==='P0001'?'Please wait before trying again. A room or account limit applies.':'This safety action is unavailable or could not be confirmed.',result.error.code==='P0001'?429:403)
+    return result.data
+  }
   if (method==='GET' && !url.searchParams.has('room')) {
     const [rooms,memberships]=await Promise.all([db.from('village_rooms').select('id,name,description').order('name').limit(100),db.from('village_memberships').select('room_id,is_moderator').eq('user_id',u).limit(100)])
     const mine=checked(memberships) ?? []
-    return {rooms:(checked(rooms) ?? []).filter(r=>canAccessVillageRoom(s.access,r.name)).map(r=>({ ...r,member:mine.some(m=>m.room_id===r.id),moderator:mine.some(m=>m.room_id===r.id && m.is_moderator) }))}
+    return {rooms:(checked(rooms) ?? []).filter(r=>canAccessVillageRoom(s.access,r.name)).map(r=>({ ...r,member:mine.some(m=>m.room_id===r.id),moderator:false }))}
   }
   const roomId=id(method==='GET'?url.searchParams.get('room'):body.roomId)
   if (method==='GET') {
@@ -85,6 +93,7 @@ export async function nativeVillage(s: Session, method: string, url: URL, body: 
   if (body.action!=='send' || typeof body.content!=='string' || !body.content.trim() || body.content.length>4000) throw new NativeError('input','Enter a text message of up to 4,000 characters.')
   const messageId=id(body.id), content=body.content.trim()
   const result=await db.from('village_messages').insert({id:messageId,room_id:roomId,user_id:u,content,message_type:'text'}).select('id').single()
+  if(result.error?.code==='P0001')throw new NativeError('rate_limit','Please wait before sending again. Posting may be paused or a message limit reached.',429)
   if (result.error?.code==='23505') {
     const old=checked(await db.from('village_messages').select('id,content,user_id,room_id').eq('id',messageId).maybeSingle())
     if (old?.user_id===u && old.room_id===roomId && old.content===content) return {id:messageId}

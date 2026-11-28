@@ -32,6 +32,7 @@ test('subscription and time validation reject private payloads, malformed keys a
   for (const value of [null, [], { ...subscription, userId: 'forged' }, { ...subscription, expirationTime: 1 }, { ...subscription, keys: { ...subscription.keys, auth: 'bad' } }, { ...subscription, keys: { ...subscription.keys, p256dh: 'A'.repeat(87) } }]) assert.equal(subscriptionInput(value), null)
   assert.equal(reminderTime('23:59'), true); assert.equal(reminderTime('24:00'), false)
   assert.equal(reminderZone('America/New_York'), true); assert.equal(reminderZone('Fake/Zone'), false)
+  assert.equal(reminderZone('Etc/GMT+5'),true)
 })
 test('browser state is an allowlisted DTO, never a serialized endpoint or malformed DB record', () => {
   const safe = { eligible: true, enabled: true, subscribed: false, time: '09:00', timezone: 'UTC' }
