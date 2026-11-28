@@ -1,18 +1,18 @@
 # Adult web deployment only. Secrets, local fixtures and native build artifacts
 # must never be uploaded as part of a web release.
-.git
-.next
-.vercel
-node_modules
+/.git
+/.next
+/.vercel
+/node_modules
 .env
 .env.*
 !.env.example
 *.tsbuildinfo
-coverage
-outputs
-apps/mobile
-tests
-docs
-supabase
-scripts
-design
+/coverage
+/outputs
+/apps/mobile
+/tests
+/docs
+/supabase
+/scripts
+/design

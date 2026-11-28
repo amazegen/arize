@@ -56,6 +56,21 @@ delivery, native iPhone acceptance or App Store readiness. Founder/Clarity roles
 remain explicit and unassigned by the migrations. Lead notification destination
 remains configurable. Keep the overall billing launch incomplete in Mission Control.
 
+## First production build failed — no live application promotion
+
+Deployment `dpl_WhQoxK69KQ5DUaREPouWZoWf8WVC` from commit `9872b67` failed
+because the initial unanchored `supabase` upload rule also excluded
+`lib/supabase`. The existing production application remained in place.
+The exclusions were corrected to root-scoped paths and a regression test added.
+Do not start another billed build without the owner's approval. The adult database
+updates above are already installed; do not replay them to retry an app build.
+
+Corrected-package validation: lint, typecheck and 122 Node tests pass. A fresh
+upload-shaped local copy (152 tracked allowed files, with no local secrets) was
+built successfully with fictional loopback configuration. Its manifest explicitly
+included all three `lib/supabase` runtime clients and excluded the root SQL folder,
+native sources and `.env.local`. This does not claim a successful hosted retry.
+
 ## Mission Control
 
 Submitted the task-level local account-deletion BUILD suggestion for owner review,
